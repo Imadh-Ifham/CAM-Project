@@ -1,7 +1,23 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function AdminLogin() {
+const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email === "admin@gmail.com" && password === "Aman14924") {
+      setError("");
+      navigate("/admin/dashboard");
+    } else {
+      setError("Invalid email or password");
+    }
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-cam-bg-900 via-cam-bg-800 to-cam-bg-700 relative overflow-hidden">
       {/* Glowing abstract shapes */}
@@ -16,7 +32,7 @@ export default function AdminLogin() {
         <p className="text-base text-gray-400 mb-8 font-inter">
           Community Aid Management Portal
         </p>
-        <form className="w-full flex flex-col gap-5">
+        <form className="w-full flex flex-col gap-5" onSubmit={handleSubmit}>
           {/* Email */}
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-cam-green-400">
@@ -31,10 +47,12 @@ export default function AdminLogin() {
             </span>
             <input
               type="email"
-              placeholder="admin@community-aid.org"
+              placeholder="admin@gmail.com"
               className="w-full pl-12 pr-4 py-3 rounded-lg bg-[#262626] text-white placeholder-white/70 border border-transparent focus:border-cam-green-400 focus:ring-2 focus:ring-cam-green-400 outline-none transition-all duration-200 font-inter"
               autoComplete="username"
               required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           {/* Password */}
@@ -64,6 +82,8 @@ export default function AdminLogin() {
               className="w-full pl-12 pr-10 py-3 rounded-lg bg-[#262626] text-white placeholder-white/70 border border-transparent focus:border-cam-green-400 focus:ring-2 focus:ring-cam-green-400 outline-none transition-all duration-200 font-inter"
               autoComplete="current-password"
               required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
             <button
               type="button"
@@ -99,6 +119,12 @@ export default function AdminLogin() {
               )}
             </button>
           </div>
+          {/* Error Message */}
+          {error && (
+            <div className="text-red-500 text-sm text-right font-inter">
+              {error}
+            </div>
+          )}
           {/* Forgot Password */}
           <div className="flex justify-end">
             <a
@@ -122,4 +148,6 @@ export default function AdminLogin() {
       </div>
     </div>
   );
-}
+};
+
+export default AdminLogin;
