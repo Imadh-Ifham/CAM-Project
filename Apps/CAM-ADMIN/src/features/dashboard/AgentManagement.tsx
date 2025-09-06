@@ -14,12 +14,16 @@ interface Agent {
 
 export default function AgentManagement() {
   // State management
-  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "denied">("pending");
+  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "denied">(
+    "pending"
+  );
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState<"approve" | "deny" | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState<
+    "approve" | "deny" | null
+  >(null);
   const [denyReason, setDenyReason] = useState("");
-  
+
   // Mock data
   const [agents, setAgents] = useState<Agent[]>([
     {
@@ -28,7 +32,7 @@ export default function AgentManagement() {
       email: "ahmed.khan@example.com",
       registrationDate: "2025-08-28",
       status: "pending",
-      notes: "Wants to help in the northern region distribution"
+      notes: "Wants to help in the northern region distribution",
     },
     {
       id: "2",
@@ -36,7 +40,7 @@ export default function AgentManagement() {
       email: "fatima.h@example.com",
       registrationDate: "2025-09-01",
       status: "pending",
-      notes: "Experienced in community support"
+      notes: "Experienced in community support",
     },
     {
       id: "3",
@@ -44,7 +48,7 @@ export default function AgentManagement() {
       email: "m.ali@example.com",
       registrationDate: "2025-08-15",
       status: "approved",
-      notes: "Works with local NGO"
+      notes: "Works with local NGO",
     },
     {
       id: "4",
@@ -52,17 +56,17 @@ export default function AgentManagement() {
       email: "aisha@example.com",
       registrationDate: "2025-08-10",
       status: "denied",
-      notes: "Incomplete registration details"
-    }
+      notes: "Incomplete registration details",
+    },
   ]);
 
   // Filter agents based on active tab
-  const filteredAgents = agents.filter(agent => agent.status === activeTab);
+  const filteredAgents = agents.filter((agent) => agent.status === activeTab);
 
   // Handle agent status change
   const handleStatusChange = (id: string, newStatus: "approved" | "denied") => {
-    setAgents(prev => 
-      prev.map(agent => 
+    setAgents((prev) =>
+      prev.map((agent) =>
         agent.id === id ? { ...agent, status: newStatus } : agent
       )
     );
@@ -73,10 +77,10 @@ export default function AgentManagement() {
 
   // Format date to be more readable
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
@@ -89,8 +93,12 @@ export default function AgentManagement() {
           <h1 className="text-3xl font-bold text-cam-green-500 mb-2 animate-fadeIn">
             Manage Agent Requests
           </h1>
-          <p className="text-gray-400 animate-fadeIn" style={{ animationDelay: "0.1s" }}>
-            Review and approve/deny agents who requested to join the CAM Community.
+          <p
+            className="text-gray-400 animate-fadeIn"
+            style={{ animationDelay: "0.1s" }}
+          >
+            Review and approve/deny agents who requested to join the CAM
+            Community.
           </p>
         </div>
         <div className="relative">
@@ -102,33 +110,36 @@ export default function AgentManagement() {
       </div>
 
       {/* Filters and Search Section */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 animate-slideInFromTop border-b border-gray-800" style={{ animationDelay: "0.2s" }}>
+      <div
+        className="flex flex-wrap items-center justify-between gap-4 mb-6 animate-slideInFromTop border-b border-gray-800"
+        style={{ animationDelay: "0.2s" }}
+      >
         <div className="flex gap-6">
-          <TabButton 
-            active={activeTab === "pending"} 
+          <TabButton
+            active={activeTab === "pending"}
             onClick={() => setActiveTab("pending")}
           >
             Pending
             <span className="ml-2 text-amber-400">
-              {agents.filter(a => a.status === "pending").length}
+              {agents.filter((a) => a.status === "pending").length}
             </span>
           </TabButton>
-          <TabButton 
-            active={activeTab === "approved"} 
+          <TabButton
+            active={activeTab === "approved"}
             onClick={() => setActiveTab("approved")}
           >
             Approved
             <span className="ml-2 text-green-400">
-              {agents.filter(a => a.status === "approved").length}
+              {agents.filter((a) => a.status === "approved").length}
             </span>
           </TabButton>
-          <TabButton 
-            active={activeTab === "denied"} 
+          <TabButton
+            active={activeTab === "denied"}
             onClick={() => setActiveTab("denied")}
           >
             Denied
             <span className="ml-2 text-red-400">
-              {agents.filter(a => a.status === "denied").length}
+              {agents.filter((a) => a.status === "denied").length}
             </span>
           </TabButton>
         </div>
@@ -141,23 +152,27 @@ export default function AgentManagement() {
           <Search className="absolute left-3 top-2.5 text-gray-500" size={18} />
         </div>
       </div>
-      
+
       <div className="py-4"></div>
 
       {/* Agent List */}
       <div className="space-y-4 mb-6">
         {filteredAgents.length > 0 ? (
           filteredAgents.map((agent, index) => (
-            <div 
+            <div
               key={agent.id}
               className="bg-black p-6 rounded-xl border border-gray-800 shadow-md hover:border-gray-700 transition-colors"
-              style={{ animationDelay: `${0.2 + (index * 0.1)}s` }}
+              style={{ animationDelay: `${0.2 + index * 0.1}s` }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center text-cam-green-500">
                     {agent.avatar ? (
-                      <img src={agent.avatar} alt={agent.name} className="w-full h-full rounded-full object-cover" />
+                      <img
+                        src={agent.avatar}
+                        alt={agent.name}
+                        className="w-full h-full rounded-full object-cover"
+                      />
                     ) : (
                       <User size={24} />
                     )}
@@ -185,7 +200,7 @@ export default function AgentManagement() {
                 <div className="flex items-center gap-3">
                   {agent.status === "pending" ? (
                     <>
-                      <button 
+                      <button
                         onClick={() => {
                           setSelectedAgent(agent);
                           setShowConfirmModal("approve");
@@ -195,7 +210,7 @@ export default function AgentManagement() {
                         <Check size={16} />
                         Approve
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           setSelectedAgent(agent);
                           setShowConfirmModal("deny");
@@ -234,11 +249,13 @@ export default function AgentManagement() {
           <div className="bg-black p-8 rounded-xl border border-gray-800 shadow-md text-center">
             <div className="flex flex-col items-center justify-center py-8">
               <UserCheck className="text-gray-600 mb-4" size={48} />
-              <h3 className="text-xl font-medium text-white">No {activeTab} agent requests</h3>
+              <h3 className="text-xl font-medium text-white">
+                No {activeTab} agent requests
+              </h3>
               <p className="text-gray-400 mt-1">
-                {activeTab === "pending" 
-                  ? "When new agents request to join, they will appear here." 
-                  : activeTab === "approved" 
+                {activeTab === "pending"
+                  ? "When new agents request to join, they will appear here."
+                  : activeTab === "approved"
                   ? "Approved agents will be listed here."
                   : "Denied agent requests will be listed here."}
               </p>
@@ -249,7 +266,9 @@ export default function AgentManagement() {
 
       {/* Recent Activity Panel */}
       <div className="mt-8 bg-black p-5 rounded-xl border border-gray-800 shadow-md">
-        <h3 className="text-lg font-medium text-cam-green-500 mb-3">Recent Actions</h3>
+        <h3 className="text-lg font-medium text-cam-green-500 mb-3">
+          Recent Actions
+        </h3>
         <div className="space-y-3">
           <div className="flex items-center gap-3 py-2 border-b border-gray-800">
             <div className="w-8 h-8 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
@@ -266,7 +285,9 @@ export default function AgentManagement() {
             </div>
             <div>
               <p className="text-sm text-white">Aisha Patel was denied</p>
-              <p className="text-xs text-gray-400">August 25, 2025 at 2:30 PM</p>
+              <p className="text-xs text-gray-400">
+                August 25, 2025 at 2:30 PM
+              </p>
             </div>
           </div>
         </div>
@@ -278,38 +299,50 @@ export default function AgentManagement() {
           <div className="bg-black rounded-xl border border-gray-800 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-gray-800 p-5">
               <h2 className="text-xl font-bold text-white">Agent Details</h2>
-              <button 
+              <button
                 onClick={() => setShowDetailsModal(false)}
                 className="text-gray-400 hover:text-white"
               >
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center text-cam-green-500">
                   <User size={32} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-medium text-white">{selectedAgent.name}</h3>
+                  <h3 className="text-xl font-medium text-white">
+                    {selectedAgent.name}
+                  </h3>
                   <p className="text-gray-400">Agent Request</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-500 mb-1">Email</h4>
-                  <p className="text-white font-medium">{selectedAgent.email}</p>
+                  <h4 className="text-sm font-medium text-gray-500 mb-1">
+                    Email
+                  </h4>
+                  <p className="text-white font-medium">
+                    {selectedAgent.email}
+                  </p>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-gray-500 mb-1">Registration Date</h4>
-                  <p className="text-white font-medium">{formatDate(selectedAgent.registrationDate)}</p>
+                  <h4 className="text-sm font-medium text-gray-500 mb-1">
+                    Registration Date
+                  </h4>
+                  <p className="text-white font-medium">
+                    {formatDate(selectedAgent.registrationDate)}
+                  </p>
                 </div>
               </div>
 
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-500 mb-1">Registration Notes</h4>
+                <h4 className="text-sm font-medium text-gray-500 mb-1">
+                  Registration Notes
+                </h4>
                 <p className="text-white p-4">
                   {selectedAgent.notes || "No notes provided"}
                 </p>
@@ -326,14 +359,14 @@ export default function AgentManagement() {
 
               {selectedAgent.status === "pending" && (
                 <div className="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-gray-800">
-                  <button 
+                  <button
                     onClick={() => setShowConfirmModal("deny")}
                     className="px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
                   >
                     <X size={16} />
                     Deny Request
                   </button>
-                  <button 
+                  <button
                     onClick={() => setShowConfirmModal("approve")}
                     className="px-6 py-2.5 bg-cam-green-500 text-white rounded-lg hover:bg-cam-green-400 transition-colors flex items-center gap-2"
                   >
@@ -357,9 +390,12 @@ export default function AgentManagement() {
                   <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center text-green-500 mx-auto mb-4">
                     <Check size={32} />
                   </div>
-                  <h3 className="text-xl font-bold text-white">Approve Agent Request</h3>
+                  <h3 className="text-xl font-bold text-white">
+                    Approve Agent Request
+                  </h3>
                   <p className="text-gray-400 mt-2">
-                    Are you sure you want to approve {selectedAgent.name} as a CAM Agent?
+                    Are you sure you want to approve {selectedAgent.name} as a
+                    CAM Agent?
                   </p>
                 </>
               ) : (
@@ -367,9 +403,12 @@ export default function AgentManagement() {
                   <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center text-red-500 mx-auto mb-4">
                     <X size={32} />
                   </div>
-                  <h3 className="text-xl font-bold text-white">Deny Agent Request</h3>
+                  <h3 className="text-xl font-bold text-white">
+                    Deny Agent Request
+                  </h3>
                   <p className="text-gray-400 mt-2">
-                    Are you sure you want to deny {selectedAgent.name}'s request?
+                    Are you sure you want to deny {selectedAgent.name}'s
+                    request?
                   </p>
                 </>
               )}
@@ -377,7 +416,10 @@ export default function AgentManagement() {
 
             {showConfirmModal === "deny" && (
               <div className="mb-6">
-                <label htmlFor="denyReason" className="block text-sm text-gray-400 mb-2">
+                <label
+                  htmlFor="denyReason"
+                  className="block text-sm text-gray-400 mb-2"
+                >
                   Reason for denial (optional)
                 </label>
                 <textarea
@@ -391,19 +433,21 @@ export default function AgentManagement() {
             )}
 
             <div className="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-gray-800">
-              <button 
+              <button
                 onClick={() => setShowConfirmModal(null)}
                 className="px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
               >
                 Cancel
               </button>
-              <button 
-                onClick={() => handleStatusChange(
-                  selectedAgent.id, 
-                  showConfirmModal === "approve" ? "approved" : "denied"
-                )}
+              <button
+                onClick={() =>
+                  handleStatusChange(
+                    selectedAgent.id,
+                    showConfirmModal === "approve" ? "approved" : "denied"
+                  )
+                }
                 className={`px-6 py-2.5 text-white rounded-lg flex items-center gap-2 ${
-                  showConfirmModal === "approve" 
+                  showConfirmModal === "approve"
                     ? "bg-cam-green-500 hover:bg-cam-green-400"
                     : "bg-red-500 hover:bg-red-400"
                 }`}
@@ -440,8 +484,8 @@ function TabButton({ children, active, onClick }: TabButtonProps) {
     <button
       onClick={onClick}
       className={`px-5 py-2.5 flex items-center justify-center transition-colors ${
-        active 
-          ? "text-white border-b-2 border-cam-green-500" 
+        active
+          ? "text-white border-b-2 border-cam-green-500"
           : "text-gray-400 hover:text-gray-300"
       }`}
     >
