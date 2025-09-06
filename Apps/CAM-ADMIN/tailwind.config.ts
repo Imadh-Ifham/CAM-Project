@@ -27,6 +27,35 @@ export default {
       borderRadius: {
         "2xl": "1rem",
       },
+      animation: {
+        fadeIn: "fadeIn 0.8s ease-in-out",
+        slideInFromLeft: "slideInFromLeft 0.8s ease-out",
+        slideInFromRight: "slideInFromRight 0.8s ease-out",
+        slideInFromBottom: "slideInFromBottom 0.8s ease-out",
+        growFromBottom: "growFromBottom 1s ease-out",
+      },
+      keyframes: {
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        slideInFromLeft: {
+          "0%": { transform: "translateX(-20px)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        slideInFromRight: {
+          "0%": { transform: "translateX(20px)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        slideInFromBottom: {
+          "0%": { transform: "translateY(20px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        growFromBottom: {
+          "0%": { transform: "scaleY(0)", opacity: "0" },
+          "100%": { transform: "scaleY(1)", opacity: "1" },
+        },
+      },
     },
   },
   plugins: [],

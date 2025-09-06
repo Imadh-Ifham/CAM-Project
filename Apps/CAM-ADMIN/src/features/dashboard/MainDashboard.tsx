@@ -3,7 +3,7 @@ import { BarChart3, Users, FileCheck, UserCheck } from "lucide-react";
 export default function MainDashboard() {
   return (
     <div className="p-6 w-full">
-      <h1 className="text-3xl font-bold text-white mb-8">
+      <h1 className="text-3xl font-bold text-cam-green-500 mb-8 animate-fadeIn">
         Dashboard Analytics
       </h1>
 
@@ -11,45 +11,60 @@ export default function MainDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Total Users"
-          value="8,249"
+          value="5"
           icon={<Users className="text-blue-500" />}
-          change="+12%"
+          change="+2"
           positive={true}
+          animationDelay="0.1s"
         />
         <StatCard
           title="Agent Registrations"
-          value="1,423"
+          value="2"
           icon={<UserCheck className="text-green-500" />}
-          change="+7.8%"
+          change="+1"
           positive={true}
+          animationDelay="0.2s"
         />
         <StatCard
           title="Requests Processed"
-          value="24,512"
+          value="1"
           icon={<FileCheck className="text-purple-500" />}
-          change="+32%"
+          change="New"
           positive={true}
+          animationDelay="0.3s"
         />
         <StatCard
           title="Acceptance Rate"
-          value="68.4%"
+          value="98%"
           icon={<BarChart3 className="text-amber-500" />}
-          change="-3.2%"
-          positive={false}
+          change="+5%"
+          positive={true}
+          animationDelay="0.4s"
         />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-cam-bg-800 p-6 rounded-xl border border-gray-700 shadow-md">
-          <h2 className="text-xl font-bold mb-4 text-white">
+        <div className="bg-cam-bg-800 p-6 rounded-xl border border-gray-700 shadow-md animate-slideInFromLeft">
+          <h2 className="text-xl font-bold mb-4 text-cam-green-500">
             User Registrations
           </h2>
           <div className="h-60 flex items-end justify-around">
-            {[65, 40, 70, 85, 60, 75, 90].map((height, i) => (
+            {[40, 15, 65, 35, 10, 80, 25].map((height, i) => (
               <div key={i} className="relative w-1/12 group">
                 <div
-                  className={`bg-gradient-to-t from-cam-green-500 to-cam-green-400 rounded-t-md w-full h-[${height}%] transition-all duration-300 hover:opacity-80`}
+                  style={{
+                    height: `${height}%`,
+                    animation: `growFromBottom 1s ease-out forwards`,
+                    animationDelay: `${0.1 * i}s`,
+                  }}
+                  className={`bg-gradient-to-t from-cam-green-500 to-cam-green-400 rounded-t-md w-full 
+                              transition-all duration-300 hover:opacity-80 hover:shadow-glow
+                              transform origin-bottom ${
+                                i === 2 || i === 5
+                                  ? "from-green-600 to-green-400 shadow-lg shadow-green-500/20"
+                                  : ""
+                              }`}
                 ></div>
                 <div className="text-xs mt-2 text-gray-400 text-center">
                   {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
@@ -62,8 +77,8 @@ export default function MainDashboard() {
           </div>
         </div>
 
-        <div className="bg-cam-bg-800 p-6 rounded-xl border border-gray-700 shadow-md">
-          <h2 className="text-xl font-bold mb-4 text-white">
+        <div className="bg-cam-bg-800 p-6 rounded-xl border border-gray-700 shadow-md animate-slideInFromRight">
+          <h2 className="text-xl font-bold mb-4 text-cam-green-500">
             Agent Performance
           </h2>
           <div className="h-60 flex items-center justify-center">
@@ -84,7 +99,7 @@ export default function MainDashboard() {
                 fill="none"
                 stroke="#4ade80"
                 strokeWidth="10"
-                strokeDasharray="251.2 376.8"
+                strokeDasharray="251.2 5.0"
                 strokeDashoffset="94.2"
                 transform="rotate(-90 50 50)"
               />
@@ -97,7 +112,7 @@ export default function MainDashboard() {
                 fontSize="12"
                 fontWeight="bold"
               >
-                68%
+                98%
               </text>
               <text
                 x="50"
@@ -114,9 +129,11 @@ export default function MainDashboard() {
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="bg-cam-bg-800 p-6 rounded-xl border border-gray-700 shadow-md">
-        <h2 className="text-xl font-bold mb-4 text-white">Recent Activity</h2>
+      {/* Recent Agent Registrations */}
+      <div className="bg-cam-bg-800 p-6 rounded-xl border border-gray-700 shadow-md animate-slideInFromBottom">
+        <h2 className="text-xl font-bold mb-4 text-cam-green-500">
+          Recent Agent Registrations
+        </h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -138,34 +155,16 @@ export default function MainDashboard() {
             <tbody>
               {[
                 {
-                  agent: "Alex Johnson",
-                  action: "Added new user",
-                  status: "Completed",
-                  time: "5 mins ago",
+                  agent: "Aman",
+                  action: "Agent Registration",
+                  status: "Approved",
+                  time: "2 days ago",
                 },
                 {
-                  agent: "Sarah Williams",
-                  action: "Processed aid request",
-                  status: "In Progress",
-                  time: "20 mins ago",
-                },
-                {
-                  agent: "David Miller",
-                  action: "Accepted new agent",
-                  status: "Completed",
-                  time: "1 hour ago",
-                },
-                {
-                  agent: "Michael Brown",
-                  action: "Updated inventory",
-                  status: "Completed",
-                  time: "2 hours ago",
-                },
-                {
-                  agent: "Jessica Lee",
-                  action: "Reviewed applications",
-                  status: "Pending",
-                  time: "3 hours ago",
+                  agent: "Imadh",
+                  action: "Agent Registration",
+                  status: "Denied",
+                  time: "1 day ago",
                 },
               ].map((item, i) => (
                 <tr key={i} className="border-t border-gray-700">
@@ -202,13 +201,25 @@ interface StatCardProps {
   icon: React.ReactNode;
   change: string;
   positive: boolean;
+  animationDelay?: string;
 }
 
-function StatCard({ title, value, icon, change, positive }: StatCardProps) {
+function StatCard({
+  title,
+  value,
+  icon,
+  change,
+  positive,
+  animationDelay = "0s",
+}: StatCardProps) {
   return (
-    <div className="bg-cam-bg-800 p-6 rounded-xl border border-gray-700 shadow-md">
+    <div
+      className="bg-cam-bg-800 p-6 rounded-xl border border-gray-700 shadow-md animate-fadeIn 
+                 transition-all duration-300 hover:shadow-glow hover:border-cam-green-500/50 cursor-pointer"
+      style={{ animationDelay }}
+    >
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-gray-400 text-sm">{title}</h3>
+        <h3 className="text-cam-green-400 text-sm font-medium">{title}</h3>
         <div className="p-2 rounded-lg bg-cam-bg-700">{icon}</div>
       </div>
       <div className="flex items-baseline">
