@@ -103,7 +103,7 @@ export default function AdminLogin() {
           <div className="flex justify-end">
             <a
               href="#"
-              className="text-cam-green-400 text-sm hover:underline transition-all font-inter"
+              className="text-green-500 text-sm hover:underline transition-all font-inter"
             >
               Forgot Password?
             </a>
@@ -111,7 +111,7 @@ export default function AdminLogin() {
           {/* Sign In Button */}
           <button
             type="submit"
-            className="w-full py-3 rounded-lg bg-gradient-to-r from-cam-green-500 to-cam-green-400 text-white font-semibold text-lg shadow-glow hover:shadow-lg hover:from-cam-green-400 hover:to-cam-green-500 transition-all duration-200 font-inter focus:outline-none focus:ring-2 focus:ring-cam-green-400"
+            className="w-full py-3 rounded-lg bg-green-500 text-white font-semibold text-lg border border-green-600 shadow-md hover:bg-green-400 transition-all duration-200 font-inter focus:outline-none focus:ring-2 focus:ring-green-400"
           >
             Sign In
           </button>
