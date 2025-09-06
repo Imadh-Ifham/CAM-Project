@@ -32,6 +32,7 @@ export default {
         slideInFromLeft: "slideInFromLeft 0.8s ease-out",
         slideInFromRight: "slideInFromRight 0.8s ease-out",
         slideInFromBottom: "slideInFromBottom 0.8s ease-out",
+        slideInFromTop: "slideInFromTop 0.8s ease-out",
         growFromBottom: "growFromBottom 1s ease-out",
       },
       keyframes: {
@@ -49,6 +50,10 @@ export default {
         },
         slideInFromBottom: {
           "0%": { transform: "translateY(20px)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        slideInFromTop: {
+          "0%": { transform: "translateY(-20px)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
         },
         growFromBottom: {

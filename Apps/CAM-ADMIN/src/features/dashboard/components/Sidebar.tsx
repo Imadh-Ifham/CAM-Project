@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Home, Users, Settings } from "lucide-react";
+import { Home, Users, Settings, UserCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
   return (
     <div
-      className={`h-screen bg-cam-bg-800 text-white shadow-lg transition-all duration-300 flex flex-col ${
+      className={`h-screen bg-black text-white shadow-lg transition-all duration-300 flex flex-col ${
         open ? "w-64" : "w-16"
       } relative`}
     >
@@ -57,6 +57,16 @@ export default function Sidebar() {
           >
             <Users size={22} />
             {open && <span className="text-base">Users</span>}
+          </Link>
+          <Link
+            to="/admin/dashboard/agents"
+            className={`flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-cam-green-500/20 transition-colors font-inter ${
+              open ? "justify-start" : "justify-center"
+            }`}
+            title={open ? undefined : "Agents"}
+          >
+            <UserCheck size={22} />
+            {open && <span className="text-base">Agents</span>}
           </Link>
           <Link
             to="/admin/dashboard/settings"

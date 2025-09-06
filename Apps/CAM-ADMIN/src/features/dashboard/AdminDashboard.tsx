@@ -1,12 +1,13 @@
 import { Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import MainDashboard from "./MainDashboard";
+import AgentManagement from "./AgentManagement";
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen flex bg-cam-bg-900 text-white">
+    <div className="min-h-screen flex bg-black text-white">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-black">
         <Routes>
           <Route path="/" element={<MainDashboard />} />
           <Route
@@ -19,6 +20,7 @@ export default function AdminDashboard() {
               </div>
             }
           />
+          <Route path="/agents" element={<AgentManagement />} />
           <Route
             path="/settings"
             element={
