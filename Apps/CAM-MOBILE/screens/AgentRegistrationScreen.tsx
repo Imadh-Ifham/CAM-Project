@@ -65,6 +65,18 @@ const AgentRegistrationScreen: React.FC = () => {
           </Text>
           <AgentRegistrationForm />
         </View>
+
+        {/* Creative Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerEmoji}>🌱</Text>
+          <Text style={styles.footerText}>
+            Powered by{" "}
+            <Text style={styles.footerHighlight}>Community Aid Map</Text>
+          </Text>
+          <Text style={styles.footerTagline}>
+            “Connecting hearts, building brighter communities across Sri Lanka.”
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -79,6 +91,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
+    paddingBottom: 40,
   },
   programSection: {
     backgroundColor: "#162616",
@@ -170,5 +183,34 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 16,
     lineHeight: 20,
+  },
+
+  // Footer Styles
+  footer: {
+    marginTop: 32,
+    alignItems: "center",
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#2e7d32",
+  },
+  footerEmoji: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
+  footerText: {
+    fontSize: 16,
+    color: "#b5e3c7",
+  },
+  footerHighlight: {
+    color: "#fdd835",
+    fontWeight: "bold",
+  },
+  footerTagline: {
+    fontSize: 13,
+    color: "#a5d6a7",
+    marginTop: 4,
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingHorizontal: 16,
   },
 });
