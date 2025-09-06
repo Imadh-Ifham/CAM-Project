@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Home, Users, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
@@ -35,25 +37,37 @@ export default function Sidebar() {
         >
           Admin
         </div>
-        <nav className="flex flex-col gap-4 w-full px-4">
-          <a
-            href="#"
-            className="py-2 px-3 rounded-lg hover:bg-cam-green-500/20 transition-colors text-base font-inter"
+        <nav className="flex flex-col gap-4 w-full px-2">
+          <Link
+            to="/admin/dashboard"
+            className={`flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-cam-green-500/20 transition-colors font-inter ${
+              open ? "justify-start" : "justify-center"
+            }`}
+            title={open ? undefined : "Dashboard"}
           >
-            Dashboard
-          </a>
-          <a
-            href="#"
-            className="py-2 px-3 rounded-lg hover:bg-cam-green-500/20 transition-colors text-base font-inter"
+            <Home size={22} />
+            {open && <span className="text-base">Dashboard</span>}
+          </Link>
+          <Link
+            to="/admin/dashboard/users"
+            className={`flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-cam-green-500/20 transition-colors font-inter ${
+              open ? "justify-start" : "justify-center"
+            }`}
+            title={open ? undefined : "Users"}
           >
-            Users
-          </a>
-          <a
-            href="#"
-            className="py-2 px-3 rounded-lg hover:bg-cam-green-500/20 transition-colors text-base font-inter"
+            <Users size={22} />
+            {open && <span className="text-base">Users</span>}
+          </Link>
+          <Link
+            to="/admin/dashboard/settings"
+            className={`flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-cam-green-500/20 transition-colors font-inter ${
+              open ? "justify-start" : "justify-center"
+            }`}
+            title={open ? undefined : "Settings"}
           >
-            Settings
-          </a>
+            <Settings size={22} />
+            {open && <span className="text-base">Settings</span>}
+          </Link>
         </nav>
       </div>
     </div>
