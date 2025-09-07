@@ -6,13 +6,17 @@ const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email === "admin@gmail.com" && password === "Aman14924") {
       setError("");
-      navigate("/admin/dashboard");
+      setSuccess(true);
+      setTimeout(() => {
+        navigate("/admin/dashboard");
+      }, 1500);
     } else {
       setError("Invalid email or password");
     }
@@ -20,7 +24,7 @@ const AdminLogin = () => {
 
   return (
     <div
-      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden"
+      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-cam-green-950 via-cam-bg-900 to-cam-bg-800"
       style={{ background: "#23272f" }}
     >
       {/* Glowing abstract shapes */}
@@ -28,14 +32,31 @@ const AdminLogin = () => {
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-cam-green-500 opacity-20 rounded-full blur-2xl animate-pulse" />
       <div className="absolute top-1/2 left-1/2 w-60 h-60 bg-cam-green-400 opacity-10 rounded-full blur-2xl animate-pulse -translate-x-1/2 -translate-y-1/2" />
       {/* Login Card */}
-      <div className="relative z-10 w-full max-w-md p-8 rounded-2xl bg-cam-bg-700/90 border border-cam-green-400 shadow-glow backdrop-blur-md flex flex-col items-center">
-        <h1 className="text-3xl font-bold text-white font-inter mb-2">
-          Admin Login
-        </h1>
-        <p className="text-base text-gray-400 mb-8 font-inter">
-          Community Aid Management Portal
-        </p>
-        <form className="w-full flex flex-col gap-5" onSubmit={handleSubmit}>
+      <div
+        className="relative z-10 w-full max-w-md p-10 rounded-3xl bg-cam-bg-800/80 border-2 border-transparent bg-clip-padding backdrop-blur-xl shadow-2xl flex flex-col items-center"
+        style={{
+          boxShadow: "0 8px 40px 0 rgba(16,255,120,0.10), 0 1.5px 0 0 #4ade80",
+          borderImage: "linear-gradient(135deg, #4ade80 0%, #22d3ee 100%) 1",
+        }}
+      >
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cam-green-400 to-cam-green-600 flex items-center justify-center mb-3 shadow-lg">
+            <svg width="36" height="36" fill="none" viewBox="0 0 24 24">
+              <path
+                stroke="#fff"
+                strokeWidth="2"
+                d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.418 0-8 2.239-8 5v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-2.761-3.582-5-8-5Z"
+              />
+            </svg>
+          </div>
+          <h1 className="text-4xl font-extrabold text-white font-inter mb-1 drop-shadow-lg">
+            Admin Login
+          </h1>
+          <p className="text-base text-green-200 mb-2 font-inter">
+            Community Aid Management Portal
+          </p>
+        </div>
+        <form className="w-full flex flex-col gap-6" onSubmit={handleSubmit}>
           {/* Email */}
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-cam-green-400">
@@ -51,7 +72,7 @@ const AdminLogin = () => {
             <input
               type="email"
               placeholder="admin@gmail.com"
-              className="w-full pl-12 pr-4 py-3 rounded-lg bg-[#262626] text-white placeholder-white/70 border border-transparent focus:border-cam-green-400 focus:ring-2 focus:ring-cam-green-400 outline-none transition-all duration-200 font-inter"
+              className="w-full pl-12 pr-4 py-3 rounded-lg bg-[#23272f] text-white placeholder-white/70 border border-cam-green-700 focus:border-cam-green-400 focus:ring-2 focus:ring-cam-green-400 outline-none transition-all duration-200 font-inter shadow-sm"
               autoComplete="username"
               required
               value={email}
@@ -82,7 +103,7 @@ const AdminLogin = () => {
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
-              className="w-full pl-12 pr-10 py-3 rounded-lg bg-[#262626] text-white placeholder-white/70 border border-transparent focus:border-cam-green-400 focus:ring-2 focus:ring-cam-green-400 outline-none transition-all duration-200 font-inter"
+              className="w-full pl-12 pr-10 py-3 rounded-lg bg-[#23272f] text-white placeholder-white/70 border border-cam-green-700 focus:border-cam-green-400 focus:ring-2 focus:ring-cam-green-400 outline-none transition-all duration-200 font-inter shadow-sm"
               autoComplete="current-password"
               required
               value={password}
@@ -122,17 +143,22 @@ const AdminLogin = () => {
               )}
             </button>
           </div>
-          {/* Error Message */}
+          {/* Error/Success Message */}
           {error && (
             <div className="text-red-500 text-sm text-right font-inter">
               {error}
+            </div>
+          )}
+          {success && (
+            <div className="text-green-400 text-center text-sm font-inter mb-2 animate-pulse">
+              Redirecting to admin dashboard...
             </div>
           )}
           {/* Forgot Password */}
           <div className="flex justify-end">
             <a
               href="#"
-              className="text-green-500 text-sm hover:underline transition-all font-inter"
+              className="text-cam-green-400 text-sm hover:underline transition-all font-inter"
             >
               Forgot Password?
             </a>
@@ -140,12 +166,12 @@ const AdminLogin = () => {
           {/* Sign In Button */}
           <button
             type="submit"
-            className="w-full py-3 rounded-lg bg-green-500 text-white font-semibold text-lg border border-green-600 shadow-md hover:bg-green-400 transition-all duration-200 font-inter focus:outline-none focus:ring-2 focus:ring-green-400"
+            className="w-full py-3 rounded-lg bg-cam-green-400 text-white font-semibold text-lg border-none shadow-lg hover:bg-cam-green-500 transition-all duration-200 font-inter focus:outline-none focus:ring-2 focus:ring-green-400"
           >
             Sign In
           </button>
         </form>
-        <p className="mt-8 text-xs text-gray-500 font-inter text-center">
+        <p className="mt-8 text-xs text-gray-400 font-inter text-center">
           Secure access to community aid management
         </p>
       </div>
