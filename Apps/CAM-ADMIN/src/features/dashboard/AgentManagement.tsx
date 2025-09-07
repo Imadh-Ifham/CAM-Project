@@ -2,6 +2,15 @@ import { useState } from "react";
 import { UserCheck, X, Bell, Search, Check, XCircle, User } from "lucide-react";
 
 // Types definition
+interface CAMProgram {
+  title: string;
+  location: string;
+  description: string;
+  overview: string;
+  keyDetails: string[];
+  contact: string[];
+}
+
 interface Agent {
   id: string;
   name: string;
@@ -10,6 +19,11 @@ interface Agent {
   status: "pending" | "approved" | "denied";
   avatar?: string;
   notes?: string;
+  numVolunteers?: number;
+  startDate?: string;
+  resources?: string;
+  pitchIdea?: string;
+  camProgram?: CAMProgram;
 }
 
 export default function AgentManagement() {
@@ -33,6 +47,25 @@ export default function AgentManagement() {
       registrationDate: "2025-08-28",
       status: "pending",
       notes: "Wants to help in the northern region distribution",
+      numVolunteers: 10,
+      startDate: "2025-09-15",
+      resources: "100 packs of clothes, 2 vehicles",
+      pitchIdea:
+        "I plan to organize a team of volunteers to collect, sort, and distribute clothes to families in need in the northern region. We will coordinate with local authorities and use our vehicles for efficient delivery. Our goal is to reach at least 100 families in the first month.",
+      camProgram: {
+        title: "Clothing Drive",
+        location: "Colombo, Sri Lanka",
+        description: "Collecting and distributing clothes to families in need.",
+        overview:
+          "This program is part of CAM's ongoing initiatives to support communities in need. All activities are coordinated by registered agents and volunteers. For more information, contact your local CAM office or visit our website.",
+        keyDetails: [
+          "Target Area: Colombo, Sri Lanka",
+          "Program Type: Clothing Drive",
+          "Status: Active",
+          "Last Updated: September 2025",
+        ],
+        contact: ["Email: info@cam.org", "Phone: +94 11 123 4567"],
+      },
     },
     {
       id: "2",
@@ -41,6 +74,26 @@ export default function AgentManagement() {
       registrationDate: "2025-09-01",
       status: "pending",
       notes: "Experienced in community support",
+      numVolunteers: 5,
+      startDate: "2025-09-20",
+      resources: "Food packs, 1 van",
+      pitchIdea:
+        "I will mobilize local volunteers to distribute food packs to low-income families. We'll ensure fair distribution and keep records for transparency.",
+      camProgram: {
+        title: "Food Distribution",
+        location: "Gampaha, Sri Lanka",
+        description:
+          "Distributing essential food items to low-income families.",
+        overview:
+          "This program aims to provide food security to vulnerable communities in Gampaha. Volunteers will coordinate with local leaders to identify families in need and distribute food packs efficiently. All activities are monitored for transparency and impact.",
+        keyDetails: [
+          "Target Area: Gampaha, Sri Lanka",
+          "Program Type: Food Distribution",
+          "Status: Active",
+          "Last Updated: September 2025",
+        ],
+        contact: ["Email: food@cam.org", "Phone: +94 11 987 6543"],
+      },
     },
     {
       id: "3",
@@ -49,6 +102,11 @@ export default function AgentManagement() {
       registrationDate: "2025-08-15",
       status: "approved",
       notes: "Works with local NGO",
+      numVolunteers: 8,
+      startDate: "2025-08-20",
+      resources: "Medical kits, 1 ambulance",
+      pitchIdea:
+        "I will coordinate with local health workers to provide basic medical aid in remote areas.",
     },
     {
       id: "4",
@@ -352,7 +410,89 @@ export default function AgentManagement() {
                     {formatDate(selectedAgent.registrationDate)}
                   </p>
                 </div>
+                {selectedAgent.numVolunteers !== undefined && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">
+                      Number of Volunteers
+                    </h4>
+                    <p className="text-white font-medium">
+                      {selectedAgent.numVolunteers}
+                    </p>
+                  </div>
+                )}
+                {selectedAgent.startDate && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">
+                      Start Date
+                    </h4>
+                    <p className="text-white font-medium">
+                      {formatDate(selectedAgent.startDate)}
+                    </p>
+                  </div>
+                )}
+                {selectedAgent.resources && (
+                  <div className="md:col-span-2">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">
+                      Resources/Quantity
+                    </h4>
+                    <p className="text-white font-medium">
+                      {selectedAgent.resources}
+                    </p>
+                  </div>
+                )}
+                {selectedAgent.pitchIdea && (
+                  <div className="md:col-span-2">
+                    <h4 className="text-sm font-medium text-gray-500 mb-1">
+                      Pitch Idea
+                    </h4>
+                    <p className="text-white p-4">{selectedAgent.pitchIdea}</p>
+                  </div>
+                )}
               </div>
+
+              {/* CAM Program Card if available */}
+              {selectedAgent.camProgram && (
+                <div className="mb-6">
+                  <div className="rounded-xl p-5 bg-green-900/10 border border-green-700 shadow-md">
+                    <h3 className="text-xl font-bold text-green-400 mb-2">
+                      {selectedAgent.camProgram.title}
+                    </h3>
+                    <p className="mb-1">
+                      <span className="font-semibold text-yellow-400">
+                        Location:
+                      </span>{" "}
+                      {selectedAgent.camProgram.location}
+                    </p>
+                    <p className="mb-2 text-white">
+                      {selectedAgent.camProgram.description}
+                    </p>
+                    <h4 className="text-green-300 font-semibold mb-1 mt-3">
+                      Program Overview:
+                    </h4>
+                    <p className="text-white mb-2">
+                      {selectedAgent.camProgram.overview}
+                    </p>
+                    <h4 className="text-green-300 font-semibold mb-1 mt-3">
+                      Key Details:
+                    </h4>
+                    <ul className="text-white mb-2 list-disc list-inside">
+                      {selectedAgent.camProgram.keyDetails.map(
+                        (detail, idx) => (
+                          <li key={idx}>{detail}</li>
+                        )
+                      )}
+                    </ul>
+                    <h4 className="text-green-300 font-semibold mb-1 mt-3">
+                      Contact:
+                    </h4>
+                    <ul className="text-white">
+                      {selectedAgent.camProgram.contact.map((c, idx) => (
+                        <li key={idx}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
 
               <div className="mb-6">
                 <h4 className="text-sm font-medium text-gray-500 mb-1">
