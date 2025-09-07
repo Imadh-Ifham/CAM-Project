@@ -5,9 +5,12 @@ import AgentManagement from "./AgentManagement";
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen flex bg-black text-white">
+    <div
+      className="min-h-screen flex text-white"
+      style={{ background: "#23272f" }}
+    >
       <Sidebar />
-      <main className="flex-1 overflow-auto bg-black">
+      <main className="flex-1 overflow-auto" style={{ background: "#23272f" }}>
         <Routes>
           <Route path="/" element={<MainDashboard />} />
           <Route

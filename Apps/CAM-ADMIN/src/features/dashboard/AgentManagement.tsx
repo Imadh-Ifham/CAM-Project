@@ -86,7 +86,7 @@ export default function AgentManagement() {
   };
 
   return (
-    <div className="p-6 w-full bg-black">
+    <div className="p-6 w-full" style={{ background: "#23272f" }}>
       {/* Header Section */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -161,8 +161,11 @@ export default function AgentManagement() {
           filteredAgents.map((agent, index) => (
             <div
               key={agent.id}
-              className="bg-black p-6 rounded-xl border border-gray-800 shadow-md hover:border-gray-700 transition-colors"
-              style={{ animationDelay: `${0.2 + index * 0.1}s` }}
+              className="p-6 rounded-xl border border-gray-800 shadow-md hover:border-gray-700 transition-colors"
+              style={{
+                background: "#23272f",
+                animationDelay: `${0.2 + index * 0.1}s`,
+              }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -246,7 +249,10 @@ export default function AgentManagement() {
             </div>
           ))
         ) : (
-          <div className="bg-black p-8 rounded-xl border border-gray-800 shadow-md text-center">
+          <div
+            className="p-8 rounded-xl border border-gray-800 shadow-md text-center"
+            style={{ background: "#23272f" }}
+          >
             <div className="flex flex-col items-center justify-center py-8">
               <UserCheck className="text-gray-600 mb-4" size={48} />
               <h3 className="text-xl font-medium text-white">
@@ -265,7 +271,10 @@ export default function AgentManagement() {
       </div>
 
       {/* Recent Activity Panel */}
-      <div className="mt-8 bg-black p-5 rounded-xl border border-gray-800 shadow-md">
+      <div
+        className="mt-8 p-5 rounded-xl border border-gray-800 shadow-md"
+        style={{ background: "#23272f" }}
+      >
         <h3 className="text-lg font-medium text-cam-green-500 mb-3">
           Recent Actions
         </h3>
@@ -295,8 +304,14 @@ export default function AgentManagement() {
 
       {/* Agent Details Modal */}
       {showDetailsModal && selectedAgent && (
-        <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-          <div className="bg-black rounded-xl border border-gray-800 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ background: "#23272f" }}
+        >
+          <div
+            className="rounded-xl border border-gray-800 shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            style={{ background: "#23272f" }}
+          >
             <div className="flex items-center justify-between border-b border-gray-800 p-5">
               <h2 className="text-xl font-bold text-white">Agent Details</h2>
               <button
@@ -382,8 +397,14 @@ export default function AgentManagement() {
 
       {/* Confirmation Modals */}
       {showConfirmModal && selectedAgent && (
-        <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-          <div className="bg-black rounded-xl border border-gray-800 shadow-xl w-full max-w-md p-6">
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ background: "#23272f" }}
+        >
+          <div
+            className="rounded-xl border border-gray-800 shadow-xl w-full max-w-md p-6"
+            style={{ background: "#23272f" }}
+          >
             <div className="text-center mb-6">
               {showConfirmModal === "approve" ? (
                 <>

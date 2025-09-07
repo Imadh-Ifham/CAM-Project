@@ -19,7 +19,10 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-cam-bg-900 via-cam-bg-800 to-cam-bg-700 relative overflow-hidden">
+    <div
+      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden"
+      style={{ background: "#23272f" }}
+    >
       {/* Glowing abstract shapes */}
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-cam-green-400 opacity-30 rounded-full blur-3xl animate-pulse" />
       <div className="absolute bottom-0 right-0 w-80 h-80 bg-cam-green-500 opacity-20 rounded-full blur-2xl animate-pulse" />

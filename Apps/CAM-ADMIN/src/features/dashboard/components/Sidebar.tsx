@@ -6,9 +6,13 @@ export default function Sidebar() {
   const [open, setOpen] = useState(true);
   return (
     <div
-      className={`h-screen bg-black text-white shadow-lg transition-all duration-300 flex flex-col ${
+      className={`h-screen text-white transition-all duration-300 flex flex-col ${
         open ? "w-64" : "w-16"
       } relative`}
+      style={{
+        background: "#23272f",
+        boxShadow: "2px 0 16px 0 rgba(0,0,0,0.18)",
+      }}
     >
       {/* Toggle Button */}
       <button
