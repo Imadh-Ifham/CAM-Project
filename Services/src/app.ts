@@ -15,7 +15,7 @@ connectDB();
 
 // Initialize dummy data (only runs once if database is empty)
 const inventoryService = new InventoryService();
-inventoryService.initializeDummyData().catch(console.error);
+// inventoryService.initializeDummyData().catch(console.error);
 
 // Middleware
 app.use(cors());

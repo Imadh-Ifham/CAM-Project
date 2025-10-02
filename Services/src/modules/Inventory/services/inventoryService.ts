@@ -167,6 +167,7 @@ export class InventoryService {
   }
 
   // Initialize dummy data (call this once to populate the database)
+  /*
   async initializeDummyData(): Promise<void> {
     try {
       const count = await InventoryModel.countDocuments();
@@ -219,4 +220,5 @@ export class InventoryService {
       console.error("Error initializing dummy data:", error);
     }
   }
+  */
 }
