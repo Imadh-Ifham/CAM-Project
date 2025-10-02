@@ -1,11 +1,11 @@
-import { Link } from "expo-router";
-import { Text, View } from "react-native";
+import React, { useEffect } from "react";
+import { useRouter } from "expo-router";
 
 export default function Index() {
-  return (
-    <View className="flex-1 justify-center items-center">
-      <Text className="text-5xl">Hello CAM!</Text>
-      <Link href={"./onboarding"}>Onboarding</Link>
-    </View>
-  );
+  const router = useRouter();
+  useEffect(() => {
+    // Redirect to the auth landing screen (route group at top level)
+    router.replace("/(auth)" as any);
+  }, [router]);
+  return null;
 }

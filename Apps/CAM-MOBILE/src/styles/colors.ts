@@ -1,0 +1,23 @@
+// Global color palette for CAM Mobile
+export const colors = {
+  primary: "#030213",
+  primaryForeground: "#ffffff",
+  secondary: "#ececf0",
+  secondaryForeground: "#030213",
+  background: "#ffffff",
+  card: "#ffffff",
+  cardForeground: "#030213",
+  accent: "#e9ebef",
+  accentForeground: "#030213",
+  muted: "#717182",
+  mutedBackground: "#ececf0",
+  border: "rgba(0,0,0,0.1)",
+  destructive: "#d4183d",
+  destructiveForeground: "#ffffff",
+  green: "#22c55e",
+  orange: "#f97316",
+  blue: "#2563eb",
+  indigo: "#6366f1",
+  heart: "#e11d48",
+  map: "#2563eb",
+};
