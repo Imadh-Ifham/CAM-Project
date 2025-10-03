@@ -1,6 +1,7 @@
+import React from "react";
 import { Stack } from "expo-router";
-import "./globals.css";
 
 export default function RootLayout() {
-  return <Stack />;
+  // Let Expo Router auto-register routes from the file system
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
