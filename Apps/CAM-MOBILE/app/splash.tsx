@@ -1,5 +1,12 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Animated, Easing } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Easing,
+  Pressable,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { setLaunched } from "../src/utils/firstLaunch";
@@ -42,13 +49,13 @@ export default function SplashScreen() {
         useNativeDriver: true,
       })
     ).start();
+  }, [pulse1, pulse2, pulse3, spin]);
 
-    const timer = setTimeout(async () => {
-      await setLaunched();
-      router.replace("/(auth)");
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [pulse1, pulse2, pulse3, spin, router]);
+  // Handler for button press
+  const handleContinue = async () => {
+    await setLaunched();
+    router.replace("/(auth)");
+  };
 
   const spinInterpolate = spin.interpolate({
     inputRange: [0, 1],
@@ -181,18 +188,32 @@ export default function SplashScreen() {
           </View>
 
           {/* Loading */}
-          <View style={{ alignItems: "center" }}>
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-            >
-              <View style={{ flexDirection: "row", gap: 4 }}>
-                <Animated.View style={[styles.loadDot, { opacity: pulse1 }]} />
-                <Animated.View style={[styles.loadDot, { opacity: pulse2 }]} />
+          <View style={{ alignItems: "center", marginBottom: 24 }}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={{ flexDirection: "row" }}>
+                <Animated.View
+                  style={[styles.loadDot, { opacity: pulse1, marginRight: 4 }]}
+                />
+                <Animated.View
+                  style={[styles.loadDot, { opacity: pulse2, marginRight: 4 }]}
+                />
                 <Animated.View style={[styles.loadDot, { opacity: pulse3 }]} />
               </View>
-              <Text style={{ color: "#ccebd6" }}>Initializing...</Text>
+              <Text style={{ color: "#ccebd6", marginLeft: 8 }}>
+                Initializing...
+              </Text>
             </View>
           </View>
+
+          {/* Continue Button */}
+          <Pressable
+            style={styles.button}
+            onPress={handleContinue}
+            accessibilityRole="button"
+            accessibilityLabel="Continue to app"
+          >
+            <Text style={styles.buttonText}>Continue</Text>
+          </Pressable>
         </View>
 
         {/* Bottom icons */}
@@ -291,9 +312,31 @@ const styles = StyleSheet.create({
     bottom: 24,
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
   },
-  lineGroup: { flexDirection: "row", alignItems: "center", gap: 6 },
+  lineGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 6,
+  },
+  button: {
+    backgroundColor: "#059669",
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 24,
+    alignItems: "center",
+    marginBottom: 8,
+    shadowColor: "#059669",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
   bottomText: { color: "rgba(134,239,172,0.60)", fontSize: 12 },
   dividerVert: {
     width: 1,
