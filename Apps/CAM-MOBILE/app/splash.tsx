@@ -285,9 +285,7 @@ const styles = StyleSheet.create({
   camText: {
     fontSize: 48,
     fontWeight: "800",
-    backgroundColor: "#ffffff",
     color: "#ffffff",
-    paddingHorizontal: 8,
     textShadowColor: "rgba(0,0,0,0.2)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
