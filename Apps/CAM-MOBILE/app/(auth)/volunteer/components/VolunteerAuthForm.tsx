@@ -16,27 +16,29 @@ export default function VolunteerAuthForm({ onSubmit, onRegister }: Props) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async () => {
+  function handleSubmit(): void {
+    if (!email || !password) {
+      // Optionally show an error or feedback to the user
+      return;
+    }
     setLoading(true);
     try {
-      await Promise.resolve();
       onSubmit({ email, password });
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <View style={{ padding: spacing.lg }}>
-      {/* Icon + Title */}
+      {/* Icon + Title + Subtitle (login only) */}
       <View style={{ alignItems: "center", marginBottom: spacing.xl }}>
         <View
           style={{
             width: 80,
             height: 80,
             borderRadius: 40,
-            backgroundColor: "#ffedd5", // orange-100
+            backgroundColor: "#ffedd5",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: spacing.md,
@@ -49,11 +51,10 @@ export default function VolunteerAuthForm({ onSubmit, onRegister }: Props) {
         </Text>
         <Text style={{ color: colors.muted }}>Sign in to continue helping</Text>
       </View>
-
       {/* Email */}
-      <View style={{ marginBottom: spacing.md }}>
+      <View style={{ marginBottom: spacing.lg }}>
         <Text style={[typography.label, { marginBottom: spacing.xs }]}>
-          Email Address
+          Email
         </Text>
         <View style={{ position: "relative" }}>
           <Feather

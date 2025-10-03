@@ -7,15 +7,21 @@ export default function AuthLayout() {
     <OnStartLayout>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="agent/login" options={{ title: "Agent Login" }} />
-        <Stack.Screen name="agent/signup" options={{ title: "Agent Signup" }} />
+        <Stack.Screen
+          name="agent/login"
+          options={{ title: "Agent Login", headerShown: false }}
+        />
+        <Stack.Screen
+          name="agent/signup"
+          options={{ title: "Agent Signup", headerShown: false }}
+        />
         <Stack.Screen
           name="volunteer/login"
-          options={{ title: "Volunteer Login" }}
+          options={{ title: "Volunteer Login", headerShown: false }}
         />
         <Stack.Screen
           name="volunteer/signup"
-          options={{ title: "Volunteer Signup" }}
+          options={{ title: "Volunteer Signup", headerShown: false }}
         />
       </Stack>
     </OnStartLayout>

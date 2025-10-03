@@ -29,7 +29,7 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
 
   return (
     <View style={{ padding: spacing.lg }}>
-      {/* Avatar/Icon */}
+      {/* Icon + Title + Subtitle (login only) */}
       <View style={{ alignItems: "center", marginBottom: spacing.xl }}>
         <View
           style={{
@@ -44,8 +44,13 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
         >
           <Feather name="user-check" size={40} color="#16a34a" />
         </View>
+        <Text style={[typography.h2, { marginBottom: spacing.xs }]}>
+          Welcome Back, Agent
+        </Text>
+        <Text style={{ color: colors.muted }}>
+          Sign in to manage your campaigns
+        </Text>
       </View>
-
       {/* Email */}
       <View style={{ marginBottom: spacing.md }}>
         <Text style={[typography.label, { marginBottom: spacing.xs }]}>
