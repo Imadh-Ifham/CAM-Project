@@ -1,4 +1,6 @@
 import admin from "firebase-admin";
+import dotenv from "dotenv";
+dotenv.config();
 
 // Prefer environment variables for service account credentials for security.
 // Required env vars:

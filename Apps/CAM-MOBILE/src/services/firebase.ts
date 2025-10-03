@@ -17,15 +17,27 @@ const app = initializeApp(firebaseConfig);
 let auth: any;
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { initializeAuth } = require("firebase/auth");
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { getReactNativePersistence } = require("firebase/auth/react-native");
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const authModule = require("firebase/auth");
+  const { initializeAuth } = authModule;
+  // getReactNativePersistence may live under either 'firebase/auth' or 'firebase/auth/react-native' depending on SDK bundling
+  let getReactNativePersistence: any = authModule.getReactNativePersistence;
+  if (typeof getReactNativePersistence !== "function") {
+    try {
+      getReactNativePersistence =
+        require("firebase/auth/react-native").getReactNativePersistence;
+    } catch {}
+  }
   const AsyncStorage =
     require("@react-native-async-storage/async-storage").default;
-  auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
-  });
+  if (typeof getReactNativePersistence === "function") {
+    auth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  } else {
+    // If persistence helper not found, fall back to default auth
+    const { getAuth } = authModule;
+    auth = getAuth(app);
+  }
 } catch (e) {
   // Fallback to default auth if RN persistence isn't available
   // eslint-disable-next-line @typescript-eslint/no-var-requires

@@ -38,8 +38,18 @@ export async function authenticate(
     }
     req.userDoc = userDoc!;
     next();
-  } catch (err) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+  } catch (err: any) {
+    // Temporary detailed logging to diagnose token issues
+    console.error("[AUTH] verifyIdToken failed:", {
+      message: err?.message,
+      code: err?.code,
+      name: err?.name,
+    });
+    return res.status(401).json({
+      message: "Invalid or expired token",
+      code: err?.code,
+      details: err?.message,
+    });
   }
 }
 

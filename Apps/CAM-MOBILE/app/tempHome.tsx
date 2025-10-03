@@ -10,6 +10,7 @@ export default function TempHome() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Only call getCurrentUser if user is signed in
     if (typeof (auth as any).onAuthStateChanged === "function") {
       const unsub = (auth as any).onAuthStateChanged(async (user: any) => {
         if (!user) {
@@ -17,6 +18,7 @@ export default function TempHome() {
           router.replace("/(auth)" as any);
           return;
         }
+        // Only call backend if user is signed in
         try {
           const me = await getCurrentUser();
           const role = me?.user?.role;
@@ -35,7 +37,13 @@ export default function TempHome() {
       });
       return () => unsub && unsub();
     } else {
-      // Fallback: try to hit backend; if unauthorized we go to auth
+      // Fallback: check if user is present before calling backend
+      const user = (auth as any).currentUser;
+      if (!user) {
+        setLoading(false);
+        router.replace("/(auth)" as any);
+        return () => {};
+      }
       (async () => {
         try {
           const me = await getCurrentUser();
