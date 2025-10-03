@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, Image, ScrollView, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { colors } from "../../src/styles/colors";
 import { spacing } from "../../src/styles/spacing";
@@ -9,9 +10,11 @@ import { Card, CardContent } from "../../src/components/ui/Card";
 
 export default function OnStartScreen() {
   const router = useRouter();
-
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={["top"]}
+    >
       {/* Header */}
       <View
         style={{
@@ -211,6 +214,6 @@ export default function OnStartScreen() {
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
