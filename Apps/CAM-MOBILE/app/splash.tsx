@@ -54,7 +54,7 @@ export default function SplashScreen() {
   // Handler for button press
   const handleContinue = async () => {
     await setLaunched();
-    router.replace("/(auth)");
+    router.replace("/tempHome" as any);
   };
 
   const spinInterpolate = spin.interpolate({

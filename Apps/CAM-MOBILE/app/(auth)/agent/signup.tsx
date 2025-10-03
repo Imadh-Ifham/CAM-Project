@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import AgentSignupForm from "./components/AgentSignupForm";
 import AgentAuthLayout from "./components/AgentAuthLayout";
 import { ScrollView } from "react-native";
+import { registerAgent } from "../../../src/api/auth";
 
 export default function AgentSignupScreen() {
   const router = useRouter();
@@ -14,10 +15,20 @@ export default function AgentSignupScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <AgentSignupForm
-          onSubmit={(data) => {
-            // TODO: integrate with backend registration service
-            console.log("Agent registration attempt:", data);
-            // After submission, send them back to login
+          onSubmit={async (data) => {
+            try {
+              await registerAgent({
+                fullName: data.fullName,
+                email: data.email,
+                phoneNumber: data.phone,
+                organization: data.organization,
+                password: data.password,
+                experienceAndMotivation: data.experience,
+              });
+              router.replace("/tempHome" as any);
+            } catch (e) {
+              console.error("Agent registration failed", e);
+            }
           }}
           onLogin={() => router.replace("/(auth)/agent/login" as any)}
         />

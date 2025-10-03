@@ -6,6 +6,7 @@ import { colors } from "../../../src/styles/colors";
 import { spacing } from "../../../src/styles/spacing";
 import { typography } from "../../../src/styles/typography";
 import VolunteerAuthLayout from "./components/VolunteerAuthLayout";
+import { registerVolunteer } from "../../../src/api/auth";
 
 export default function VolunteerSignupScreen() {
   const router = useRouter();
@@ -17,9 +18,21 @@ export default function VolunteerSignupScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <VolunteerSignupForm
-          onSubmit={(data) => {
-            // TODO: integrate with backend registration service
-            console.log("Volunteer registration attempt:", data);
+          onSubmit={async (data) => {
+            try {
+              await registerVolunteer({
+                fullName: data.fullName,
+                age: parseInt(data.age || "0", 10) || undefined,
+                email: data.email,
+                phoneNumber: data.phone,
+                password: data.password,
+                skillsAndInterest: data.skills,
+                availability: data.availability,
+              });
+              router.replace("/tempHome" as any);
+            } catch (e) {
+              console.error("Volunteer registration failed", e);
+            }
           }}
           onLogin={() => router.replace("/(auth)/volunteer/login" as any)}
         />

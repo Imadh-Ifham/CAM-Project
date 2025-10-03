@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db";
 import inventoryRoutes from "./modules/Inventory/routes/inventoryRoutes";
+import agentAuthRoutes from "./modules/auth/agent/routes";
+import volunteerAuthRoutes from "./modules/auth/volunteer/routes";
+import meRoute from "./modules/auth/routes/me";
 import { InventoryService } from "./modules/Inventory/services/inventoryService";
 // import userRoutes from "./routes/userRoutes";
 
@@ -33,6 +36,9 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/agent", agentAuthRoutes);
+app.use("/api/volunteer", volunteerAuthRoutes);
+app.use("/api/auth", meRoute);
 // app.use("/api/users", userRoutes);
 
 export default app;
