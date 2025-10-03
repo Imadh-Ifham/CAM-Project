@@ -23,20 +23,12 @@ export async function authenticate(
     const decoded = await admin.auth().verifyIdToken(token);
     req.user = decoded;
 
-    let userDoc: IUserDocument | null = await User.findOne({
+    const userDoc: IUserDocument | null = await User.findOne({
       uid: decoded.uid,
     });
-    if (!userDoc) {
-      // Defer role assignment to controller; default to volunteer as placeholder
-      userDoc = await User.create({
-        uid: decoded.uid,
-        email: decoded.email || "",
-        role: "volunteer",
-        fullName: decoded.name || "",
-        phoneNumber: decoded.phone_number,
-      });
-    }
-    req.userDoc = userDoc!;
+    // Do NOT create here; let the specific controller (registerAgent/registerVolunteer)
+    // create or upsert the user with proper required fields from the request body.
+    req.userDoc = userDoc || undefined;
     next();
   } catch (err: any) {
     // Temporary detailed logging to diagnose token issues
