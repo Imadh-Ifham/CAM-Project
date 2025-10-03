@@ -23,9 +23,6 @@ export default function OnStartScreen() {
           alignItems: "center",
         }}
       >
-        <Button variant="ghost" size="sm" onPress={() => {}}>
-          {/* back icon placeholder */}←
-        </Button>
         <Text style={[{ marginLeft: spacing.md }, typography.h3]}>
           Welcome to CAM
         </Text>
