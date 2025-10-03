@@ -1,10 +1,20 @@
 import React from "react";
-import { View, Text } from "react-native";
+import AgentAuthLayout from "./components/AgentAuthLayout";
+import AgentAuthForm from "./components/AgentAuthForm";
+import { useRouter } from "expo-router";
 
 export default function AgentLoginScreen() {
+  const router = useRouter();
+
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <Text>Agent Login</Text>
-    </View>
+    <AgentAuthLayout title="Agent Login">
+      <AgentAuthForm
+        onSubmit={(data) => {
+          // TODO: integrate with backend auth service
+          console.log("Agent login attempt:", data);
+        }}
+        onRegister={() => router.push("/(auth)/agent/signup" as any)}
+      />
+    </AgentAuthLayout>
   );
 }

@@ -5,6 +5,7 @@ import {
   ViewStyle,
   TextStyle,
   ActivityIndicator,
+  View,
 } from "react-native";
 import { colors } from "../../styles/colors";
 import { spacing } from "../../styles/spacing";
@@ -23,6 +24,12 @@ type Props = {
   textStyle?: TextStyle;
 };
 
+const sizeStyles: Record<Size, ViewStyle> = {
+  sm: { height: 36, paddingHorizontal: spacing.md },
+  md: { height: 44, paddingHorizontal: spacing.lg },
+  lg: { height: 48, paddingHorizontal: spacing.xl },
+};
+
 export const Button: React.FC<Props> = ({
   children,
   onPress,
@@ -38,18 +45,49 @@ export const Button: React.FC<Props> = ({
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
+    gap: spacing.xs,
   };
-  // ...rest of the component implementation
+
+  const variantStyle: ViewStyle = (() => {
+    switch (variant) {
+      case "outline":
+        return {
+          backgroundColor: "transparent",
+          borderWidth: 1,
+          borderColor: colors.border,
+        };
+      case "ghost":
+        return {
+          backgroundColor: "transparent",
+        };
+      case "primary":
+      default:
+        return {
+          backgroundColor: colors.primary,
+        };
+    }
+  })();
+
+  const contentColor =
+    variant === "primary" ? colors.primaryForeground : colors.cardForeground;
+
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      style={[base, style]}
+      style={[base, sizeStyles[size], variantStyle, style]}
     >
       {loading ? (
-        <ActivityIndicator color={colors.primaryForeground} />
+        <ActivityIndicator color={contentColor} />
+      ) : typeof children === "string" ? (
+        <Text style={[{ color: contentColor, fontWeight: "600" }, textStyle]}>
+          {children}
+        </Text>
       ) : (
-        <Text style={textStyle}>{children}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {/* render children as-is to allow icons */}
+          {children}
+        </View>
       )}
     </Pressable>
   );
