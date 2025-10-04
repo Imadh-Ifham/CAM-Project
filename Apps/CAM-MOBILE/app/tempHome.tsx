@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { View, Text, ActivityIndicator, Pressable } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { auth } from "../src/services/firebase";
 import { getCurrentUser } from "../src/api/auth";
 
 export default function TempHome() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // If ?stay=1 is present, do not auto-redirect
+    if (params?.stay === "1") {
+      setLoading(false);
+      return;
+    }
     // Only call getCurrentUser if user is signed in
     if (typeof (auth as any).onAuthStateChanged === "function") {
       const unsub = (auth as any).onAuthStateChanged(async (user: any) => {
@@ -60,7 +66,7 @@ export default function TempHome() {
       })();
       return () => {};
     }
-  }, [router]);
+  }, [router, params]);
 
   if (loading) {
     return (
@@ -73,15 +79,68 @@ export default function TempHome() {
 
   if (error) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 12,
+        }}
+      >
         <Text>{error}</Text>
+        <Pressable
+          onPress={async () => {
+            try {
+              await (auth as any).signOut();
+            } finally {
+              router.replace("/(auth)" as any);
+            }
+          }}
+          style={{
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            backgroundColor: "#ef4444",
+            borderRadius: 10,
+          }}
+        >
+          <Text style={{ color: "white", fontWeight: "700" }}>Logout</Text>
+        </Pressable>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+    <View
+      style={{
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+      }}
+    >
       <Text>Welcome</Text>
+      <Text>
+        {(auth as any)?.currentUser?.email
+          ? `Signed in as ${(auth as any).currentUser.email}`
+          : "No Firebase user"}
+      </Text>
+      <Pressable
+        onPress={async () => {
+          try {
+            await (auth as any).signOut();
+          } finally {
+            router.replace("/(auth)" as any);
+          }
+        }}
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 10,
+          backgroundColor: "#ef4444",
+          borderRadius: 10,
+        }}
+      >
+        <Text style={{ color: "white", fontWeight: "700" }}>Logout</Text>
+      </Pressable>
     </View>
   );
 }
