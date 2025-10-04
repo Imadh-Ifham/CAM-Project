@@ -207,6 +207,42 @@ export default function OnStartScreen() {
           </Card>
         </Pressable>
 
+        <Pressable onPress={() => router.push("volunteer/login" as any)}>
+          <Card>
+            <CardContent>
+              <View style={{ alignItems: "center" }}>
+                <Text style={{ fontSize: 56, color: "#f97316" }}>◎</Text>
+                <Text style={[typography.h2, { marginTop: spacing.sm }]}>
+                  Volunteer Login
+                </Text>
+                <Text
+                  style={{
+                    color: colors.muted,
+                    textAlign: "center",
+                    marginTop: spacing.sm,
+                  }}
+                >
+                  Join campaigns and help deliver aid to communities
+                </Text>
+                <View
+                  style={{
+                    backgroundColor: "#fff7ed",
+                    padding: spacing.md,
+                    borderRadius: 12,
+                    marginTop: spacing.md,
+                    alignSelf: "stretch",
+                  }}
+                >
+                  <Text style={{ color: "#c2410c", fontSize: 12 }}>
+                    • Join active campaigns{"\n"}• Complete volunteer tasks
+                    {"\n"}• Make a community impact
+                  </Text>
+                </View>
+              </View>
+            </CardContent>
+          </Card>
+        </Pressable>
+
         {/* Footer */}
         <View style={{ alignItems: "center", marginTop: spacing.xl }}>
           <Text style={{ color: colors.muted, fontSize: 12 }}>
