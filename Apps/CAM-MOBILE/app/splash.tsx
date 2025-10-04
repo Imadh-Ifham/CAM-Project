@@ -54,7 +54,8 @@ export default function SplashScreen() {
   // Handler for button press
   const handleContinue = async () => {
     await setLaunched();
-    router.replace("/(auth)");
+    // Go to the auth chooser; do NOT hit protected endpoints yet
+    router.replace("/(auth)" as any);
   };
 
   const spinInterpolate = spin.interpolate({
