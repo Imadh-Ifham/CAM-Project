@@ -10,6 +10,7 @@ export default function AgentLoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<any>(null);
   const [show, setShow] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
   const pretty = useMemo(() => {
     try {
       return detail
@@ -30,6 +31,11 @@ export default function AgentLoginScreen() {
       return String(detail);
     }
   }, [detail]);
+
+  function validateEmail(email: string) {
+    // Simple email validation
+    return /.+@.+\..+/.test(email);
+  }
 
   return (
     <AgentAuthLayout title="Agent Login">
@@ -67,16 +73,63 @@ export default function AgentLoginScreen() {
           ) : null}
         </View>
       )}
+      {success && (
+        <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+          <Text style={{ color: "green", textAlign: "center" }}>{success}</Text>
+        </View>
+      )}
       <AgentAuthForm
         onSubmit={async (data) => {
+          setError(null);
+          setDetail(null);
+          setSuccess(null);
+          // Field validation
+          if (!data.email || !data.password) {
+            setError("Please fill in all fields to login.");
+            return;
+          }
+          if (!validateEmail(data.email)) {
+            setError(
+              "Please enter a valid email address (missing @ or domain)."
+            );
+            return;
+          }
           try {
             await login({ email: data.email, password: data.password });
-            router.replace("/tempHome" as any);
+            setSuccess("Login successful! Redirecting...");
+            setTimeout(() => {
+              router.replace("/tempHome" as any);
+            }, 1000);
           } catch (e: any) {
             setDetail(e);
+            // Try to extract a user-friendly error message
             const code = e?.code || e?.cause?.code;
-            if (code) setError(`Login failed (${code}).`);
-            else setError("Login failed. Please try again.");
+            const msg = e?.message || e?.cause?.message;
+            if (code === "auth/user-not-found") {
+              setError("No account found with that email address.");
+            } else if (code === "auth/wrong-password") {
+              setError("Incorrect password. Please try again.");
+            } else if (code === "auth/invalid-email") {
+              setError("Invalid email address format.");
+            } else if (code === "auth/too-many-requests") {
+              setError("Too many failed attempts. Please try again later.");
+            } else if (
+              msg &&
+              /password/i.test(msg) &&
+              /incorrect|invalid/i.test(msg)
+            ) {
+              setError("Incorrect password. Please try again.");
+            } else if (
+              msg &&
+              /email/i.test(msg) &&
+              /not found|does not exist/i.test(msg)
+            ) {
+              setError("No account found with that email address.");
+            } else {
+              setError(
+                "Login failed. Please check your credentials and try again."
+              );
+            }
             console.error("Login failed", e);
           }
         }}
