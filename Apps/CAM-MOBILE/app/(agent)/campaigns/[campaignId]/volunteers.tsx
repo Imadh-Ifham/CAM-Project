@@ -234,8 +234,14 @@ export default function CampaignVolunteers() {
                     <PendingBadge />
                   </View>
 
-                  {/* Contact */}
-                  <View style={{ flexDirection: "row", gap: spacing.md }}>
+                  {/* Contact (stacked to avoid overflow) */}
+                  <View
+                    style={{
+                      flexDirection: "column",
+                      gap: spacing.xs,
+                      alignItems: "flex-start",
+                    }}
+                  >
                     <Info icon="mail-outline" text={r.email} />
                     <Info icon="call-outline" text={r.phone} />
                   </View>
@@ -390,24 +396,6 @@ export default function CampaignVolunteers() {
                       <Text style={{ fontWeight: "700" }} numberOfLines={1}>
                         {v.name}
                       </Text>
-                      <View
-                        style={{
-                          backgroundColor: colors.green,
-                          paddingHorizontal: 8,
-                          paddingVertical: 2,
-                          borderRadius: 999,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: "#fff",
-                            fontWeight: "700",
-                            fontSize: 11,
-                          }}
-                        >
-                          Active
-                        </Text>
-                      </View>
                     </View>
                     <Text
                       style={{ color: colors.muted, fontSize: 12 }}
@@ -434,14 +422,27 @@ export default function CampaignVolunteers() {
                     </View>
                   </View>
                 </View>
-                <View style={{ flexDirection: "row", gap: spacing.sm }}>
-                  <Button size="sm" variant="outline">
-                    <Ionicons
-                      name="call-outline"
-                      size={14}
-                      color={colors.cardForeground}
-                    />
-                  </Button>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: spacing.sm,
+                  }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: colors.green,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 999,
+                    }}
+                  >
+                    <Text
+                      style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}
+                    >
+                      Active
+                    </Text>
+                  </View>
                   <Button size="sm" variant="outline">
                     <Ionicons
                       name="ellipsis-horizontal"
