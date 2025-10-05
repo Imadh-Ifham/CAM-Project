@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 interface MenuItemProps {
   title: string;
@@ -44,6 +45,7 @@ function MenuItem({
 }
 
 export default function AdminMenu() {
+  const router = useRouter();
   const menuItems: MenuItemProps[] = [
     {
       title: "User Management",
@@ -59,7 +61,7 @@ export default function AdminMenu() {
       icon: "megaphone",
       color: "#4ade80",
       badge: "23",
-      onPress: () => console.log("Campaign Management pressed"),
+      onPress: () => router.push("/adminDashboard/components/campaigns"),
     },
     {
       title: "Inventory Management",

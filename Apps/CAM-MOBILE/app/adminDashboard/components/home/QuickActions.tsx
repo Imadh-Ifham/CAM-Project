@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 interface QuickActionProps {
   title: string;
@@ -35,6 +36,7 @@ function QuickActionCard({
 }
 
 export default function QuickActions() {
+  const router = useRouter();
   const quickActions: QuickActionProps[] = [
     {
       title: "Add New User",
@@ -48,7 +50,8 @@ export default function QuickActions() {
       subtitle: "Start new relief campaign",
       icon: "add-circle",
       color: "#4ade80",
-      onPress: () => console.log("Create Campaign pressed"),
+      onPress: () =>
+        router.push("/adminDashboard/components/campaigns/createCampaign"),
     },
     {
       title: "Manage Inventory",
