@@ -92,6 +92,12 @@ export default function CampaignsIndex() {
     router.push("/adminDashboard/components/campaigns/createCampaign" as any);
   };
 
+  const handleCampaignPress = (campaignId: string) => {
+    router.push(
+      `/adminDashboard/components/campaigns/campaignDetail/CampaignDetailView` as any
+    );
+  };
+
   const getCampaignIcon = (type: string) => {
     switch (type) {
       case "disaster-relief":
@@ -238,7 +244,11 @@ export default function CampaignsIndex() {
           </View>
         ) : (
           filteredCampaigns.map((campaign) => (
-            <TouchableOpacity key={campaign.id} style={styles.campaignCard}>
+            <TouchableOpacity
+              key={campaign.id}
+              style={styles.campaignCard}
+              onPress={() => handleCampaignPress(campaign.id)}
+            >
               {/* Campaign Header */}
               <View style={styles.campaignHeader}>
                 <View style={styles.campaignIcon}>
@@ -354,7 +364,7 @@ export default function CampaignsIndex() {
               </View>
 
               {/* Campaign Actions */}
-              <View style={styles.campaignActions}>
+              {/* <View style={styles.campaignActions}>
                 <TouchableOpacity style={styles.actionButton}>
                   <Ionicons name="eye" size={16} color="#00ff94" />
                   <Text style={styles.actionButtonText}>View</Text>
@@ -367,7 +377,7 @@ export default function CampaignsIndex() {
                   <Ionicons name="share" size={16} color="#60a5fa" />
                   <Text style={styles.actionButtonText}>Share</Text>
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </TouchableOpacity>
           ))
         )}
@@ -434,6 +444,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a1a",
     borderBottomWidth: 1,
     borderBottomColor: "#333",
+    maxHeight: 70,
   },
   filterContent: {
     paddingHorizontal: 20,
@@ -468,7 +479,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#333",
     gap: 12,
-    marginTop: -480,
   },
   statCard: {
     flex: 1,
