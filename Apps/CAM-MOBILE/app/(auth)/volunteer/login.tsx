@@ -3,7 +3,7 @@ import { Text, View, Pressable } from "react-native";
 import VolunteerAuthLayout from "./components/VolunteerAuthLayout";
 import VolunteerAuthForm from "./components/VolunteerAuthForm";
 import { useRouter } from "expo-router";
-import { login } from "../../../src/api/auth";
+import { login, getCurrentUser, logout } from "../../../src/api/auth";
 
 function validateEmail(email: string) {
   // Simple email validation
@@ -96,10 +96,20 @@ export default function VolunteerLoginScreen() {
           }
           try {
             await login({ email: data.email, password: data.password });
+            // Verify role after login
+            const me = await getCurrentUser();
+            const role = me?.user?.role || me?.role;
+            if (role !== "volunteer") {
+              await logout();
+              setError(
+                "This account is not a Volunteer. Please use the correct login."
+              );
+              return;
+            }
             setSuccess("Login successful! Redirecting...");
             setTimeout(() => {
               router.replace("/tempHome" as any);
-            }, 1000);
+            }, 800);
           } catch (e: any) {
             setDetail(e);
             // Try to extract a user-friendly error message
