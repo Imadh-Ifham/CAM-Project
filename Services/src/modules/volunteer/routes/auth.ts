@@ -1,64 +1,108 @@
-import { Router } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import path from 'path';
-import dotenv from 'dotenv';
+import { Router } from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+import Volunteer from "../models/Volunteer";
+import authMiddleware from "../middleware/auth";
 
-import Volunteer from '../models/Volunteer';
-
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
-const JWT_SECRET = process.env.JWT_SECRET || 'replace_this_with_secure_secret';
+dotenv.config();
 
 const router = Router();
+const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 
-// POST /api/auth/register
-router.post('/register', async (req, res) => {
+// ✅ REGISTER
+router.post("/register", async (req, res) => {
   try {
     const { name, email, password, phone, preferredType } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ message: 'Missing fields' });
+    if (!name || !email || !password)
+      return res.status(400).json({ message: "Missing required fields" });
 
     const existing = await Volunteer.findOne({ email });
-    if (existing) return res.status(409).json({ message: 'Email already registered' });
+    if (existing)
+      return res.status(409).json({ message: "Email already registered" });
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-
-    const volunteer = new Volunteer({ name, email, passwordHash, phone, preferredType });
+    const passwordHash = await bcrypt.hash(password, 10);
+    const volunteer = new Volunteer({
+      name,
+      email,
+      passwordHash,
+      phone,
+      preferredType,
+    });
     await volunteer.save();
 
-    const token = jwt.sign({ id: volunteer._id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: volunteer._id }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
-    const out = volunteer.toObject();
-    delete (out as any).passwordHash;
+    const safeVolunteer = volunteer.toObject();
+    delete (safeVolunteer as any).passwordHash;
 
-    res.status(201).json({ volunteer: out, token });
+    res.status(201).json({ volunteer: safeVolunteer, token });
   } catch (err: any) {
-    console.error('Register error', err.message || err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Register error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
+// ✅ LOGIN
+router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Missing fields' });
+    if (!email || !password)
+      return res.status(400).json({ message: "Missing credentials" });
 
     const volunteer = await Volunteer.findOne({ email });
-    if (!volunteer) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!volunteer)
+      return res.status(401).json({ message: "Invalid credentials" });
 
     const match = await bcrypt.compare(password, volunteer.passwordHash);
-    if (!match) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!match)
+      return res.status(401).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: volunteer._id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: volunteer._id }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
-    const out = volunteer.toObject();
-    delete (out as any).passwordHash;
+    const safeVolunteer = volunteer.toObject();
+    delete (safeVolunteer as any).passwordHash;
 
-    res.json({ volunteer: out, token });
+    res.json({ volunteer: safeVolunteer, token });
   } catch (err: any) {
-    console.error('Login error', err.message || err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ✅ GET current volunteer profile
+router.get("/me", authMiddleware, async (req: any, res) => {
+  try {
+    if (!req.volunteer)
+      return res.status(401).json({ message: "Unauthorized" });
+    res.json({ volunteer: req.volunteer });
+  } catch (err: any) {
+    console.error("Profile fetch error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ✅ UPDATE volunteer profile
+router.put("/me", authMiddleware, async (req: any, res) => {
+  try {
+    const { name, phone, preferredType } = req.body;
+    const updated = await Volunteer.findByIdAndUpdate(
+      req.volunteer._id,
+      { name, phone, preferredType },
+      { new: true }
+    ).select("-passwordHash");
+
+    if (!updated)
+      return res.status(404).json({ message: "Volunteer not found" });
+
+    res.json({ volunteer: updated });
+  } catch (err: any) {
+    console.error("Profile update error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
