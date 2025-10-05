@@ -1,13 +1,25 @@
+// app/volunteer/api/volunteerApi.ts
 import axios from 'axios';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:7000/api/volunteers';
+const API_URL =
+  process.env.EXPO_PUBLIC_API_URL || 'http://localhost:7000/api/auth';
 
-export const getVolunteers = async (token: string) => {
-  const res = await axios.get(API_URL, { headers: { Authorization: `Bearer ${token}` } });
+/**
+ * Get volunteer profile (authenticated)
+ */
+export const getVolunteerProfile = async (token: string) => {
+  const res = await axios.get(`${API_URL}/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return res.data;
 };
 
-export const getVolunteerProfile = async (id: string, token: string) => {
-  const res = await axios.get(`${API_URL}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+/**
+ * Update volunteer profile details
+ */
+export const updateVolunteerProfile = async (data: any, token: string) => {
+  const res = await axios.put(`${API_URL}/me`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   return res.data;
 };
