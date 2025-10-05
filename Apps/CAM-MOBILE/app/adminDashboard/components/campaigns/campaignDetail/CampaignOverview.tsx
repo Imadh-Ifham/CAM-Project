@@ -42,7 +42,7 @@ const priorityColors = {
   low: "#4ade80",
 };
 
-export function CampaignOverview({ campaign }: CampaignOverviewProps) {
+export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
   const formatCurrency = (amount: number) => {
     return `LKR ${amount.toLocaleString()}`;
   };

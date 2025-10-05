@@ -24,7 +24,9 @@ interface CampaignResourcesProps {
   campaign: Campaign;
 }
 
-export function CampaignResources({ campaign }: CampaignResourcesProps) {
+export default function CampaignResources({
+  campaign,
+}: CampaignResourcesProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredResources = campaign.resources.filter((resource) =>

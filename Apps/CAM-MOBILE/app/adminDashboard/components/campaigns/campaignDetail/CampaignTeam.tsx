@@ -59,7 +59,7 @@ const mockTeamMembers = [
   },
 ];
 
-export function CampaignTeam({ campaign }: CampaignTeamProps) {
+export default function CampaignTeam({ campaign }: CampaignTeamProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
 

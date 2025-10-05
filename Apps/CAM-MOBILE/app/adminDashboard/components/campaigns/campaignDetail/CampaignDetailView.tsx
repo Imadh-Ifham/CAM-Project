@@ -10,11 +10,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { CampaignOverview } from "./CampaignOverview";
-import { CampaignTeam } from "./CampaignTeam";
-import { CampaignResources } from "./CampaignResources";
-import { CampaignProgress } from "./CampaignProgress";
-import { CampaignTimeline } from "./CampaignTimeline";
+import CampaignOverview from "./CampaignOverview";
+import CampaignTeam from "./CampaignTeam";
+import CampaignResources from "./CampaignResources";
+import CampaignProgress from "./CampaignProgress";
+import CampaignTimeline from "./CampaignTimeline";
 
 // Mock campaign data - in a real app, this would come from an API
 const mockCampaignDetail = {

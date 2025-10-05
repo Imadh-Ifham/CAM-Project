@@ -39,7 +39,7 @@ const mockProgressData = {
   ],
 };
 
-export function CampaignProgress({ campaign }: CampaignProgressProps) {
+export default function CampaignProgress({ campaign }: CampaignProgressProps) {
   const formatCurrency = (amount: number) => {
     return `LKR ${amount.toLocaleString()}`;
   };

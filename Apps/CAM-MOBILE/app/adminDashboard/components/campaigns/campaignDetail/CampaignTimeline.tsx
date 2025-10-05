@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   },
 });
 
-function CampaignTimelineComponent({ campaign }: CampaignTimelineProps) {
+function CampaignTimeline({ campaign }: CampaignTimelineProps) {
   const [filterType, setFilterType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -509,4 +509,4 @@ function CampaignTimelineComponent({ campaign }: CampaignTimelineProps) {
   );
 }
 
-export { CampaignTimelineComponent as CampaignTimeline };
+export default CampaignTimeline;
