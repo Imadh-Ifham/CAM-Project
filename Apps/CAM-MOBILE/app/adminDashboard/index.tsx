@@ -1,17 +1,10 @@
-import React from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-} from "react-native";
-import AdminHeader from "./components/AdminHeader";
-import StatsOverview from "./components/StatsOverview";
-import QuickActions from "./components/QuickActions";
-import RecentActivity from "./components/RecentActivity";
-import AdminMenu from "./components/AdminMenu";
+import { ScrollView, StyleSheet, StatusBar } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import AdminHeader from "./components/home/AdminHeader";
+import StatsOverview from "./components/home/StatsOverview";
+import QuickActions from "./components/home/QuickActions";
+import RecentActivity from "./components/home/RecentActivity";
+import AdminMenu from "./components/home/AdminMenu";
 
 export default function AdminDashboard() {
   return (
