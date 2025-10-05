@@ -3,7 +3,7 @@ import { Text, View, Pressable } from "react-native";
 import AgentAuthLayout from "./components/AgentAuthLayout";
 import AgentAuthForm from "./components/AgentAuthForm";
 import { useRouter } from "expo-router";
-import { login } from "../../../src/api/auth";
+import { login, getCurrentUser, logout } from "../../../src/api/auth";
 
 export default function AgentLoginScreen() {
   const router = useRouter();
@@ -96,10 +96,20 @@ export default function AgentLoginScreen() {
           }
           try {
             await login({ email: data.email, password: data.password });
+            // fetch user profile to verify role
+            const me = await getCurrentUser();
+            const role = me?.user?.role || me?.role;
+            if (role !== "agent") {
+              await logout();
+              setError(
+                "This account is not an Agent. Please use the correct login."
+              );
+              return;
+            }
             setSuccess("Login successful! Redirecting...");
             setTimeout(() => {
               router.replace("/tempHome" as any);
-            }, 1000);
+            }, 800);
           } catch (e: any) {
             setDetail(e);
             // Try to extract a user-friendly error message
