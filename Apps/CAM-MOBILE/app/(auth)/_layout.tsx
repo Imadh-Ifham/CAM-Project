@@ -23,6 +23,10 @@ export default function AuthLayout() {
           name="volunteer/signup"
           options={{ title: "Volunteer Signup", headerShown: false }}
         />
+        <Stack.Screen
+          name="admin/login"
+          options={{ title: "Admin Login", headerShown: false }}
+        />
       </Stack>
     </OnStartLayout>
   );
