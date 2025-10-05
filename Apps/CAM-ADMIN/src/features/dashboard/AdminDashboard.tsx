@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import MainDashboard from "./MainDashboard";
 import AgentManagement from "./AgentManagement";
+import UserManagement from "../users/UserManagement";
 
 export default function AdminDashboard() {
   return (
@@ -13,16 +14,7 @@ export default function AdminDashboard() {
       <main className="flex-1 overflow-auto" style={{ background: "#23272f" }}>
         <Routes>
           <Route path="/" element={<MainDashboard />} />
-          <Route
-            path="/users"
-            element={
-              <div className="p-6">
-                <h1 className="text-3xl font-bold text-white">
-                  Users Management
-                </h1>
-              </div>
-            }
-          />
+          <Route path="/users" element={<UserManagement />} /> {/* 👈 Updated */}
           <Route path="/agents" element={<AgentManagement />} />
           <Route
             path="/settings"
