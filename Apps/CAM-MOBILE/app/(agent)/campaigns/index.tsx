@@ -15,6 +15,7 @@ import { spacing } from "../../../src/styles/spacing";
 import { typography } from "../../../src/styles/typography";
 import { Card, CardContent, CardHeader } from "../../../src/components/ui/Card";
 import { Button } from "../../../src/components/ui/Button";
+import { useRouter } from "expo-router";
 
 type Campaign = {
   id: number;
@@ -112,6 +113,7 @@ const statusPill = (status: Campaign["status"]) => {
 };
 
 export default function AgentCampaigns() {
+  const router = useRouter();
   const [filter, setFilter] = useState<
     "all" | "available" | "active" | "completed"
   >("all");
@@ -416,7 +418,12 @@ export default function AgentCampaigns() {
 
               {/* CTA */}
               {c.status === "Active" && (
-                <Button style={{ width: "100%", backgroundColor: "#16a34a" }}>
+                <Button
+                  style={{ width: "100%", backgroundColor: "#16a34a" }}
+                  onPress={() =>
+                    router.replace(`/(agent)/campaigns/${c.id}/overview` as any)
+                  }
+                >
                   Manage Campaign
                 </Button>
               )}

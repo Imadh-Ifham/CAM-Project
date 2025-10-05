@@ -19,6 +19,9 @@ type Props = {
   tabs: TopTab[];
   activeKey: string;
   onTabChange?: (key: string) => void;
+  // Optional: reduce outer horizontal padding to make the control wider on screen
+  outerPaddingHorizontal?: number;
+  outerPaddingTop?: number;
 };
 
 // A segmented control-like top navbar used across Agent screens
@@ -27,6 +30,8 @@ export const TopNavBar: React.FC<Props> = ({
   tabs,
   activeKey,
   onTabChange,
+  outerPaddingHorizontal,
+  outerPaddingTop,
 }) => {
   const router = useRouter();
   const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>(
@@ -79,8 +84,11 @@ export const TopNavBar: React.FC<Props> = ({
     });
   };
 
+  const padH = outerPaddingHorizontal ?? spacing.lg;
+  const padT = outerPaddingTop ?? spacing.md;
+
   return (
-    <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
+    <View style={{ paddingHorizontal: padH, paddingTop: padT }}>
       <View
         style={{
           backgroundColor: colors.mutedBackground,
@@ -126,6 +134,8 @@ export const TopNavBar: React.FC<Props> = ({
                   fontWeight: active ? "700" : "500",
                   color: active ? colors.cardForeground : colors.muted,
                 }}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
                 {t.label}
               </Text>
