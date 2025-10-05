@@ -1,5 +1,14 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../../src/styles/colors";
 import { spacing } from "../../../src/styles/spacing";
@@ -18,6 +27,7 @@ type Campaign = {
   agentRoleRequired: "Collector" | "Distributor" | "Both";
   volunteersNeeded: number;
   resourceNeeds: { food: number; clothes: number; funds: number };
+  taskTypes?: string;
 };
 
 const CAMPAIGNS: Campaign[] = [
@@ -32,6 +42,7 @@ const CAMPAIGNS: Campaign[] = [
     agentRoleRequired: "Both",
     volunteersNeeded: 20,
     resourceNeeds: { food: 500, clothes: 200, funds: 10000 },
+    taskTypes: "Collection, packaging, delivery",
   },
   {
     id: 2,
@@ -44,6 +55,7 @@ const CAMPAIGNS: Campaign[] = [
     agentRoleRequired: "Distributor",
     volunteersNeeded: 15,
     resourceNeeds: { food: 300, clothes: 150, funds: 8000 },
+    taskTypes: "Emergency distribution, logistics",
   },
   {
     id: 3,
@@ -56,6 +68,7 @@ const CAMPAIGNS: Campaign[] = [
     agentRoleRequired: "Collector",
     volunteersNeeded: 12,
     resourceNeeds: { food: 0, clothes: 50, funds: 5000 },
+    taskTypes: "Medical supply collection, community outreach",
   },
   {
     id: 4,
@@ -68,6 +81,7 @@ const CAMPAIGNS: Campaign[] = [
     agentRoleRequired: "Both",
     volunteersNeeded: 30,
     resourceNeeds: { food: 800, clothes: 400, funds: 20000 },
+    taskTypes: "Setup, maintenance, distribution",
   },
 ];
 
@@ -101,6 +115,16 @@ export default function AgentCampaigns() {
   const [filter, setFilter] = useState<
     "all" | "available" | "active" | "completed"
   >("all");
+
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
+    null
+  );
+  const [joinRequest, setJoinRequest] = useState({
+    experience: "",
+    motivation: "",
+    availability: "",
+  });
 
   const list = useMemo(() => {
     switch (filter) {
@@ -397,7 +421,13 @@ export default function AgentCampaigns() {
                 </Button>
               )}
               {c.status === "Available" && (
-                <Button style={{ width: "100%", backgroundColor: colors.blue }}>
+                <Button
+                  style={{ width: "100%", backgroundColor: colors.blue }}
+                  onPress={() => {
+                    setSelectedCampaign(c);
+                    setShowJoinModal(true);
+                  }}
+                >
                   Request to Join
                 </Button>
               )}
@@ -414,6 +444,279 @@ export default function AgentCampaigns() {
           </Card>
         ))}
       </ScrollView>
+
+      {/* Join Campaign Modal */}
+      <Modal
+        visible={showJoinModal}
+        onRequestClose={() => setShowJoinModal(false)}
+        transparent
+        animationType="fade"
+      >
+        <Pressable
+          onPress={() => setShowJoinModal(false)}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            padding: spacing.lg,
+          }}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+          >
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
+              style={{ width: "100%", alignItems: "center" }}
+            >
+              <View
+                style={{
+                  width: "110%",
+                  maxWidth: 500,
+                  borderRadius: 16,
+                  backgroundColor: colors.card,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  overflow: "hidden",
+                }}
+              >
+                {/* Modal Header */}
+                <View
+                  style={{
+                    padding: spacing.lg,
+                    borderBottomWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <Text style={{ fontSize: 18, fontWeight: "700" }}>
+                    Join Campaign: {selectedCampaign?.name}
+                  </Text>
+                  <Text
+                    style={{ marginTop: 4, color: colors.muted, fontSize: 13 }}
+                  >
+                    Submit your request to join this campaign as an agent.
+                  </Text>
+                </View>
+
+                {/* Modal Content */}
+                <ScrollView
+                  contentContainerStyle={{
+                    padding: spacing.lg,
+                    gap: spacing.lg,
+                  }}
+                  style={{ maxHeight: 520 }}
+                >
+                  {/* Campaign Summary */}
+                  <View
+                    style={{
+                      backgroundColor: colors.mutedBackground,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      padding: spacing.md,
+                    }}
+                  >
+                    <Text style={{ fontWeight: "700", marginBottom: 8 }}>
+                      Campaign Summary
+                    </Text>
+                    <View style={{ gap: 4 }}>
+                      <Text style={{ fontSize: 13 }}>
+                        <Text style={{ fontWeight: "700" }}>Location: </Text>
+                        {selectedCampaign?.location}
+                      </Text>
+                      <Text style={{ fontSize: 13 }}>
+                        <Text style={{ fontWeight: "700" }}>Duration: </Text>
+                        {selectedCampaign?.startDate} -{" "}
+                        {selectedCampaign?.endDate}
+                      </Text>
+                      <Text style={{ fontSize: 13 }}>
+                        <Text style={{ fontWeight: "700" }}>
+                          Required Role:{" "}
+                        </Text>
+                        {selectedCampaign?.agentRoleRequired}
+                      </Text>
+                      {!!selectedCampaign?.taskTypes && (
+                        <Text style={{ fontSize: 13 }}>
+                          <Text style={{ fontWeight: "700" }}>Tasks: </Text>
+                          {selectedCampaign?.taskTypes}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Required Agent Type */}
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontWeight: "600" }}>
+                      Required Agent Type
+                    </Text>
+                    <View
+                      style={{
+                        backgroundColor: colors.mutedBackground,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        padding: spacing.md,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Text style={{ fontWeight: "700" }}>
+                          {selectedCampaign?.agentRoleRequired}
+                        </Text>
+                        <View
+                          style={{
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderRadius: 999,
+                            borderWidth: 1,
+                            borderColor: "#2563eb",
+                            backgroundColor: "#eef2ff",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: "#2563eb",
+                              fontSize: 12,
+                              fontWeight: "700",
+                            }}
+                          >
+                            Required
+                          </Text>
+                        </View>
+                      </View>
+                      <Text
+                        style={{
+                          color: colors.muted,
+                          marginTop: 6,
+                          fontSize: 13,
+                        }}
+                      >
+                        {selectedCampaign?.agentRoleRequired === "Collector" &&
+                          "You will be responsible for collecting donations and resources from the community."}
+                        {selectedCampaign?.agentRoleRequired ===
+                          "Distributor" &&
+                          "You will be responsible for distributing collected resources to target locations."}
+                        {selectedCampaign?.agentRoleRequired === "Both" &&
+                          "You will handle both collection of donations and distribution to target locations."}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Experience */}
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontWeight: "600" }}>
+                      Relevant Experience
+                    </Text>
+                    <TextInput
+                      value={joinRequest.experience}
+                      onChangeText={(t) =>
+                        setJoinRequest({ ...joinRequest, experience: t })
+                      }
+                      placeholder="Describe your experience with aid distribution, logistics, or community work..."
+                      multiline
+                      numberOfLines={3}
+                      style={{
+                        minHeight: 80,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        padding: spacing.md,
+                        backgroundColor: colors.card,
+                        textAlignVertical: "top",
+                      }}
+                    />
+                  </View>
+
+                  {/* Motivation */}
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontWeight: "600" }}>
+                      Why do you want to join?
+                    </Text>
+                    <TextInput
+                      value={joinRequest.motivation}
+                      onChangeText={(t) =>
+                        setJoinRequest({ ...joinRequest, motivation: t })
+                      }
+                      placeholder="Tell us why you're interested in this campaign..."
+                      multiline
+                      numberOfLines={2}
+                      style={{
+                        minHeight: 64,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        padding: spacing.md,
+                        backgroundColor: colors.card,
+                        textAlignVertical: "top",
+                      }}
+                    />
+                  </View>
+
+                  {/* Availability */}
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontWeight: "600" }}>Availability</Text>
+                    <TextInput
+                      value={joinRequest.availability}
+                      onChangeText={(t) =>
+                        setJoinRequest({ ...joinRequest, availability: t })
+                      }
+                      placeholder="e.g., Weekends, evenings, full-time"
+                      style={{
+                        height: 44,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        paddingHorizontal: spacing.md,
+                        backgroundColor: colors.card,
+                      }}
+                    />
+                  </View>
+                </ScrollView>
+
+                {/* Footer */}
+                <View
+                  style={{
+                    padding: spacing.lg,
+                    borderTopWidth: 1,
+                    borderColor: colors.border,
+                    flexDirection: "row",
+                    gap: spacing.md,
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <Button
+                    variant="outline"
+                    onPress={() => setShowJoinModal(false)}
+                    style={{ height: 44 }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onPress={() => {
+                      // In real app, call API
+                      // Simple UX: close & reset
+                      setShowJoinModal(false);
+                      setSelectedCampaign(null);
+                      setJoinRequest({
+                        experience: "",
+                        motivation: "",
+                        availability: "",
+                      });
+                    }}
+                    style={{ height: 44, backgroundColor: colors.green }}
+                  >
+                    Submit Request
+                  </Button>
+                </View>
+              </View>
+            </Pressable>
+          </KeyboardAvoidingView>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
