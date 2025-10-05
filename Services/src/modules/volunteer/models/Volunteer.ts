@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
-export type PreferredType = 'collecting' | 'distributing';
+export type PreferredType = "collecting" | "distributing";
 
 export interface IVolunteer extends Document {
   name: string;
@@ -17,9 +17,10 @@ const VolunteerSchema = new Schema<IVolunteer>({
   email: { type: String, required: true, unique: true, index: true },
   passwordHash: { type: String, required: true },
   phone: { type: String },
-  preferredType: { type: String, enum: ['collecting', 'distributing'] },
-  assignedCampaigns: [{ type: Schema.Types.ObjectId, ref: 'Campaign' }],
+  preferredType: { type: String, enum: ["collecting", "distributing"] },
+  assignedCampaigns: [{ type: Schema.Types.ObjectId, ref: "Campaign" }],
   createdAt: { type: Date, default: () => new Date() },
 });
 
-export default mongoose.models.Volunteer || mongoose.model<IVolunteer>('Volunteer', VolunteerSchema);
+export default (mongoose.models.Volunteer as mongoose.Model<IVolunteer>) ||
+  mongoose.model<IVolunteer>("Volunteer", VolunteerSchema);
