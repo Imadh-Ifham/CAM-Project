@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { usePathname } from "expo-router";
+import { useSegments } from "expo-router";
 import TopNavBar, { TopTab } from "../components/ui/TopNavBar";
 
 type Props = {
@@ -8,7 +8,7 @@ type Props = {
 
 // Renders the segmented top tabs based on current pathname
 export const MainTabs: React.FC<Props> = ({ role = "agent" }) => {
-  const pathname = usePathname();
+  const segments = useSegments();
 
   const tabs: TopTab[] = useMemo(() => {
     if (role === "agent") {
@@ -27,10 +27,16 @@ export const MainTabs: React.FC<Props> = ({ role = "agent" }) => {
   }, [role]);
 
   const activeKey = useMemo(() => {
-    const m = pathname.match(/\/(agent|volunteer)\/(\w+)/);
-    const key = m?.[2];
-    return key === "campaigns" || key === "profile" ? key : "home";
-  }, [pathname]);
+    const flat = segments.map((s) => (Array.isArray(s) ? s[0] : s));
+    const clean = flat
+      .map((s) => (s ? s.replace(/[()]/g, "") : s))
+      .filter(Boolean) as string[];
+    const roleIdx = clean.findIndex((s) => s === "agent" || s === "volunteer");
+    const next = roleIdx >= 0 ? clean[roleIdx + 1] : clean[0];
+    if (next === "campaigns") return "campaigns";
+    if (next === "profile") return "profile";
+    return "home";
+  }, [segments]);
 
   return <TopNavBar tabs={tabs} activeKey={activeKey} />;
 };
