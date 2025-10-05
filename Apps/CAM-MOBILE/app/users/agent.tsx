@@ -175,8 +175,8 @@ export default function AgentScreen() {
               your tasks from here.
             </Text>
             <View style={{ height: spacing.lg }} />
-            <Button onPress={() => router.replace("/tempHome?stay=1" as any)}>
-              Back to Temp Home
+            <Button onPress={() => router.replace("/(agent)/home" as any)}>
+              Go to Agent Home
             </Button>
             <View style={{ height: spacing.sm }} />
             <Button variant="outline" onPress={() => {}}>
