@@ -19,6 +19,7 @@ export default function CampaignLayout() {
         style={{
           paddingHorizontal: spacing.lg,
           paddingVertical: spacing.md,
+          marginTop: 30,
           borderBottomWidth: 1,
           borderColor: colors.border,
           flexDirection: "row",
