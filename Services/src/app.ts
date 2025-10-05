@@ -4,6 +4,8 @@ import cors from "cors";
 import connectDB from "./config/db";
 import inventoryRoutes from "./modules/Inventory/routes/inventoryRoutes";
 import { InventoryService } from "./modules/Inventory/services/inventoryService";
+import volunteerAuthRoutes from './modules/volunteer/routes/auth';
+import volunteerCampaignRoutes from './modules/volunteer/routes/campaigns';
 // import userRoutes from "./routes/userRoutes";
 
 const app: Application = express();
@@ -33,6 +35,8 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/inventory", inventoryRoutes);
+app.use('/api/auth', volunteerAuthRoutes);
+app.use('/api/campaigns', volunteerCampaignRoutes);
 // app.use("/api/users", userRoutes);
 
 export default app;
