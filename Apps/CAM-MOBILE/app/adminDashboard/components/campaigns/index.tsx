@@ -468,6 +468,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#333",
     gap: 12,
+    marginTop: -480,
   },
   statCard: {
     flex: 1,
