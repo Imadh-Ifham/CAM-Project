@@ -1,59 +1,147 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { colors } from "../../src/styles/colors";
 import { spacing } from "../../src/styles/spacing";
 import { typography } from "../../src/styles/typography";
 import { Card, CardContent, CardHeader } from "../../src/components/ui/Card";
 import { Button } from "../../src/components/ui/Button";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function AgentHome() {
   const router = useRouter();
   // Mocked data; wire to API later
   const totalCollected = 450;
-  const pendingTasks = 3;
+  const deliveriesMade = 12; // for second stats card as per design
+  const collectionTarget = 85; // out of 100
+  const volunteerEngagement = 92; // percent
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ padding: spacing.lg }}>
-        {/* Quick Stats */}
-        <View style={{ flexDirection: "row", gap: spacing.lg }}>
-          <Card style={{ flex: 1 }}>
-            <CardContent>
-              <View
-                style={{ alignItems: "center", paddingVertical: spacing.lg }}
-              >
+      <ScrollView
+        contentContainerStyle={{
+          padding: spacing.lg,
+          paddingBottom: spacing.xl,
+        }}
+      >
+        {/* Quick Stats (like image 2) */}
+        <View
+          style={{
+            flexDirection: "row",
+            gap: spacing.lg,
+            marginTop: spacing.lg,
+          }}
+        >
+          {/* Resources Collected */}
+          <Card
+            style={{
+              flex: 1,
+              borderRadius: 20,
+              backgroundColor: "#eef6ff",
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 2,
+            }}
+          >
+            <CardContent style={{ padding: spacing.lg }}>
+              <View style={{ alignItems: "center" }}>
+                <LinearGradient
+                  colors={["#60a5fa", "#2563eb"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: spacing.sm,
+                  }}
+                >
+                  <Ionicons name="cube-outline" size={24} color="#fff" />
+                </LinearGradient>
                 <Text
                   style={{
-                    fontSize: 28,
-                    fontWeight: "700",
+                    fontSize: 26,
+                    fontWeight: "800",
                     color: colors.blue,
                   }}
                 >
                   {totalCollected}
                 </Text>
-                <Text style={{ color: colors.muted, marginTop: spacing.xs }}>
+                <Text
+                  style={{
+                    color: colors.blue,
+                    marginTop: spacing.xs,
+                    fontWeight: "600",
+                  }}
+                >
                   Resources Collected
+                </Text>
+                <Text
+                  style={{ color: colors.muted, marginTop: 4, fontSize: 12 }}
+                >
+                  +25 this week
                 </Text>
               </View>
             </CardContent>
           </Card>
-          <Card style={{ flex: 1 }}>
-            <CardContent>
-              <View
-                style={{ alignItems: "center", paddingVertical: spacing.lg }}
-              >
-                <Text
+
+          {/* Deliveries Made */}
+          <Card
+            style={{
+              flex: 1,
+              borderRadius: 20,
+              backgroundColor: "#f6f1ff",
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 2,
+            }}
+          >
+            <CardContent style={{ padding: spacing.lg }}>
+              <View style={{ alignItems: "center" }}>
+                <LinearGradient
+                  colors={["#a78bfa", "#7c3aed"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                   style={{
-                    fontSize: 28,
-                    fontWeight: "700",
-                    color: colors.orange,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: spacing.sm,
                   }}
                 >
-                  {pendingTasks}
+                  <Ionicons
+                    name="checkmark-done-outline"
+                    size={24}
+                    color="#fff"
+                  />
+                </LinearGradient>
+                <Text
+                  style={{ fontSize: 26, fontWeight: "800", color: "#7c3aed" }}
+                >
+                  {deliveriesMade}
                 </Text>
-                <Text style={{ color: colors.muted, marginTop: spacing.xs }}>
-                  Pending Tasks
+                <Text
+                  style={{
+                    color: "#7c3aed",
+                    marginTop: spacing.xs,
+                    fontWeight: "600",
+                  }}
+                >
+                  Deliveries Made
+                </Text>
+                <Text
+                  style={{ color: colors.muted, marginTop: 4, fontSize: 12 }}
+                >
+                  100% on-time
                 </Text>
               </View>
             </CardContent>
@@ -66,57 +154,98 @@ export default function AgentHome() {
             Active Campaigns Overview
           </Text>
           <View style={{ gap: spacing.md }}>
-            <Card>
+            {/* Active Campaigns card */}
+            <Card style={{ borderRadius: 20 }}>
               <CardContent>
                 <View
                   style={{
                     flexDirection: "row",
+                    alignItems: "center",
                     justifyContent: "space-between",
-                    padding: spacing.md,
                   }}
                 >
-                  <View>
-                    <Text style={{ fontWeight: "700", color: "#065f46" }}>
-                      3 Active Campaigns
-                    </Text>
-                    <Text
-                      style={{ color: "#047857", marginTop: 2, fontSize: 12 }}
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: "rgba(16,185,129,0.15)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: spacing.md,
+                      }}
                     >
-                      Managing resources & volunteers
-                    </Text>
+                      <Ionicons
+                        name="people-outline"
+                        size={22}
+                        color="#059669"
+                      />
+                    </View>
+                    <View>
+                      <Text style={{ fontWeight: "700", color: "#065f46" }}>
+                        3 Active Campaigns
+                      </Text>
+                      <Text
+                        style={{ color: "#047857", marginTop: 2, fontSize: 12 }}
+                      >
+                        Managing resources & volunteers
+                      </Text>
+                    </View>
                   </View>
                 </View>
               </CardContent>
             </Card>
 
-            <Card>
+            {/* Next Delivery card */}
+            <Card style={{ borderRadius: 20 }}>
               <CardContent>
                 <View
                   style={{
                     flexDirection: "row",
+                    alignItems: "center",
                     justifyContent: "space-between",
-                    padding: spacing.md,
                   }}
                 >
-                  <View>
-                    <Text style={{ fontWeight: "700", color: "#1e3a8a" }}>
-                      Next Delivery
-                    </Text>
-                    <Text
-                      style={{ color: "#1d4ed8", marginTop: 2, fontSize: 12 }}
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: "rgba(37,99,235,0.15)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: spacing.md,
+                      }}
                     >
-                      Community Center A – Tomorrow
-                    </Text>
+                      <Ionicons
+                        name="cube-outline"
+                        size={22}
+                        color={colors.blue}
+                      />
+                    </View>
+                    <View>
+                      <Text style={{ fontWeight: "700", color: "#1e3a8a" }}>
+                        Next Delivery
+                      </Text>
+                      <Text
+                        style={{ color: "#1d4ed8", marginTop: 2, fontSize: 12 }}
+                      >
+                        Community Center A – Tomorrow
+                      </Text>
+                    </View>
                   </View>
                   <View>
                     <Text
                       style={{
                         backgroundColor: colors.blue,
                         color: "#fff",
-                        paddingHorizontal: 8,
-                        paddingVertical: 2,
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
                         borderRadius: 999,
                         fontSize: 12,
+                        overflow: "hidden",
                       }}
                     >
                       Due Soon
@@ -126,34 +255,55 @@ export default function AgentHome() {
               </CardContent>
             </Card>
 
-            <Card>
+            {/* Pending Volunteer Approvals */}
+            <Card style={{ borderRadius: 20 }}>
               <CardContent>
                 <View
                   style={{
                     flexDirection: "row",
+                    alignItems: "center",
                     justifyContent: "space-between",
-                    padding: spacing.md,
                   }}
                 >
-                  <View>
-                    <Text style={{ fontWeight: "700", color: "#9a3412" }}>
-                      Pending Volunteer Approvals
-                    </Text>
-                    <Text
-                      style={{ color: "#ea580c", marginTop: 2, fontSize: 12 }}
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        backgroundColor: "rgba(249,115,22,0.15)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: spacing.md,
+                      }}
                     >
-                      2 applications awaiting review
-                    </Text>
+                      <Ionicons
+                        name="checkmark-done-outline"
+                        size={22}
+                        color={colors.orange}
+                      />
+                    </View>
+                    <View>
+                      <Text style={{ fontWeight: "700", color: "#9a3412" }}>
+                        Pending Volunteer Approvals
+                      </Text>
+                      <Text
+                        style={{ color: "#ea580c", marginTop: 2, fontSize: 12 }}
+                      >
+                        2 applications awaiting review
+                      </Text>
+                    </View>
                   </View>
                   <View>
                     <Text
                       style={{
                         backgroundColor: colors.orange,
                         color: "#fff",
-                        paddingHorizontal: 8,
-                        paddingVertical: 2,
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
                         borderRadius: 999,
                         fontSize: 12,
+                        overflow: "hidden",
                       }}
                     >
                       Action Needed
@@ -164,6 +314,218 @@ export default function AgentHome() {
             </Card>
           </View>
         </View>
+
+        {/* Weekly Performance (image 3) */}
+        <Card style={{ borderRadius: 20, marginTop: spacing.xl }}>
+          <CardHeader>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Ionicons
+                name="bar-chart-outline"
+                size={18}
+                color={colors.muted}
+              />
+              <Text style={[typography.h3, { marginLeft: spacing.sm }]}>
+                Weekly Performance
+              </Text>
+            </View>
+          </CardHeader>
+          <CardContent>
+            {/* Collection Target */}
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              <Text style={{ color: colors.cardForeground }}>
+                Collection Target
+              </Text>
+              <Text style={{ color: colors.muted }}>
+                {collectionTarget} / 100
+              </Text>
+            </View>
+            <View
+              style={{
+                height: 8,
+                backgroundColor: colors.mutedBackground,
+                borderRadius: 999,
+                marginTop: spacing.sm,
+              }}
+            >
+              <View
+                style={{
+                  height: 8,
+                  borderRadius: 999,
+                  width: `${collectionTarget}%`,
+                  backgroundColor: colors.green,
+                }}
+              />
+            </View>
+
+            {/* Volunteer Engagement */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginTop: spacing.lg,
+              }}
+            >
+              <Text style={{ color: colors.cardForeground }}>
+                Volunteer Engagement
+              </Text>
+              <Text style={{ color: colors.muted }}>
+                {volunteerEngagement}%
+              </Text>
+            </View>
+            <View
+              style={{
+                height: 8,
+                backgroundColor: colors.mutedBackground,
+                borderRadius: 999,
+                marginTop: spacing.sm,
+              }}
+            >
+              <View
+                style={{
+                  height: 8,
+                  borderRadius: 999,
+                  width: `${volunteerEngagement}%`,
+                  backgroundColor: colors.blue,
+                }}
+              />
+            </View>
+          </CardContent>
+        </Card>
+
+        {/* Resource Inventory (image 4) */}
+        <Card style={{ borderRadius: 20, marginTop: spacing.xl }}>
+          <CardHeader>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Ionicons name="cube-outline" size={18} color={colors.muted} />
+              <Text style={[typography.h3, { marginLeft: spacing.sm }]}>
+                Resource Inventory
+              </Text>
+            </View>
+          </CardHeader>
+          <CardContent>
+            <View style={{ flexDirection: "row", gap: spacing.md }}>
+              {/* Food */}
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: "#fff1e6",
+                  borderRadius: 16,
+                  padding: spacing.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 6,
+                  }}
+                >
+                  <Ionicons
+                    name="restaurant-outline"
+                    size={18}
+                    color="#ea580c"
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={{ color: "#ea580c", fontWeight: "700" }}>
+                    Food Items
+                  </Text>
+                </View>
+                <Text
+                  style={{ color: "#ea580c", fontSize: 28, fontWeight: "800" }}
+                >
+                  128
+                </Text>
+                <Text style={{ color: "#ea580c", marginTop: 2, fontSize: 12 }}>
+                  in stock
+                </Text>
+              </View>
+              {/* Clothing */}
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: "#eef6ff",
+                  borderRadius: 16,
+                  padding: spacing.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 6,
+                  }}
+                >
+                  <Ionicons
+                    name="shirt-outline"
+                    size={18}
+                    color={colors.blue}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={{ color: colors.blue, fontWeight: "700" }}>
+                    Clothing
+                  </Text>
+                </View>
+                <Text
+                  style={{
+                    color: colors.blue,
+                    fontSize: 28,
+                    fontWeight: "800",
+                  }}
+                >
+                  67
+                </Text>
+                <Text
+                  style={{ color: colors.blue, marginTop: 2, fontSize: 12 }}
+                >
+                  items
+                </Text>
+              </View>
+              {/* Funds */}
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: "#ecfdf5",
+                  borderRadius: 16,
+                  padding: spacing.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 6,
+                  }}
+                >
+                  <Ionicons
+                    name="cash-outline"
+                    size={18}
+                    color="#16a34a"
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={{ color: "#16a34a", fontWeight: "700" }}>
+                    Funds
+                  </Text>
+                </View>
+                <Text
+                  style={{ color: "#16a34a", fontSize: 28, fontWeight: "800" }}
+                >
+                  $2.4K
+                </Text>
+                <Text style={{ color: "#16a34a", marginTop: 2, fontSize: 12 }}>
+                  available
+                </Text>
+              </View>
+            </View>
+          </CardContent>
+        </Card>
 
         {/* Quick Actions */}
         <View
@@ -187,7 +549,7 @@ export default function AgentHome() {
             My Profile
           </Button>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
