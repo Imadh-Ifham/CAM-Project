@@ -135,6 +135,41 @@ export default function VolunteerLoginScreen() {
         }}
         onRegister={() => router.push("/(auth)/volunteer/signup" as any)}
       />
+
+      {/* Dummy Button for Quick Dashboard Access */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+        <Pressable
+          onPress={() => router.replace("/adminDashboard" as any)}
+          style={{
+            backgroundColor: "#00ff94",
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            borderRadius: 8,
+            alignItems: "center",
+            marginTop: 8,
+          }}
+        >
+          <Text
+            style={{
+              color: "#000",
+              fontWeight: "600",
+              fontSize: 16,
+            }}
+          >
+            🚀 Go to Admin Dashboard (Demo)
+          </Text>
+        </Pressable>
+        <Text
+          style={{
+            color: "#888",
+            fontSize: 12,
+            textAlign: "center",
+            marginTop: 4,
+          }}
+        >
+          Skip login for testing
+        </Text>
+      </View>
     </AdminAuthLayout>
   );
 }
