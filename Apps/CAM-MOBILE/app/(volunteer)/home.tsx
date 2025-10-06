@@ -30,12 +30,13 @@ export default function VolunteerHome() {
             flexDirection: "row",
             gap: spacing.lg,
             marginTop: spacing.lg,
+            justifyContent: "center",
           }}
         >
           {/* Completed */}
           <Card
             style={{
-              flex: 1,
+              width: 115,
               borderRadius: 20,
               backgroundColor: "#ecfdf5",
               shadowColor: "#000",
@@ -87,7 +88,7 @@ export default function VolunteerHome() {
           {/* Active */}
           <Card
             style={{
-              flex: 1,
+              width: 110,
               borderRadius: 20,
               backgroundColor: "#eff6ff",
               shadowColor: "#000",
@@ -139,7 +140,7 @@ export default function VolunteerHome() {
           {/* Hours */}
           <Card
             style={{
-              flex: 1,
+              width: 110,
               borderRadius: 20,
               backgroundColor: "#fff7ed",
               shadowColor: "#000",
