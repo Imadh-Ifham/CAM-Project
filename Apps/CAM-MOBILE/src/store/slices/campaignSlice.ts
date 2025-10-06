@@ -1,5 +1,6 @@
 import { Campaign, mockCampaignDetail } from "@/src/types/campaign.type";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { RootState } from "../store";
 
 interface CampaignState {
   campaignList: Campaign[] | null;
@@ -28,8 +29,8 @@ export const { setSelectedCampaign, clearSelectedCampaign } =
   campaignSlice.actions;
 
 // Selectors
-export const selectCampaignList = (state: { campaign: CampaignState }) =>
+export const selectCampaignList = (state: RootState) =>
   state.campaign.campaignList;
-export const selectSelectedCampaign = (state: { campaign: CampaignState }) =>
+export const selectSelectedCampaign = (state: RootState) =>
   state.campaign.selectedCampaign;
 export default campaignSlice.reducer;
