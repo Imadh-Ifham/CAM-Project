@@ -15,8 +15,8 @@ import CampaignTeam from "./CampaignTeam";
 import CampaignResources from "./CampaignResources";
 import CampaignProgress from "./CampaignProgress";
 import { mockCampaignDetail } from "@/src/types/campaign.type";
-import { useSelector } from "react-redux";
-import { selectSelectedCampaign } from "@/src/store/slices/campaignSlice";
+import { useAppSelector } from "@/src/store/hooks";
+import { selectSelectedCampaign } from "@/src/store/selectors";
 
 // Mock campaign data - in a real app, this would come from an API
 
@@ -32,9 +32,8 @@ export default function CampaignDetailView() {
   const params = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Import useSelector and the selector from your campaignSlice
-
-  const selectedCampaign = useSelector(selectSelectedCampaign);
+  // Using Redux to get selected campaign
+  const selectedCampaign = useAppSelector(selectSelectedCampaign);
 
   const handleEditCampaign = () => {
     router.push(
