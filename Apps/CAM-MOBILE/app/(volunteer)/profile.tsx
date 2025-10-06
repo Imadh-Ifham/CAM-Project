@@ -27,7 +27,7 @@ export default function VolunteerProfile() {
     try {
       setLoading(true);
       await logout();
-      router.replace("/(auth)/volunteer/login" as any);
+      router.replace("/splash" as any);
     } catch (e: any) {
       Alert.alert("Logout failed", e?.message || "Please try again.");
     } finally {
