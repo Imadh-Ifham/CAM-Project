@@ -3,6 +3,7 @@
 # dependencies
 
 node_modules/
+package-lock.json
 
 # VS Code settings
 .vscode/
@@ -34,7 +35,6 @@ yarn-error.*
 # macOS
 .DS_Store
 *.pem
-
 
 # local env files
 .env
