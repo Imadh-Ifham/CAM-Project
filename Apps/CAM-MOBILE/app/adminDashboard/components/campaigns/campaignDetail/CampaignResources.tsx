@@ -7,18 +7,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-interface Resource {
-  name: string;
-  required: number;
-  available: number;
-  unit: string;
-}
-
-interface Campaign {
-  id: string;
-  resources: Resource[];
-}
+import { Campaign } from "@/src/types/campaign.type";
 
 interface CampaignResourcesProps {
   campaign: Campaign;

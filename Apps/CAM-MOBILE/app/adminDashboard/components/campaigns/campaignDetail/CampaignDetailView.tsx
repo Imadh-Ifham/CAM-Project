@@ -14,71 +14,15 @@ import CampaignOverview from "./CampaignOverview";
 import CampaignTeam from "./CampaignTeam";
 import CampaignResources from "./CampaignResources";
 import CampaignProgress from "./CampaignProgress";
-import CampaignTimeline from "./CampaignTimeline";
+import { mockCampaignDetail } from "@/src/types/campaign.type";
 
 // Mock campaign data - in a real app, this would come from an API
-const mockCampaignDetail = {
-  id: "1",
-  name: "Flood Relief - Colombo",
-  description:
-    "Emergency flood relief operation providing immediate assistance to affected families in Colombo district. This campaign focuses on distributing essential supplies, temporary shelter, and medical aid.",
-  type: "disaster-relief",
-  status: "active",
-  priority: "critical",
-  location: "Colombo, Western Province",
-  startDate: "2024-01-15",
-  endDate: "2024-02-15",
-  volunteers: 25,
-  targetVolunteers: 50,
-  progress: 75,
-  budget: 150000,
-  spent: 112500,
-  coordinator: {
-    name: "Dr. Saman Perera",
-    phone: "+94 77 123 4567",
-    email: "saman.perera@cam.lk",
-  },
-  resources: [
-    { name: "Food Packets", required: 1000, available: 750, unit: "packets" },
-    { name: "Water Bottles", required: 2000, available: 1500, unit: "bottles" },
-    { name: "Medical Kits", required: 50, available: 35, unit: "kits" },
-    { name: "Tents", required: 100, available: 80, unit: "tents" },
-  ],
-  timeline: [
-    {
-      date: "2024-01-15",
-      event: "Campaign launched",
-      type: "milestone" as "milestone",
-    },
-    {
-      date: "2024-01-16",
-      event: "First volunteer team deployed",
-      type: "activity" as "activity",
-    },
-    {
-      date: "2024-01-18",
-      event: "Resource distribution began",
-      type: "activity" as "activity",
-    },
-    {
-      date: "2024-01-20",
-      event: "50% progress milestone reached",
-      type: "milestone" as "milestone",
-    },
-    {
-      date: "2024-01-22",
-      event: "Additional volunteers recruited",
-      type: "activity" as "activity",
-    },
-  ],
-};
 
 const tabItems = [
   { key: "overview", label: "Overview", icon: "information-circle" },
   { key: "team", label: "Team", icon: "people" },
   { key: "resources", label: "Resources", icon: "cube" },
   { key: "progress", label: "Progress", icon: "bar-chart" },
-  { key: "timeline", label: "Timeline", icon: "time" },
 ];
 
 export default function CampaignDetailView() {
@@ -128,8 +72,6 @@ export default function CampaignDetailView() {
         return <CampaignResources campaign={mockCampaignDetail} />;
       case "progress":
         return <CampaignProgress campaign={mockCampaignDetail} />;
-      case "timeline":
-        return <CampaignTimeline campaign={mockCampaignDetail} />;
       default:
         return <CampaignOverview campaign={mockCampaignDetail} />;
     }

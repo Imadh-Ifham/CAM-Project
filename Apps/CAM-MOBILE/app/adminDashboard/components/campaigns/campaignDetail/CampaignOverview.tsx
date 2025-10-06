@@ -1,28 +1,6 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-interface Campaign {
-  id: string;
-  name: string;
-  description: string;
-  type: string;
-  status: string;
-  priority: string;
-  location: string;
-  startDate: string;
-  endDate: string;
-  volunteers: number;
-  targetVolunteers: number;
-  progress: number;
-  budget: number;
-  spent: number;
-  coordinator: {
-    name: string;
-    phone: string;
-    email: string;
-  };
-}
+import { Campaign } from "@/src/types/campaign.type";
 
 interface CampaignOverviewProps {
   campaign: Campaign;
