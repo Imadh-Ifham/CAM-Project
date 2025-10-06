@@ -11,7 +11,6 @@ const keys = [
   { key: "overview", label: "Overview" },
   { key: "collect", label: "Collect" },
   { key: "distribution", label: "Distribution" },
-  { key: "volunteers", label: "Volunteers" },
   { key: "tasks", label: "Tasks" },
 ];
 
