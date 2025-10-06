@@ -17,7 +17,7 @@ type RegisterData = {
 };
 
 type Props = {
-  onSubmit: (data: RegisterData) => void;
+  onSubmit: (data: RegisterData) => Promise<void> | void;
   onLogin: () => void;
 };
 
@@ -35,11 +35,11 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
+    if (loading) return;
     setLoading(true);
     try {
       // TODO: validation can be added here (e.g., password match)
-      await Promise.resolve();
-      onSubmit(data);
+      await onSubmit(data);
     } finally {
       setLoading(false);
     }
