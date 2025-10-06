@@ -135,6 +135,42 @@ export default function OnStartScreen() {
           Choose Your Role
         </Text>
 
+        <Pressable onPress={() => router.push("volunteer/login" as any)}>
+          <Card>
+            <CardContent>
+              <View style={{ alignItems: "center" }}>
+                <Text style={{ fontSize: 56, color: "#f97316" }}>◎</Text>
+                <Text style={[typography.h2, { marginTop: spacing.sm }]}>
+                  Volunteer Login
+                </Text>
+                <Text
+                  style={{
+                    color: colors.muted,
+                    textAlign: "center",
+                    marginTop: spacing.sm,
+                  }}
+                >
+                  Join campaigns and help deliver aid to communities
+                </Text>
+                <View
+                  style={{
+                    backgroundColor: "#fff7ed",
+                    padding: spacing.md,
+                    borderRadius: 12,
+                    marginTop: spacing.md,
+                    alignSelf: "stretch",
+                  }}
+                >
+                  <Text style={{ color: "#c2410c", fontSize: 12 }}>
+                    • Join active campaigns{"\n"}• Complete volunteer tasks
+                    {"\n"}• Make a community impact
+                  </Text>
+                </View>
+              </View>
+            </CardContent>
+          </Card>
+        </Pressable>
+
         <Pressable onPress={() => router.push("agent/login" as any)}>
           <Card style={{ marginBottom: spacing.lg }}>
             <CardContent>
@@ -171,13 +207,13 @@ export default function OnStartScreen() {
           </Card>
         </Pressable>
 
-        <Pressable onPress={() => router.push("volunteer/login" as any)}>
+        <Pressable onPress={() => router.push("admin/login" as any)}>
           <Card>
             <CardContent>
               <View style={{ alignItems: "center" }}>
-                <Text style={{ fontSize: 56, color: "#f97316" }}>◎</Text>
+                <Text style={{ fontSize: 56, color: "#2563eb" }}>⚙️</Text>
                 <Text style={[typography.h2, { marginTop: spacing.sm }]}>
-                  Volunteer Login
+                  Admin Login
                 </Text>
                 <Text
                   style={{
@@ -186,20 +222,21 @@ export default function OnStartScreen() {
                     marginTop: spacing.sm,
                   }}
                 >
-                  Join campaigns and help deliver aid to communities
+                  Access system controls and manage all user operations
                 </Text>
                 <View
                   style={{
-                    backgroundColor: "#fff7ed",
+                    backgroundColor: "#eff6ff",
                     padding: spacing.md,
                     borderRadius: 12,
                     marginTop: spacing.md,
                     alignSelf: "stretch",
                   }}
                 >
-                  <Text style={{ color: "#c2410c", fontSize: 12 }}>
-                    • Join active campaigns{"\n"}• Complete volunteer tasks
-                    {"\n"}• Make a community impact
+                  <Text style={{ color: "#1d4ed8", fontSize: 12 }}>
+                    • Monitor platform activities{"\n"}• Manage agents &
+                    volunteers
+                    {"\n"}• Configure campaigns & reports
                   </Text>
                 </View>
               </View>

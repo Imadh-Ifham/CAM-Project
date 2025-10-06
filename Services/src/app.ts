@@ -3,10 +3,11 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db";
 import inventoryRoutes from "./modules/Inventory/routes/inventoryRoutes";
+import agentAuthRoutes from "./modules/auth/agent/routes";
+import volunteerAuthRoutes from "./modules/auth/volunteer/routes";
+import meRoute from "./modules/auth/routes/me";
 import { InventoryService } from "./modules/Inventory/services/inventoryService";
-import volunteerCampaignRoutes from './modules/volunteer/routes/campaigns';
-import volunteerAuthRoutes from './modules/volunteer/routes/auth';
-// import userRoutes from "./routes/userRoutes";
+import volunteerCampaignRoutes from "./modules/volunteer/routes/campaigns";
 
 const app: Application = express();
 
@@ -35,9 +36,9 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/inventory", inventoryRoutes);
-app.use('/api/auth', volunteerAuthRoutes);
-app.use('/api/campaigns', volunteerCampaignRoutes);
-app.use('/api/auth', volunteerAuthRoutes);
-// app.use("/api/users", userRoutes);
+app.use("/api/campaigns", volunteerCampaignRoutes);
+app.use("/api/agent", agentAuthRoutes);
+app.use("/api/volunteer", volunteerAuthRoutes);
+app.use("/api/auth", meRoute);
 
 export default app;
