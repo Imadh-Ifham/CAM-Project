@@ -94,7 +94,7 @@ export default function VolunteerScreen() {
     return `Last login: ${str}`;
   }, [updatedAt]);
 
-  const goHome = () => router.replace("/tempHome" as any);
+  const goHome = () => router.replace("/(volunteer)/home" as any);
 
   return (
     <LinearGradient
