@@ -6,6 +6,7 @@ import inventoryRoutes from "./modules/Inventory/routes/inventoryRoutes";
 import { InventoryService } from "./modules/Inventory/services/inventoryService";
 import volunteerCampaignRoutes from './modules/volunteer/routes/campaigns';
 import volunteerAuthRoutes from './modules/volunteer/routes/auth';
+import volunteerRoutes from "./modules/volunteer/routes/volunteer";
 // import userRoutes from "./routes/userRoutes";
 
 const app: Application = express();
@@ -38,6 +39,7 @@ app.use("/api/inventory", inventoryRoutes);
 app.use('/api/auth', volunteerAuthRoutes);
 app.use('/api/campaigns', volunteerCampaignRoutes);
 app.use('/api/auth', volunteerAuthRoutes);
+app.use("/api/volunteers", volunteerRoutes);
 // app.use("/api/users", userRoutes);
 
 export default app;
