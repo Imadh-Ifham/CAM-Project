@@ -11,15 +11,9 @@
     "skipLibCheck": true,
     "noEmit": true,
     "baseUrl": ".",
-    "types": [
-      "react",
-      "react-native",
-      "expo-router"
-    ],
+    "types": ["react", "react-native", "expo-router"],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [
@@ -27,7 +21,11 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "nativewind-env.d.ts"
+    "nativewind-env.d.ts",
+    "src/types/firebase-auth-react-native.d.ts",
+    "src/types/firebase-auth-augmentation.d.ts",
+    "src/types/firebase-auth-shim.d.ts"
+    // Removed '../../Services/src/config/firebase.ts' or any pattern that matches it
   ],
   "extends": "expo/tsconfig.base"
 }
