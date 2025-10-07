@@ -4,10 +4,11 @@ import cors from "cors";
 import connectDB from "./config/db";
 import inventoryRoutes from "./modules/Inventory/routes/inventoryRoutes";
 import agentAuthRoutes from "./modules/auth/agent/routes";
-import volunteerAuthRoutes from "./modules/auth/volunteer/routes";
+import volunteerAuthRoutes from "./modules/auth/volunteer/routes/index";
 import meRoute from "./modules/auth/routes/me";
 import { InventoryService } from "./modules/Inventory/services/inventoryService";
 import volunteerCampaignRoutes from './modules/volunteer/routes/campaigns';
+import volunteerProfileRoutes from './modules/volunteer/routes/volunteer';
 // import userRoutes from "./routes/userRoutes";
 
 const app: Application = express();
@@ -23,7 +24,8 @@ const inventoryService = new InventoryService();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // This MUST be before routes
+app.use(express.urlencoded({ extended: true })); // Add this too
 
 // Health check endpoint
 app.get("/", (req, res) => {
@@ -39,7 +41,7 @@ app.get("/", (req, res) => {
 app.use("/api/inventory", inventoryRoutes);
 app.use('/api/auth', volunteerAuthRoutes);
 app.use('/api/campaigns', volunteerCampaignRoutes);
-app.use('/api/auth', volunteerAuthRoutes);
+app.use('/api/volunteers', volunteerProfileRoutes);
 // app.use("/api/users", userRoutes);
 
 export default app;
