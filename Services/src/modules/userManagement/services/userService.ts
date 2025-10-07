@@ -1,6 +1,6 @@
 // Services/src/modules/userManagement/services/userService.ts
 
-import User from '../models/user';
+import User from '../../auth/models/User';
 
 export const getAllUsers = async (filter: any = {}) => {
   return await User.find(filter).select('-password').sort({ joinedAt: -1 });

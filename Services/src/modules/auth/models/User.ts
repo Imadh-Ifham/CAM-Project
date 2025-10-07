@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type UserRole = "agent" | "volunteer";
+export type UserRole = "admin"| "agent" | "volunteer";
 
 export interface IUserBase {
   uid: string; // Firebase UID
@@ -8,6 +8,7 @@ export interface IUserBase {
   phoneNumber?: string;
   role: UserRole;
   fullName: string;
+  status: "active" | "inactive";
 }
 
 export interface IAgentProfile {
@@ -50,8 +51,13 @@ const UserSchema = new Schema<IUserDocument>(
     uid: { type: String, required: true, unique: true, index: true },
     email: { type: String, required: true, lowercase: true, index: true },
     phoneNumber: { type: String },
-    role: { type: String, enum: ["agent", "volunteer"], required: true },
+    role: { type: String, enum: ["admin", "agent", "volunteer"], required: true },
     fullName: { type: String, required: true },
+    status: { 
+      type: String, 
+      enum: ["active", "inactive"], 
+      default: "active" // ✅ new field
+    },
     agentProfile: { type: AgentProfileSchema, required: false },
     volunteerProfile: { type: VolunteerProfileSchema, required: false },
   },
