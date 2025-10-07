@@ -15,7 +15,11 @@ router.get("/me", authMiddleware, async (req: AuthRequest, res) => {
     if (!volunteer)
       return res.status(404).json({ message: "Volunteer not found" });
 
-    res.json({ volunteer });
+    // Remove sensitive data
+    const volunteerData = volunteer.toObject();
+    delete volunteerData.passwordHash;
+
+    res.json({ volunteer: volunteerData });
   } catch (err: any) {
     console.error("Get profile error:", err.message || err);
     res.status(500).json({ message: "Server error" });
