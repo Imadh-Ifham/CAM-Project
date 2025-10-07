@@ -8,62 +8,20 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-interface Campaign {
-  id: string;
-  volunteers: number;
-  targetVolunteers: number;
-}
+import { Campaign } from "@/src/types/campaign.type";
+import { mockTeamMembers } from "@/src/types/volunteer.type";
 
 interface CampaignTeamProps {
   campaign: Campaign;
 }
 
-// Mock team data
-const mockTeamMembers = [
-  {
-    id: "1",
-    name: "Dr. Saman Perera",
-    role: "Campaign Coordinator",
-    phone: "+94 77 123 4567",
-    email: "saman.perera@cam.lk",
-    status: "active",
-    joinDate: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: "Nimal Silva",
-    role: "Field Supervisor",
-    phone: "+94 71 234 5678",
-    email: "nimal.silva@cam.lk",
-    status: "active",
-    joinDate: "2024-01-16",
-  },
-  {
-    id: "3",
-    name: "Kamala Jayawardena",
-    role: "Medical Officer",
-    phone: "+94 76 345 6789",
-    email: "kamala.j@cam.lk",
-    status: "active",
-    joinDate: "2024-01-18",
-  },
-  {
-    id: "4",
-    name: "Ruwan Fernando",
-    role: "Logistics Coordinator",
-    phone: "+94 78 456 7890",
-    email: "ruwan.fernando@cam.lk",
-    status: "inactive",
-    joinDate: "2024-01-20",
-  },
-];
-
 export default function CampaignTeam({ campaign }: CampaignTeamProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
 
-  const filteredMembers = mockTeamMembers.filter(
+  const volunteers = mockTeamMembers.volunteers;
+
+  const filteredMembers = volunteers.filter(
     (member) =>
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.role.toLowerCase().includes(searchQuery.toLowerCase())
@@ -115,14 +73,14 @@ export default function CampaignTeam({ campaign }: CampaignTeamProps) {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: "#00ff94" }]}>
-              {mockTeamMembers.filter((m) => m.status === "active").length}
+              {volunteers.filter((m) => m.status === "active").length}
             </Text>
             <Text style={styles.statLabel}>Active Members</Text>
           </View>
 
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: "#60a5fa" }]}>
-              {mockTeamMembers.length}
+              {volunteers.length}
             </Text>
             <Text style={styles.statLabel}>Total Members</Text>
           </View>

@@ -224,3 +224,12 @@ export async function getCurrentUser() {
   await throwIfNotOk(res);
   return res.json();
 }
+
+export async function logout() {
+  try {
+    await (firebaseAuth as any).signOut(auth);
+  } catch (e) {
+    // best-effort sign out
+    console.warn("logout() failed", e);
+  }
+}
