@@ -914,27 +914,6 @@ export default function AgentsList() {
                           <Text style={{ color: "#fff", fontWeight: "700" }}>
                             {a.name}
                           </Text>
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              gap: 6,
-                              marginTop: 4,
-                            }}
-                          >
-                            <View
-                              style={{
-                                backgroundColor: "#374151",
-                                paddingHorizontal: 8,
-                                paddingVertical: 2,
-                                borderRadius: 6,
-                              }}
-                            >
-                              <Text style={{ color: "#d1d5db", fontSize: 12 }}>
-                                {a.role}
-                              </Text>
-                            </View>
-                          </View>
                           <Text
                             numberOfLines={1}
                             style={{
