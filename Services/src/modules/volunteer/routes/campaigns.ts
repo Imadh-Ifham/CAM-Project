@@ -21,6 +21,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    console.log('Getting campaign with ID:', id); // Debug log
+    
     const campaign = await Campaign.findById(id).lean();
     if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
 
@@ -30,8 +33,8 @@ router.get('/:id', async (req, res) => {
 
     res.json({ campaign, collected, distributed });
   } catch (err: any) {
-    console.error('Get campaign error', err.message || err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Get campaign error:', err.message, err.stack); // Better logging
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
@@ -46,18 +49,22 @@ router.post('/:id/collect', authenticateVolunteer, async (req: any, res) => {
     const campaign = await Campaign.findById(id);
     if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
 
-  const assigned = (campaign.assignedVolunteers as IAssignedVolunteer[]).some((a) => a.volunteerId.toString() === volunteer._id.toString());
+    const assigned = (campaign.assignedVolunteers as IAssignedVolunteer[]).some((a) => a.volunteerId.toString() === volunteer._id.toString());
     if (!assigned) return res.status(403).json({ message: 'Not assigned to this campaign' });
 
-    const log = new CollectionLog({ campaignId: id, volunteerId: volunteer._id, items, note });
-    await log.save();
+    // Add default type to items if not provided
+    const itemsWithType = items.map((item: any) => ({
+      ...item,
+      type: item.type || 'general'
+    }));
 
-    // TODO: Update campaign.collectedTotals (can be computed by service)
+    const log = new CollectionLog({ campaignId: id, volunteerId: volunteer._id, items: itemsWithType, note });
+    await log.save();
 
     res.status(201).json({ log });
   } catch (err: any) {
-    console.error('Collect error', err.message || err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Collect error FULL:', err.message, err.stack);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
@@ -107,6 +114,50 @@ router.get('/:id/history', authenticateVolunteer, async (req: any, res) => {
   } catch (err: any) {
     console.error('History error', err.message || err);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /api/campaigns/:id/assign - assign volunteer to campaign (for testing)
+router.post('/:id/assign', authenticateVolunteer, async (req: any, res) => {
+  try {
+    const { id } = req.params;
+    const volunteer = req.volunteer;
+
+    console.log('=== ASSIGN DEBUG ===');
+    console.log('Campaign ID:', id);
+    console.log('Volunteer ID:', volunteer._id);
+    console.log('===================');
+
+    const campaign = await Campaign.findById(id);
+    if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
+
+    console.log('Campaign found');
+    console.log('Current assignedVolunteers:', campaign.assignedVolunteers);
+
+    // Check if already assigned
+    const alreadyAssigned = (campaign.assignedVolunteers as IAssignedVolunteer[]).some(
+      (a) => a.volunteerId.toString() === volunteer._id.toString()
+    );
+
+    if (alreadyAssigned) {
+      return res.status(400).json({ message: 'Already assigned to this campaign' });
+    }
+
+    // Use findByIdAndUpdate to avoid validation issues
+    const updatedCampaign = await Campaign.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          assignedVolunteers: { volunteerId: volunteer._id }
+        }
+      },
+      { new: true }
+    );
+
+    res.json({ message: 'Successfully assigned to campaign', campaign: updatedCampaign });
+  } catch (err: any) {
+    console.error('Assign error FULL:', err.message, err.stack);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
