@@ -13,25 +13,25 @@ export interface AuthRequest extends Request {
 
 export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const auth = req.headers.authorization;
-    if (!auth || typeof auth !== "string") return res.status(401).json({ message: "No Authorization header" });
-    const token = auth.startsWith("Bearer ") ? auth.slice(7) : auth;
-    let payload: any;
-    try {
-      payload = jwt.verify(token, JWT_SECRET);
-    } catch {
-      return res.status(401).json({ message: "Invalid or expired token" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "No token provided" });
     }
-    if (!payload?.id) return res.status(401).json({ message: "Invalid token payload" });
 
-    const volunteer = await Volunteer.findById(payload.id).select("-passwordHash").lean();
-    if (!volunteer) return res.status(401).json({ message: "Volunteer not found" });
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    // Match the payload from auth controller: { volunteerId, email }
+    const volunteer = await Volunteer.findById(decoded.volunteerId);
+    if (!volunteer) {
+      return res.status(401).json({ message: "Volunteer not found" });
+    }
 
     req.volunteer = volunteer;
     next();
   } catch (err: any) {
-    console.error("Auth error:", err);
-    return res.status(401).json({ message: "Unauthorized" });
+    console.error("Auth middleware error:", err.message);
+    return res.status(401).json({ message: "Invalid token" });
   }
 };
 
