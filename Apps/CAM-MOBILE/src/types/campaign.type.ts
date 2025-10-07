@@ -43,8 +43,6 @@ export interface CampaignFormData {
   // Location
   district: string;
   city: string;
-  address: string;
-  coordinates?: { latitude: number; longitude: number };
 
   // Resources
   resources: Array<{
@@ -106,7 +104,6 @@ export const initialCampaignFormData: CampaignFormData = {
   priority: "medium",
   district: "",
   city: "",
-  address: "",
   resources: [],
   estimatedBudget: 0,
   startDate: new Date(),
