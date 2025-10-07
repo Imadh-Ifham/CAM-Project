@@ -53,8 +53,9 @@ export default function AdminMenu() {
       icon: "people",
       color: "#00ff94",
       badge: "2,847",
-      onPress: () => console.log("User Management pressed"),
+      onPress: () => router.push("/adminDashboard/userManagement")
     },
+
     {
       title: "Campaign Management",
       subtitle: "Create and monitor relief campaigns",
