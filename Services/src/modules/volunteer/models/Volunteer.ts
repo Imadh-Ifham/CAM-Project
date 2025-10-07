@@ -17,7 +17,11 @@ const VolunteerSchema = new Schema<IVolunteer>({
   email: { type: String, required: true, unique: true, index: true },
   passwordHash: { type: String, required: true },
   phone: { type: String },
-  preferredType: { type: String, enum: ["collecting", "distributing"] },
+  preferredType: {
+    type: String,
+    enum: ["collection", "distribution", "both"],
+    default: "both",
+  },
   assignedCampaigns: [{ type: Schema.Types.ObjectId, ref: "Campaign" }],
   createdAt: { type: Date, default: () => new Date() },
 });
