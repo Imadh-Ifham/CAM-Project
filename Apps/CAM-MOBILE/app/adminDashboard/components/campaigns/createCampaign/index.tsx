@@ -17,73 +17,19 @@ import CampaignLocation from "./CampaignLocation";
 import CampaignResources from "./CampaignResources";
 import CampaignSchedule from "./CampaignSchedule";
 import CampaignTeam from "./CampaignTeam";
-
-export interface CampaignFormData {
-  // Basic Info
-  name: string;
-  description: string;
-  type:
-    | "disaster-relief"
-    | "medical-aid"
-    | "education"
-    | "food-distribution"
-    | "emergency-response";
-  priority: "low" | "medium" | "high" | "critical";
-
-  // Location
-  district: string;
-  city: string;
-  address: string;
-  coordinates?: { latitude: number; longitude: number };
-
-  // Resources
-  resources: Array<{
-    id: string;
-    name: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    estimatedCost: number;
-    description?: string;
-  }>;
-  estimatedBudget: number;
-
-  // Schedule
-  startDate: Date;
-  endDate: Date;
-  isUrgent: boolean;
-  expectedDuration: number; // in days
-
-  // Team
-  assignedAgents: string[];
-  requiredVolunteers: number;
-  skillsRequired: string[];
-}
-
-const initialFormData: CampaignFormData = {
-  name: "",
-  description: "",
-  type: "disaster-relief",
-  priority: "medium",
-  district: "",
-  city: "",
-  address: "",
-  resources: [],
-  estimatedBudget: 0,
-  startDate: new Date(),
-  endDate: new Date(),
-  isUrgent: false,
-  expectedDuration: 7,
-  assignedAgents: [],
-  requiredVolunteers: 10,
-  skillsRequired: [],
-};
+import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
+import { updateFormData } from "@/src/store/slices/campaignSlice";
+import { selectCampaignFormData } from "@/src/store/selectors";
+import { CampaignFormData } from "@/src/types/campaign.type";
 
 export default function CreateCampaign() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<CampaignFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const dispatch = useAppDispatch();
+
+  const campaignFormData = useAppSelector(selectCampaignFormData);
 
   const steps = [
     { title: "Basic Info", icon: "information-circle" as const },
@@ -93,8 +39,8 @@ export default function CreateCampaign() {
     { title: "Team", icon: "people" as const },
   ];
 
-  const updateFormData = (updates: Partial<CampaignFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+  const updateFormDataHandler = (updates: Partial<CampaignFormData>) => {
+    dispatch(updateFormData(updates));
   };
 
   const handleNext = () => {
@@ -113,7 +59,7 @@ export default function CreateCampaign() {
     setIsSubmitting(true);
     try {
       // TODO: Implement API call to create campaign
-      console.log("Creating campaign:", formData);
+      console.log("Creating campaign:", campaignFormData);
 
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -133,34 +79,37 @@ export default function CreateCampaign() {
       case 0:
         return (
           <CampaignBasicInfo
-            formData={formData}
-            updateFormData={updateFormData}
+            formData={campaignFormData}
+            updateFormData={updateFormDataHandler}
           />
         );
       case 1:
         return (
           <CampaignLocation
-            formData={formData}
-            updateFormData={updateFormData}
+            formData={campaignFormData}
+            updateFormData={updateFormDataHandler}
           />
         );
       case 2:
         return (
           <CampaignResources
-            formData={formData}
-            updateFormData={updateFormData}
+            formData={campaignFormData}
+            updateFormData={updateFormDataHandler}
           />
         );
       case 3:
         return (
           <CampaignSchedule
-            formData={formData}
-            updateFormData={updateFormData}
+            formData={campaignFormData}
+            updateFormData={updateFormDataHandler}
           />
         );
       case 4:
         return (
-          <CampaignTeam formData={formData} updateFormData={updateFormData} />
+          <CampaignTeam
+            formData={campaignFormData}
+            updateFormData={updateFormDataHandler}
+          />
         );
       default:
         return null;

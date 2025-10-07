@@ -17,20 +17,30 @@ export interface ICampaign extends Document {
   updatedAt?: Date;
 }
 
-const AssignedVolunteerSchema = new Schema<IAssignedVolunteer>({
-  volunteerId: { type: Schema.Types.ObjectId, ref: "Volunteer", required: true },
-  role: { type: String, enum: ["collecting", "distributing"] },
-}, { _id: false });
+const AssignedVolunteerSchema = new Schema<IAssignedVolunteer>(
+  {
+    volunteerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Volunteer",
+      required: true,
+    },
+    role: { type: String, enum: ["collecting", "distributing"] },
+  },
+  { _id: false }
+);
 
-const CampaignSchema = new Schema<ICampaign>({
-  title: { type: String, required: true },
-  description: { type: String },
-  startDate: { type: Date },
-  endDate: { type: Date },
-  goals: { type: Schema.Types.Mixed },
-  assignedVolunteers: { type: [AssignedVolunteerSchema], default: [] },
-  status: { type: String, enum: ["active", "completed"], default: "active" },
-}, { timestamps: true });
+const DemoCampaignSchema = new Schema<ICampaign>(
+  {
+    title: { type: String, required: true },
+    description: { type: String },
+    startDate: { type: Date },
+    endDate: { type: Date },
+    goals: { type: Schema.Types.Mixed },
+    assignedVolunteers: { type: [AssignedVolunteerSchema], default: [] },
+    status: { type: String, enum: ["active", "completed"], default: "active" },
+  },
+  { timestamps: true }
+);
 
-export default (mongoose.models.Campaign as mongoose.Model<ICampaign>) ||
-  mongoose.model<ICampaign>("Campaign", CampaignSchema);
+export default (mongoose.models.DemoCampaign as mongoose.Model<ICampaign>) ||
+  mongoose.model<ICampaign>("DemoCampaign", DemoCampaignSchema);

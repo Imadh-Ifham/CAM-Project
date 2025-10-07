@@ -1,14 +1,22 @@
-import { Campaign, mockCampaignDetail } from "@/src/types/campaign.type";
+import {
+  Campaign,
+  CampaignFormData,
+  initialCampaignFormData,
+  mockCampaignDetail,
+} from "@/src/types/campaign.type";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { RootState } from "../store";
 
 interface CampaignState {
   campaignList: Campaign[] | null;
   selectedCampaign: Campaign;
+  campaignFormData: CampaignFormData;
 }
 
 const initialState: CampaignState = {
   campaignList: null,
   selectedCampaign: mockCampaignDetail,
+  campaignFormData: initialCampaignFormData,
 };
 
 const campaignSlice = createSlice({
@@ -21,15 +29,16 @@ const campaignSlice = createSlice({
     clearSelectedCampaign: (state) => {
       state.selectedCampaign = mockCampaignDetail;
     },
+    updateFormData: (
+      state,
+      action: PayloadAction<Partial<CampaignFormData>>
+    ) => {
+      state.campaignFormData = { ...state.campaignFormData, ...action.payload };
+    },
   },
 });
 
-export const { setSelectedCampaign, clearSelectedCampaign } =
+export const { setSelectedCampaign, clearSelectedCampaign, updateFormData } =
   campaignSlice.actions;
 
-// Selectors
-export const selectCampaignList = (state: { campaign: CampaignState }) =>
-  state.campaign.campaignList;
-export const selectSelectedCampaign = (state: { campaign: CampaignState }) =>
-  state.campaign.selectedCampaign;
 export default campaignSlice.reducer;

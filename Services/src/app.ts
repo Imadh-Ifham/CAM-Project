@@ -8,6 +8,7 @@ import volunteerAuthRoutes from "./modules/auth/volunteer/routes";
 import meRoute from "./modules/auth/routes/me";
 import { InventoryService } from "./modules/Inventory/services/inventoryService";
 import volunteerCampaignRoutes from "./modules/volunteer/routes/campaigns";
+import { campaignRoutes } from "./modules/campaign";
 
 const app: Application = express();
 
@@ -36,7 +37,8 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/inventory", inventoryRoutes);
-app.use("/api/campaigns", volunteerCampaignRoutes);
+app.use("/api/volunteer/campaigns", volunteerCampaignRoutes);
+app.use("/api/campaigns", campaignRoutes);
 app.use("/api/agent", agentAuthRoutes);
 app.use("/api/volunteer", volunteerAuthRoutes);
 app.use("/api/auth", meRoute);

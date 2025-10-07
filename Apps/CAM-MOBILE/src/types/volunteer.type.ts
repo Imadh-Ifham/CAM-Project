@@ -1,14 +1,6 @@
-export interface Volunteer {
-  id: string;
-  name: string;
-  role: string;
-  phone: string;
-  email: string;
-  status: "active" | "inactive";
-  joinDate: string;
-}
+import { Agent } from "./agent.type";
 
-export interface Agent {
+export interface Volunteer {
   id: string;
   name: string;
   role: string;

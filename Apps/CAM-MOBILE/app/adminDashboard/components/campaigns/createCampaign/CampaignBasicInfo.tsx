@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { CampaignFormData } from ".";
+import { CampaignFormData } from "@/src/types/campaign.type";
 
 interface CampaignBasicInfoProps {
   formData: CampaignFormData;

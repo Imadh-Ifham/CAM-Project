@@ -28,6 +28,46 @@ type Resources = {
   unit: string;
 };
 
+export interface CampaignFormData {
+  // Basic Info
+  name: string;
+  description: string;
+  type:
+    | "disaster-relief"
+    | "medical-aid"
+    | "education"
+    | "food-distribution"
+    | "emergency-response";
+  priority: "low" | "medium" | "high" | "critical";
+
+  // Location
+  district: string;
+  city: string;
+
+  // Resources
+  resources: Array<{
+    id: string;
+    name: string;
+    category: string;
+    quantity: number;
+    unit: string;
+    estimatedCost: number;
+    description?: string;
+  }>;
+  estimatedBudget: number;
+
+  // Schedule
+  startDate: Date;
+  endDate: Date;
+  isUrgent: boolean;
+  expectedDuration: number; // in days
+
+  // Team
+  assignedAgents: string[];
+  requiredVolunteers: number;
+  skillsRequired: string[];
+}
+
 export const mockCampaignDetail: Campaign = {
   campaignID: "1",
   name: "Flood Relief - Colombo",
@@ -55,4 +95,22 @@ export const mockCampaignDetail: Campaign = {
     { name: "Medical Kits", required: 50, available: 35, unit: "kits" },
     { name: "Tents", required: 100, available: 80, unit: "tents" },
   ],
+};
+
+export const initialCampaignFormData: CampaignFormData = {
+  name: "",
+  description: "",
+  type: "disaster-relief",
+  priority: "medium",
+  district: "",
+  city: "",
+  resources: [],
+  estimatedBudget: 0,
+  startDate: new Date(),
+  endDate: new Date(),
+  isUrgent: false,
+  expectedDuration: 7,
+  assignedAgents: [],
+  requiredVolunteers: 10,
+  skillsRequired: [],
 };
