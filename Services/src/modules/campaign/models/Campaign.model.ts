@@ -44,7 +44,7 @@ export interface ICampaign extends Document {
   expectedDuration: number; // in days
 
   // Team
-  assignedAgents: string[]; // Agent IDs
+  requestedAgent: string[]; // Agent ID
   requiredVolunteers: number;
   volunteers: number; // Current volunteer count
   skillsRequired: string[];
@@ -54,6 +54,7 @@ export interface ICampaign extends Document {
     name: string;
     phone: string;
     email: string;
+    isAssigned: boolean;
   };
 
   // Progress tracking
@@ -244,7 +245,7 @@ const CampaignSchema = new Schema<ICampaign>(
     },
 
     // Team
-    assignedAgents: [
+    requestedAgent: [
       {
         type: String,
         ref: "Agent", // Reference to Agent model
@@ -272,25 +273,26 @@ const CampaignSchema = new Schema<ICampaign>(
     coordinator: {
       name: {
         type: String,
-        required: [true, "Coordinator name is required"],
         trim: true,
         maxlength: [100, "Coordinator name cannot exceed 100 characters"],
       },
       phone: {
         type: String,
-        required: [true, "Coordinator phone is required"],
         trim: true,
         match: [/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"],
       },
       email: {
         type: String,
-        required: [true, "Coordinator email is required"],
         trim: true,
         lowercase: true,
         match: [
           /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
           "Invalid email format",
         ],
+      },
+      isAssigned: {
+        type: Boolean,
+        default: false,
       },
     },
 

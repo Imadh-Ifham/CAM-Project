@@ -63,7 +63,6 @@ export interface CampaignFormData {
   expectedDuration: number; // in days
 
   // Team
-  assignedAgents: string[];
   requiredVolunteers: number;
   skillsRequired: string[];
 }
@@ -110,7 +109,6 @@ export const initialCampaignFormData: CampaignFormData = {
   endDate: new Date(),
   isUrgent: false,
   expectedDuration: 7,
-  assignedAgents: [],
   requiredVolunteers: 10,
   skillsRequired: [],
 };
