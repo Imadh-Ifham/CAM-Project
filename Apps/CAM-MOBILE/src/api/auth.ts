@@ -62,6 +62,9 @@ async function withAuthHeaders(init?: RequestInit): Promise<RequestInit> {
   };
 }
 
+// Export for use in other API modules
+export { withAuthHeaders, HTTPError };
+
 export async function registerAgent(payload: {
   fullName: string;
   email: string;
