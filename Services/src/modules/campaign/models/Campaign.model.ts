@@ -45,6 +45,8 @@ export interface ICampaign extends Document {
 
   // Team
   requestedAgent: string[]; // Agent ID
+  // After admin approval, the assigned coordinator's agent identifier
+  coordinatorAgentId?: string;
   requiredVolunteers: number;
   volunteers: number; // Current volunteer count
   skillsRequired: string[];
@@ -251,6 +253,11 @@ const CampaignSchema = new Schema<ICampaign>(
         ref: "Agent", // Reference to Agent model
       },
     ],
+    coordinatorAgentId: {
+      type: String,
+      required: false,
+      index: true,
+    },
     requiredVolunteers: {
       type: Number,
       required: [true, "Required volunteers count is required"],

@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../../src/styles/colors";
@@ -16,9 +17,14 @@ import { typography } from "../../../src/styles/typography";
 import { Card, CardContent, CardHeader } from "../../../src/components/ui/Card";
 import { Button } from "../../../src/components/ui/Button";
 import { useRouter } from "expo-router";
-import { useGetCampaignsQuery } from "../../../src/store/services/campaignsApi";
+import {
+  useGetCampaignsQuery,
+  useJoinCampaignMutation,
+  useGetMeQuery,
+} from "../../../src/store/services/campaignsApi";
 import { useAppSelector } from "../../../src/store/hooks";
 import { selectCurrentAgent } from "../../../src/store/selectors/agentSelectors";
+import { auth } from "../../../src/services/firebase";
 
 type UiCampaign = {
   id: string; // campaignID
@@ -33,6 +39,9 @@ type UiCampaign = {
   // Optional UI fields (not guaranteed by backend)
   agentRoleRequired?: "Collector" | "Distributor" | "Both";
   taskTypes?: string;
+  // Relations
+  requestedAgent?: string[];
+  coordinatorAgentId?: string;
 };
 
 const statusPill = (status: "Active" | "Paused" | "Completed") => {
@@ -64,10 +73,23 @@ const statusPill = (status: "Active" | "Paused" | "Completed") => {
 export default function AgentCampaigns() {
   const router = useRouter();
   const [filter, setFilter] = useState<
-    "all" | "active" | "paused" | "completed"
+    "all" | "active" | "paused" | "completed" | "pending" | "approved"
   >("all");
 
-  const agentId = useAppSelector(selectCurrentAgent)?.id; // not required for listing
+  const agentId = useAppSelector(selectCurrentAgent)?.id; // mock agent id in current slice
+  const currentUid = (auth as any)?.currentUser?.uid as string | undefined;
+  const [joinCampaign, { isLoading: isJoining }] = useJoinCampaignMutation();
+  // Resolve authoritative identity from server (contains agentId if mapped)
+  const { data: meData } = useGetMeQuery();
+  const effectiveAgentId = meData?.user?.agentId || meData?.agentId;
+  const effectiveUid = meData?.user?.uid || meData?.uid;
+  const identityCandidates = useMemo(
+    () =>
+      [effectiveAgentId, effectiveUid, agentId, currentUid]
+        .filter(Boolean)
+        .map(String),
+    [effectiveAgentId, effectiveUid, agentId, currentUid]
+  );
 
   // Query server lists by status; rely on backend to derive from token or accept agentId
   const {
@@ -114,6 +136,8 @@ export default function AgentCampaigns() {
               .reduce((a: number, r: any) => a + (r.quantity || 0), 0) || 0,
           funds: c.estimatedBudget || 0,
         },
+        requestedAgent: c.requestedAgent,
+        coordinatorAgentId: c.coordinatorAgentId,
       }));
 
     switch (filter) {
@@ -123,6 +147,33 @@ export default function AgentCampaigns() {
         return mapServer(pausedData);
       case "completed":
         return mapServer(completedData);
+      case "pending": {
+        const all = [
+          ...mapServer(activeData),
+          ...mapServer(pausedData),
+          ...mapServer(completedData),
+        ];
+        return all.filter((c) => {
+          const reqArr = c.requestedAgent || [];
+          const requested = identityCandidates.some((id) =>
+            reqArr.includes(id)
+          );
+          const approved = identityCandidates.includes(
+            c.coordinatorAgentId || ""
+          );
+          return requested && !approved;
+        });
+      }
+      case "approved": {
+        const all = [
+          ...mapServer(activeData),
+          ...mapServer(pausedData),
+          ...mapServer(completedData),
+        ];
+        return all.filter((c) =>
+          identityCandidates.includes(c.coordinatorAgentId || "")
+        );
+      }
       default:
         return [
           ...mapServer(activeData),
@@ -130,7 +181,16 @@ export default function AgentCampaigns() {
           ...mapServer(completedData),
         ];
     }
-  }, [filter, activeData, pausedData, completedData]);
+  }, [
+    filter,
+    activeData,
+    pausedData,
+    completedData,
+    agentId,
+    currentUid,
+    effectiveAgentId,
+    effectiveUid,
+  ]);
 
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<UiCampaign | null>(
@@ -143,6 +203,34 @@ export default function AgentCampaigns() {
   });
 
   const list = listFromServer;
+
+  // Counts for pending/approved filters (computed from raw server data)
+  const pendingCount = (activeData || [])
+    .concat(pausedData || [], completedData || [])
+    .filter((c: any) => {
+      const req: string[] = c?.requestedAgent || [];
+      const coord: string | undefined = c?.coordinatorAgentId;
+      const requested = identityCandidates.some((id) => req.includes(id));
+      const approved = identityCandidates.includes(coord || "");
+      return requested && !approved;
+    }).length;
+  const approvedCount = (activeData || [])
+    .concat(pausedData || [], completedData || [])
+    .filter((c: any) => {
+      const coord: string | undefined = c?.coordinatorAgentId;
+      return identityCandidates.includes(coord || "");
+    }).length;
+
+  // Helpers to reconcile server-stored IDs (agentId or Firebase UID)
+  const isCoordinator = (c: UiCampaign) => {
+    const id = c.coordinatorAgentId;
+    if (!id) return false;
+    return identityCandidates.includes(id);
+  };
+  const isRequestedByMe = (c: UiCampaign) => {
+    const arr = c.requestedAgent || [];
+    return identityCandidates.some((id) => arr.includes(id));
+  };
 
   const FilterPill: React.FC<{
     label: string;
@@ -309,6 +397,20 @@ export default function AgentCampaigns() {
                 active={filter === "active"}
                 tone="green"
                 onPress={() => setFilter("active")}
+              />
+              <FilterPill
+                label="Pending"
+                count={pendingCount}
+                active={filter === "pending"}
+                tone="blue"
+                onPress={() => setFilter("pending")}
+              />
+              <FilterPill
+                label="Approved"
+                count={approvedCount}
+                active={filter === "approved"}
+                tone="green"
+                onPress={() => setFilter("approved")}
               />
               <FilterPill
                 label="Paused"
@@ -495,8 +597,8 @@ export default function AgentCampaigns() {
                 </View>
               </View>
 
-              {/* CTA */}
-              {c.status === "active" && (
+              {/* CTA: Manage if current agent is coordinator */}
+              {c.status === "active" && isCoordinator(c) && (
                 <Button
                   style={{ width: "100%", backgroundColor: "#16a34a" }}
                   onPress={() =>
@@ -506,6 +608,35 @@ export default function AgentCampaigns() {
                   Manage Campaign
                 </Button>
               )}
+              {/* CTA: Request to Join if active, no coordinator and not already requested */}
+              {c.status === "active" &&
+                !c.coordinatorAgentId &&
+                (agentId || currentUid) &&
+                !isRequestedByMe(c) && (
+                  <Button
+                    style={{ width: "100%" }}
+                    disabled={isJoining}
+                    onPress={() => {
+                      setSelectedCampaign(c);
+                      setShowJoinModal(true);
+                    }}
+                  >
+                    Request to Join
+                  </Button>
+                )}
+              {/* CTA: Requested state */}
+              {c.status === "active" &&
+                !c.coordinatorAgentId &&
+                (agentId || currentUid) &&
+                isRequestedByMe(c) && (
+                  <Button
+                    variant="outline"
+                    style={{ width: "100%", backgroundColor: "#e5e7eb" }}
+                    textStyle={{ color: colors.muted }}
+                  >
+                    Pending
+                  </Button>
+                )}
               {c.status === "completed" && (
                 <Button
                   variant="outline"
@@ -600,15 +731,22 @@ export default function AgentCampaigns() {
                       </Text>
                       <Text style={{ fontSize: 13 }}>
                         <Text style={{ fontWeight: "700" }}>Duration: </Text>
-                        {selectedCampaign?.startDate} -{" "}
-                        {selectedCampaign?.endDate}
+                        {selectedCampaign
+                          ? `${new Date(
+                              selectedCampaign.startDate
+                            ).toLocaleDateString()} - ${new Date(
+                              selectedCampaign.endDate
+                            ).toLocaleDateString()}`
+                          : ""}
                       </Text>
-                      <Text style={{ fontSize: 13 }}>
-                        <Text style={{ fontWeight: "700" }}>
-                          Required Role:{" "}
+                      {!!selectedCampaign?.agentRoleRequired && (
+                        <Text style={{ fontSize: 13 }}>
+                          <Text style={{ fontWeight: "700" }}>
+                            Required Role:{" "}
+                          </Text>
+                          {selectedCampaign?.agentRoleRequired}
                         </Text>
-                        {selectedCampaign?.agentRoleRequired}
-                      </Text>
+                      )}
                       {!!selectedCampaign?.taskTypes && (
                         <Text style={{ fontSize: 13 }}>
                           <Text style={{ fontWeight: "700" }}>Tasks: </Text>
@@ -619,67 +757,70 @@ export default function AgentCampaigns() {
                   </View>
 
                   {/* Required Agent Type */}
-                  <View style={{ gap: 6 }}>
-                    <Text style={{ fontWeight: "600" }}>
-                      Required Agent Type
-                    </Text>
-                    <View
-                      style={{
-                        backgroundColor: colors.mutedBackground,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        padding: spacing.md,
-                      }}
-                    >
+                  {!!selectedCampaign?.agentRoleRequired && (
+                    <View style={{ gap: 6 }}>
+                      <Text style={{ fontWeight: "600" }}>
+                        Required Agent Type
+                      </Text>
                       <View
                         style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "space-between",
+                          backgroundColor: colors.mutedBackground,
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          padding: spacing.md,
                         }}
                       >
-                        <Text style={{ fontWeight: "700" }}>
-                          {selectedCampaign?.agentRoleRequired}
-                        </Text>
                         <View
                           style={{
-                            paddingHorizontal: 10,
-                            paddingVertical: 4,
-                            borderRadius: 999,
-                            borderWidth: 1,
-                            borderColor: "#2563eb",
-                            backgroundColor: "#eef2ff",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
                           }}
                         >
-                          <Text
+                          <Text style={{ fontWeight: "700" }}>
+                            {selectedCampaign?.agentRoleRequired}
+                          </Text>
+                          <View
                             style={{
-                              color: "#2563eb",
-                              fontSize: 12,
-                              fontWeight: "700",
+                              paddingHorizontal: 10,
+                              paddingVertical: 4,
+                              borderRadius: 999,
+                              borderWidth: 1,
+                              borderColor: "#2563eb",
+                              backgroundColor: "#eef2ff",
                             }}
                           >
-                            Required
-                          </Text>
+                            <Text
+                              style={{
+                                color: "#2563eb",
+                                fontSize: 12,
+                                fontWeight: "700",
+                              }}
+                            >
+                              Required
+                            </Text>
+                          </View>
                         </View>
+                        <Text
+                          style={{
+                            color: colors.muted,
+                            marginTop: 6,
+                            fontSize: 13,
+                          }}
+                        >
+                          {selectedCampaign?.agentRoleRequired ===
+                            "Collector" &&
+                            "You will be responsible for collecting donations and resources from the community."}
+                          {selectedCampaign?.agentRoleRequired ===
+                            "Distributor" &&
+                            "You will be responsible for distributing collected resources to target locations."}
+                          {selectedCampaign?.agentRoleRequired === "Both" &&
+                            "You will handle both collection of donations and distribution to target locations."}
+                        </Text>
                       </View>
-                      <Text
-                        style={{
-                          color: colors.muted,
-                          marginTop: 6,
-                          fontSize: 13,
-                        }}
-                      >
-                        {selectedCampaign?.agentRoleRequired === "Collector" &&
-                          "You will be responsible for collecting donations and resources from the community."}
-                        {selectedCampaign?.agentRoleRequired ===
-                          "Distributor" &&
-                          "You will be responsible for distributing collected resources to target locations."}
-                        {selectedCampaign?.agentRoleRequired === "Both" &&
-                          "You will handle both collection of donations and distribution to target locations."}
-                      </Text>
                     </View>
-                  </View>
+                  )}
 
                   {/* Experience */}
                   <View style={{ gap: 6 }}>
@@ -687,6 +828,7 @@ export default function AgentCampaigns() {
                       Relevant Experience
                     </Text>
                     <TextInput
+                      maxLength={1000}
                       value={joinRequest.experience}
                       onChangeText={(t) =>
                         setJoinRequest({ ...joinRequest, experience: t })
@@ -712,6 +854,7 @@ export default function AgentCampaigns() {
                       Why do you want to join?
                     </Text>
                     <TextInput
+                      maxLength={500}
                       value={joinRequest.motivation}
                       onChangeText={(t) =>
                         setJoinRequest({ ...joinRequest, motivation: t })
@@ -735,6 +878,7 @@ export default function AgentCampaigns() {
                   <View style={{ gap: 6 }}>
                     <Text style={{ fontWeight: "600" }}>Availability</Text>
                     <TextInput
+                      maxLength={100}
                       value={joinRequest.availability}
                       onChangeText={(t) =>
                         setJoinRequest({ ...joinRequest, availability: t })
@@ -771,16 +915,42 @@ export default function AgentCampaigns() {
                     Cancel
                   </Button>
                   <Button
-                    onPress={() => {
-                      // In real app, call API
-                      // Simple UX: close & reset
-                      setShowJoinModal(false);
-                      setSelectedCampaign(null);
-                      setJoinRequest({
-                        experience: "",
-                        motivation: "",
-                        availability: "",
-                      });
+                    disabled={!selectedCampaign || isJoining}
+                    loading={isJoining}
+                    onPress={async () => {
+                      if (!selectedCampaign) return;
+                      try {
+                        const payload = {
+                          campaignId: selectedCampaign.id,
+                          experience: joinRequest.experience
+                            .trim()
+                            .slice(0, 1000),
+                          motivation: joinRequest.motivation
+                            .trim()
+                            .slice(0, 500),
+                          availability: joinRequest.availability
+                            .trim()
+                            .slice(0, 100),
+                        };
+                        await joinCampaign(payload).unwrap();
+                        Alert.alert(
+                          "Request sent",
+                          "Your join request was submitted successfully."
+                        );
+                        setShowJoinModal(false);
+                        setSelectedCampaign(null);
+                        setJoinRequest({
+                          experience: "",
+                          motivation: "",
+                          availability: "",
+                        });
+                      } catch (e) {
+                        const msg =
+                          (e as any)?.data?.message ||
+                          (e as any)?.error ||
+                          "Failed to submit join request";
+                        Alert.alert("Request failed", String(msg));
+                      }
                     }}
                     style={{ height: 44, backgroundColor: colors.green }}
                   >

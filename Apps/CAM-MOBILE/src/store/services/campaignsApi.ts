@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { auth } from "@/src/services/firebase";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 
@@ -66,6 +67,24 @@ export type ServerCampaign = {
   expectedDuration: number;
   requiredVolunteers: number;
   volunteers?: number;
+  // Team relations
+  requestedAgent?: string[];
+  coordinatorAgentId?: string;
+};
+
+// Minimal shape for authenticated user response
+export type ServerMe = {
+  user?: {
+    uid?: string;
+    email?: string;
+    role?: string;
+    agentId?: string;
+  };
+  // Some backends may return fields at the root
+  uid?: string;
+  email?: string;
+  role?: string;
+  agentId?: string;
 };
 
 export type GetCampaignsParams = {
@@ -98,6 +117,17 @@ export const campaignsApi = createApi({
   reducerPath: "campaignsApi",
   baseQuery: fetchBaseQuery({
     baseUrl: BASE_URL,
+    prepareHeaders: async (headers) => {
+      const user: any = (auth as any).currentUser;
+      if (user) {
+        try {
+          const token = await user.getIdToken?.(true);
+          if (token) headers.set("Authorization", `Bearer ${token}`);
+        } catch {}
+      }
+      headers.set("Content-Type", "application/json");
+      return headers;
+    },
   }),
   tagTypes: ["Campaign"],
   endpoints: (builder) => ({
@@ -125,6 +155,15 @@ export const campaignsApi = createApi({
         return (resp?.data ?? []) as ServerCampaign[];
       },
     }),
+    getMe: builder.query<ServerMe, void>({
+      query: () => ({ url: "auth/me" }),
+      transformResponse: (resp: any) => {
+        // Accept a few common shapes
+        if (resp?.data?.user) return resp.data as ServerMe;
+        if (resp?.data) return resp.data as ServerMe;
+        return resp as ServerMe;
+      },
+    }),
     getCampaignById: builder.query<ServerCampaign, string>({
       query: (id) => ({ url: `campaigns/${id}` }),
       providesTags: (result, _err, id) => [{ type: "Campaign", id }],
@@ -133,7 +172,38 @@ export const campaignsApi = createApi({
         return resp as ServerCampaign;
       },
     }),
+    joinCampaign: builder.mutation<
+      {
+        request: any;
+        campaignRelation: {
+          requestedAgentCount: number;
+          hasCoordinator: boolean;
+          isRequested: boolean;
+        };
+      },
+      {
+        campaignId: string;
+        experience?: string;
+        motivation?: string;
+        availability?: string;
+      }
+    >({
+      query: ({ campaignId, ...body }) => ({
+        url: `campaigns/${campaignId}/join-requests`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_res, _err, arg) => [
+        { type: "Campaign" as const, id: arg.campaignId },
+        { type: "Campaign" as const, id: "LIST" },
+      ],
+    }),
   }),
 });
 
-export const { useGetCampaignsQuery, useGetCampaignByIdQuery } = campaignsApi;
+export const {
+  useGetCampaignsQuery,
+  useGetCampaignByIdQuery,
+  useJoinCampaignMutation,
+  useGetMeQuery,
+} = campaignsApi;
