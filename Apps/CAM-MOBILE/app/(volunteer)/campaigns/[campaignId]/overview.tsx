@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, Alert, Linking, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, Alert, Linking, ScrollView, ActivityIndicator } from "react-native";
 import { colors } from "../../../../src/styles/colors";
 import { spacing } from "../../../../src/styles/spacing";
 import { typography } from "../../../../src/styles/typography";
@@ -11,24 +11,29 @@ import {
 import { Button } from "../../../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
+import { getCampaign } from "../../../../src/api/campaign";
 
 export default function VolunteerCampaignOverview() {
   const params = useLocalSearchParams();
   const campaignId = String(params.campaignId || "1");
+  
+  const [campaign, setCampaign] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock campaign data (replace with API later)
-  const campaign = {
-    id: Number(campaignId),
-    name: "Winter Relief 2024",
-    description: "Emergency winter supplies for affected families",
-    location: "Downtown Community Center",
-    startDate: "2024-01-15",
-    endDate: "2024-02-28",
-    agent: "John Doe",
-    agentPhone: "+1234567890",
-    volunteers: 12,
-    volunteersNeeded: 20,
-    status: "Active" as const,
+  useEffect(() => {
+    loadCampaign();
+  }, [campaignId]);
+
+  const loadCampaign = async () => {
+    try {
+      setLoading(true);
+      const data = await getCampaign(campaignId);
+      setCampaign(data.campaign || data);
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Failed to load campaign");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const ProgressBar = ({
@@ -67,6 +72,22 @@ export default function VolunteerCampaignOverview() {
       Alert.alert("Unable to start call", e?.message || "");
     }
   };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={colors.cardForeground} />
+      </View>
+    );
+  }
+
+  if (!campaign) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: colors.muted }}>Campaign not found</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
