@@ -16,83 +16,32 @@ import { typography } from "../../../src/styles/typography";
 import { Card, CardContent, CardHeader } from "../../../src/components/ui/Card";
 import { Button } from "../../../src/components/ui/Button";
 import { useRouter } from "expo-router";
+import { useGetCampaignsQuery } from "../../../src/store/services/campaignsApi";
+import { useAppSelector } from "../../../src/store/hooks";
+import { selectCurrentAgent } from "../../../src/store/selectors/agentSelectors";
 
-type Campaign = {
-  id: number;
+type UiCampaign = {
+  id: string; // campaignID
   name: string;
   description: string;
   location: string;
   startDate: string;
   endDate: string;
-  status: "Active" | "Available" | "Completed";
-  agentRoleRequired: "Collector" | "Distributor" | "Both";
+  status: "active" | "paused" | "completed" | "draft" | "cancelled";
   volunteersNeeded: number;
   resourceNeeds: { food: number; clothes: number; funds: number };
+  // Optional UI fields (not guaranteed by backend)
+  agentRoleRequired?: "Collector" | "Distributor" | "Both";
   taskTypes?: string;
 };
 
-const CAMPAIGNS: Campaign[] = [
-  {
-    id: 1,
-    name: "Winter Relief 2024",
-    status: "Active",
-    description: "Emergency winter supplies for affected families",
-    location: "Downtown Community Center",
-    startDate: "2024-01-15",
-    endDate: "2024-02-28",
-    agentRoleRequired: "Both",
-    volunteersNeeded: 20,
-    resourceNeeds: { food: 500, clothes: 200, funds: 10000 },
-    taskTypes: "Collection, packaging, delivery",
-  },
-  {
-    id: 2,
-    name: "Flood Response",
-    status: "Available",
-    description: "Flood relief operations in affected areas",
-    location: "Regional Emergency Center",
-    startDate: "2024-02-01",
-    endDate: "2024-03-15",
-    agentRoleRequired: "Distributor",
-    volunteersNeeded: 15,
-    resourceNeeds: { food: 300, clothes: 150, funds: 8000 },
-    taskTypes: "Emergency distribution, logistics",
-  },
-  {
-    id: 3,
-    name: "Community Health Drive",
-    status: "Available",
-    description: "Medical supplies and health awareness campaign",
-    location: "City Medical Center",
-    startDate: "2024-03-01",
-    endDate: "2024-04-15",
-    agentRoleRequired: "Collector",
-    volunteersNeeded: 12,
-    resourceNeeds: { food: 0, clothes: 50, funds: 5000 },
-    taskTypes: "Medical supply collection, community outreach",
-  },
-  {
-    id: 4,
-    name: "Emergency Shelter Setup",
-    status: "Completed",
-    description: "Temporary shelter establishment for displaced families",
-    location: "West Side Community",
-    startDate: "2023-12-15",
-    endDate: "2024-01-15",
-    agentRoleRequired: "Both",
-    volunteersNeeded: 30,
-    resourceNeeds: { food: 800, clothes: 400, funds: 20000 },
-    taskTypes: "Setup, maintenance, distribution",
-  },
-];
-
-const statusPill = (status: Campaign["status"]) => {
+const statusPill = (status: "Active" | "Paused" | "Completed") => {
   const map: Record<
-    Campaign["status"],
+    "Active" | "Paused" | "Completed",
     { bg: string; fg: string; label: string }
   > = {
     Active: { bg: "#e6f7ef", fg: "#065f46", label: "Active" },
-    Available: { bg: "#e8f0ff", fg: "#1d4ed8", label: "Available" },
+    Paused: { bg: "#fff7ed", fg: "#b45309", label: "Paused" },
     Completed: { bg: "#eef2f4", fg: "#6b7280", label: "Completed" },
   };
   const s = map[status];
@@ -115,11 +64,76 @@ const statusPill = (status: Campaign["status"]) => {
 export default function AgentCampaigns() {
   const router = useRouter();
   const [filter, setFilter] = useState<
-    "all" | "available" | "active" | "completed"
+    "all" | "active" | "paused" | "completed"
   >("all");
 
+  const agentId = useAppSelector(selectCurrentAgent)?.id; // not required for listing
+
+  // Query server lists by status; rely on backend to derive from token or accept agentId
+  const {
+    data: activeData,
+    isFetching: isFetchingActive,
+    error: activeError,
+  } = useGetCampaignsQuery({ status: "active" });
+  const {
+    data: pausedData,
+    isFetching: isFetchingPaused,
+    error: pausedError,
+  } = useGetCampaignsQuery({ status: "paused" });
+  const {
+    data: completedData,
+    isFetching: isFetchingCompleted,
+    error: completedError,
+  } = useGetCampaignsQuery({ status: "completed" });
+
+  const listFromServer: UiCampaign[] = useMemo(() => {
+    const mapServer = (arr: any[] | undefined): UiCampaign[] =>
+      (arr || []).map((c) => ({
+        id: c.campaignID,
+        name: c.name,
+        description: c.description,
+        location: c.location ?? `${c.city}, ${c.district}`,
+        startDate:
+          typeof c.startDate === "string"
+            ? c.startDate
+            : new Date(c.startDate).toISOString(),
+        endDate:
+          typeof c.endDate === "string"
+            ? c.endDate
+            : new Date(c.endDate).toISOString(),
+        status: c.status,
+        volunteersNeeded: c.requiredVolunteers,
+        resourceNeeds: {
+          food:
+            c.resources
+              ?.filter?.((r: any) => r.category === "food")
+              .reduce((a: number, r: any) => a + (r.quantity || 0), 0) || 0,
+          clothes:
+            c.resources
+              ?.filter?.((r: any) => r.category === "clothing")
+              .reduce((a: number, r: any) => a + (r.quantity || 0), 0) || 0,
+          funds: c.estimatedBudget || 0,
+        },
+      }));
+
+    switch (filter) {
+      case "active":
+        return mapServer(activeData);
+      case "paused":
+        return mapServer(pausedData);
+      case "completed":
+        return mapServer(completedData);
+      default:
+        return [
+          ...mapServer(activeData),
+          ...mapServer(pausedData),
+          ...mapServer(completedData),
+        ];
+    }
+  }, [filter, activeData, pausedData, completedData]);
+
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
+  const [selectedCampaign, setSelectedCampaign] = useState<UiCampaign | null>(
     null
   );
   const [joinRequest, setJoinRequest] = useState({
@@ -128,18 +142,7 @@ export default function AgentCampaigns() {
     availability: "",
   });
 
-  const list = useMemo(() => {
-    switch (filter) {
-      case "active":
-        return CAMPAIGNS.filter((c) => c.status === "Active");
-      case "available":
-        return CAMPAIGNS.filter((c) => c.status === "Available");
-      case "completed":
-        return CAMPAIGNS.filter((c) => c.status === "Completed");
-      default:
-        return CAMPAIGNS;
-    }
-  }, [filter]);
+  const list = listFromServer;
 
   const FilterPill: React.FC<{
     label: string;
@@ -200,6 +203,54 @@ export default function AgentCampaigns() {
           paddingBottom: spacing.xl,
         }}
       >
+        {/* Loading or error banners */}
+        {(isFetchingActive || isFetchingPaused || isFetchingCompleted) && (
+          <View
+            style={{
+              padding: spacing.md,
+              borderRadius: 12,
+              backgroundColor: colors.mutedBackground,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text style={{ color: colors.muted }}>Loading campaigns…</Text>
+          </View>
+        )}
+        {(activeError || pausedError || completedError) && (
+          <View
+            style={{
+              padding: spacing.md,
+              borderRadius: 12,
+              backgroundColor: "#fee2e2",
+              borderWidth: 1,
+              borderColor: "#ef4444",
+            }}
+          >
+            <Text style={{ color: "#991b1b", fontWeight: "700" }}>
+              Failed to load campaigns
+            </Text>
+            {(() => {
+              const err = (activeError || pausedError || completedError) as any;
+              if (err?.status) {
+                const detail =
+                  typeof err?.data === "string"
+                    ? err.data
+                    : JSON.stringify(err?.data);
+                return (
+                  <Text style={{ color: "#991b1b" }}>
+                    {`Status ${err.status}${detail ? `: ${detail}` : ""}`}
+                  </Text>
+                );
+              }
+              return (
+                <Text style={{ color: "#991b1b" }}>
+                  {JSON.stringify(err) || "Unknown error"}
+                </Text>
+              );
+            })()}
+          </View>
+        )}
         {/* Header */}
         <View
           style={{
@@ -220,7 +271,10 @@ export default function AgentCampaigns() {
             }}
           >
             <Text style={{ color: colors.muted, fontSize: 12 }}>
-              {CAMPAIGNS.length} Total
+              {(activeData?.length || 0) +
+                (pausedData?.length || 0) +
+                (completedData?.length || 0)}{" "}
+              Total
             </Text>
           </View>
         </View>
@@ -240,28 +294,32 @@ export default function AgentCampaigns() {
             >
               <FilterPill
                 label="All"
-                count={CAMPAIGNS.length}
+                count={
+                  (activeData?.length || 0) +
+                  (pausedData?.length || 0) +
+                  (completedData?.length || 0)
+                }
                 active={filter === "all"}
                 tone="slate"
                 onPress={() => setFilter("all")}
               />
               <FilterPill
-                label="Available"
-                count={CAMPAIGNS.filter((c) => c.status === "Available").length}
-                active={filter === "available"}
-                tone="blue"
-                onPress={() => setFilter("available")}
-              />
-              <FilterPill
                 label="Active"
-                count={CAMPAIGNS.filter((c) => c.status === "Active").length}
+                count={activeData?.length || 0}
                 active={filter === "active"}
                 tone="green"
                 onPress={() => setFilter("active")}
               />
               <FilterPill
+                label="Paused"
+                count={pausedData?.length || 0}
+                active={filter === "paused"}
+                tone="blue"
+                onPress={() => setFilter("paused")}
+              />
+              <FilterPill
                 label="Completed"
-                count={CAMPAIGNS.filter((c) => c.status === "Completed").length}
+                count={completedData?.length || 0}
                 active={filter === "completed"}
                 tone="gray"
                 onPress={() => setFilter("completed")}
@@ -271,6 +329,30 @@ export default function AgentCampaigns() {
         </Card>
 
         {/* Campaign cards */}
+        {list.length === 0 &&
+        !isFetchingActive &&
+        !isFetchingPaused &&
+        !isFetchingCompleted ? (
+          <View
+            style={{
+              padding: spacing.lg,
+              borderRadius: 12,
+              alignItems: "center",
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.card,
+            }}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={22}
+              color={colors.muted}
+            />
+            <Text style={{ color: colors.muted, marginTop: 8 }}>
+              No campaigns found for the selected filter
+            </Text>
+          </View>
+        ) : null}
         {list.map((c) => (
           <Card key={c.id} style={{ borderRadius: 16 }}>
             <CardContent>
@@ -286,7 +368,13 @@ export default function AgentCampaigns() {
                 <Text style={{ fontWeight: "700", fontSize: 16 }}>
                   {c.name}
                 </Text>
-                {statusPill(c.status)}
+                {statusPill(
+                  c.status === "active"
+                    ? "Active"
+                    : c.status === "paused"
+                    ? "Paused"
+                    : "Completed"
+                )}
               </View>
               <Text style={{ color: colors.muted, marginBottom: spacing.md }}>
                 {c.description}
@@ -313,18 +401,9 @@ export default function AgentCampaigns() {
                     color={colors.muted}
                   />
                   <Text>
-                    {c.startDate} - {c.endDate}
+                    {new Date(c.startDate).toLocaleDateString()} -{" "}
+                    {new Date(c.endDate).toLocaleDateString()}
                   </Text>
-                </View>
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-                >
-                  <Ionicons
-                    name="person-outline"
-                    size={16}
-                    color={colors.muted}
-                  />
-                  <Text>Agent Role: {c.agentRoleRequired}</Text>
                 </View>
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
@@ -417,7 +496,7 @@ export default function AgentCampaigns() {
               </View>
 
               {/* CTA */}
-              {c.status === "Active" && (
+              {c.status === "active" && (
                 <Button
                   style={{ width: "100%", backgroundColor: "#16a34a" }}
                   onPress={() =>
@@ -427,18 +506,7 @@ export default function AgentCampaigns() {
                   Manage Campaign
                 </Button>
               )}
-              {c.status === "Available" && (
-                <Button
-                  style={{ width: "100%", backgroundColor: colors.blue }}
-                  onPress={() => {
-                    setSelectedCampaign(c);
-                    setShowJoinModal(true);
-                  }}
-                >
-                  Request to Join
-                </Button>
-              )}
-              {c.status === "Completed" && (
+              {c.status === "completed" && (
                 <Button
                   variant="outline"
                   style={{ width: "100%", backgroundColor: "#e5e7eb" }}
