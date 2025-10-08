@@ -9,6 +9,7 @@ class CampaignController {
    */
   async createCampaign(req: Request, res: Response): Promise<void> {
     try {
+      console.log("Received body:", req.body);
       const campaignData = req.body as CampaignFormData;
 
       // Parse dates
