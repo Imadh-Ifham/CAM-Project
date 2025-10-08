@@ -9,51 +9,12 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { CampaignFormData } from ".";
+import { CampaignFormData } from "@/src/types/campaign.type";
 
 interface CampaignTeamProps {
   formData: CampaignFormData;
   updateFormData: (updates: Partial<CampaignFormData>) => void;
 }
-
-// Mock data for agents (in real app, this would come from API)
-const availableAgents = [
-  {
-    id: "1",
-    name: "John Silva",
-    district: "Colombo",
-    experience: "5 years",
-    speciality: "Disaster Relief",
-  },
-  {
-    id: "2",
-    name: "Sarah Fernando",
-    district: "Kandy",
-    experience: "3 years",
-    speciality: "Medical Aid",
-  },
-  {
-    id: "3",
-    name: "Michael Perera",
-    district: "Galle",
-    experience: "7 years",
-    speciality: "Food Distribution",
-  },
-  {
-    id: "4",
-    name: "Priya Rajapaksa",
-    district: "Jaffna",
-    experience: "4 years",
-    speciality: "Emergency Response",
-  },
-  {
-    id: "5",
-    name: "David Kumar",
-    district: "Colombo",
-    experience: "6 years",
-    speciality: "Education",
-  },
-];
 
 const commonSkills = [
   "First Aid",
@@ -77,32 +38,7 @@ export default function CampaignTeam({
   formData,
   updateFormData,
 }: CampaignTeamProps) {
-  const [showAgentSelection, setShowAgentSelection] = useState(false);
-  const [searchAgent, setSearchAgent] = useState("");
   const [newSkill, setNewSkill] = useState("");
-
-  const filteredAgents = availableAgents.filter(
-    (agent) =>
-      agent.name.toLowerCase().includes(searchAgent.toLowerCase()) ||
-      agent.district.toLowerCase().includes(searchAgent.toLowerCase()) ||
-      agent.speciality.toLowerCase().includes(searchAgent.toLowerCase())
-  );
-
-  const assignAgent = (agentId: string) => {
-    if (!formData.assignedAgents.includes(agentId)) {
-      updateFormData({
-        assignedAgents: [...formData.assignedAgents, agentId],
-      });
-    }
-    setShowAgentSelection(false);
-    setSearchAgent("");
-  };
-
-  const removeAgent = (agentId: string) => {
-    updateFormData({
-      assignedAgents: formData.assignedAgents.filter((id) => id !== agentId),
-    });
-  };
 
   const addSkill = (skill: string) => {
     if (skill && !formData.skillsRequired.includes(skill)) {
@@ -117,12 +53,6 @@ export default function CampaignTeam({
     updateFormData({
       skillsRequired: formData.skillsRequired.filter((s) => s !== skill),
     });
-  };
-
-  const getAssignedAgentDetails = () => {
-    return availableAgents.filter((agent) =>
-      formData.assignedAgents.includes(agent.id)
-    );
   };
 
   return (
@@ -244,120 +174,10 @@ export default function CampaignTeam({
         )}
       </View>
 
-      {/* Agent Assignment */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Assigned Agents</Text>
-          <TouchableOpacity
-            style={styles.assignButton}
-            onPress={() => setShowAgentSelection(!showAgentSelection)}
-          >
-            <Ionicons
-              name={showAgentSelection ? "close" : "person-add"}
-              size={18}
-              color="#00ff94"
-            />
-            <Text style={styles.assignButtonText}>
-              {showAgentSelection ? "Cancel" : "Assign Agent"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Agent Selection */}
-        {showAgentSelection && (
-          <View style={styles.agentSelection}>
-            <TextInput
-              style={styles.searchInput}
-              value={searchAgent}
-              onChangeText={setSearchAgent}
-              placeholder="Search agents by name, district, or speciality..."
-              placeholderTextColor="#666"
-            />
-
-            <ScrollView style={styles.agentsList} nestedScrollEnabled>
-              {filteredAgents.map((agent) => (
-                <TouchableOpacity
-                  key={agent.id}
-                  style={[
-                    styles.agentCard,
-                    formData.assignedAgents.includes(agent.id) &&
-                      styles.agentCardAssigned,
-                  ]}
-                  onPress={() => assignAgent(agent.id)}
-                  disabled={formData.assignedAgents.includes(agent.id)}
-                >
-                  <View style={styles.agentAvatar}>
-                    <Ionicons name="person" size={20} color="#00ff94" />
-                  </View>
-
-                  <View style={styles.agentInfo}>
-                    <Text style={styles.agentName}>{agent.name}</Text>
-                    <Text style={styles.agentDetails}>
-                      {agent.district} • {agent.experience} • {agent.speciality}
-                    </Text>
-                  </View>
-
-                  {formData.assignedAgents.includes(agent.id) && (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={20}
-                      color="#00ff94"
-                    />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Assigned Agents List */}
-        <View style={styles.assignedAgentsList}>
-          {getAssignedAgentDetails().length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={48} color="#666" />
-              <Text style={styles.emptyStateText}>No agents assigned yet</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Assign agents to lead this campaign
-              </Text>
-            </View>
-          ) : (
-            getAssignedAgentDetails().map((agent) => (
-              <View key={agent.id} style={styles.assignedAgentCard}>
-                <View style={styles.agentAvatar}>
-                  <Ionicons name="person" size={18} color="#00ff94" />
-                </View>
-
-                <View style={styles.agentInfo}>
-                  <Text style={styles.agentName}>{agent.name}</Text>
-                  <Text style={styles.agentDetails}>
-                    {agent.district} • {agent.speciality}
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.removeAgentButton}
-                  onPress={() => removeAgent(agent.id)}
-                >
-                  <Ionicons name="close" size={16} color="#ff4444" />
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-        </View>
-      </View>
-
       {/* Team Summary */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Team Summary</Text>
         <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <Ionicons name="people" size={18} color="#00ff94" />
-            <Text style={styles.summaryLabel}>Assigned Agents:</Text>
-            <Text style={styles.summaryValue}>
-              {formData.assignedAgents.length}
-            </Text>
-          </View>
-
           <View style={styles.summaryRow}>
             <Ionicons name="person-add" size={18} color="#4ade80" />
             <Text style={styles.summaryLabel}>Required Volunteers:</Text>
@@ -378,8 +198,7 @@ export default function CampaignTeam({
             <Ionicons name="calculator" size={18} color="#f472b6" />
             <Text style={styles.summaryLabel}>Total Team Size:</Text>
             <Text style={styles.summaryValue}>
-              {formData.assignedAgents.length + formData.requiredVolunteers}{" "}
-              people
+              {formData.requiredVolunteers} people
             </Text>
           </View>
         </View>

@@ -1,15 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-
-// Basic validation functions
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-const isValidPhoneNumber = (phone: string): boolean => {
-  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-  return phoneRegex.test(phone.replace(/\s+/g, ""));
-};
+import { CampaignFormData } from "../../../types/campaign.type";
 
 const isValidDate = (dateString: string): boolean => {
   const date = new Date(dateString);
@@ -33,9 +23,8 @@ export const validateCreateCampaign = (
     startDate,
     endDate,
     requiredVolunteers,
-    coordinator,
     resources = [],
-  } = req.body;
+  }: CampaignFormData = req.body;
 
   // Basic Info Validation
   if (!name || typeof name !== "string" || name.trim().length < 3) {
@@ -103,27 +92,6 @@ export const validateCreateCampaign = (
     requiredVolunteers < 1
   ) {
     errors.push("At least 1 volunteer is required");
-  }
-
-  // Coordinator Validation
-  if (!coordinator || typeof coordinator !== "object") {
-    errors.push("Coordinator information is required");
-  } else {
-    if (
-      !coordinator.name ||
-      typeof coordinator.name !== "string" ||
-      coordinator.name.trim().length === 0
-    ) {
-      errors.push("Coordinator name is required");
-    }
-
-    if (!coordinator.email || !isValidEmail(coordinator.email)) {
-      errors.push("Valid coordinator email is required");
-    }
-
-    if (!coordinator.phone || !isValidPhoneNumber(coordinator.phone)) {
-      errors.push("Valid coordinator phone number is required");
-    }
   }
 
   // Resources Validation

@@ -1,42 +1,6 @@
 import { Request, Response } from "express";
 import CampaignService from "../services/campaign.service";
-
-// Interface for create campaign request body
-interface CreateCampaignRequestBody {
-  name: string;
-  description: string;
-  type:
-    | "disaster-relief"
-    | "medical-aid"
-    | "education"
-    | "food-distribution"
-    | "emergency-response";
-  priority: "low" | "medium" | "high" | "critical";
-  district: string;
-  city: string;
-  resources: Array<{
-    id: string;
-    name: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    estimatedCost: number;
-    description?: string;
-  }>;
-  estimatedBudget: number;
-  startDate: string; // ISO date string
-  endDate: string; // ISO date string
-  isUrgent: boolean;
-  expectedDuration: number;
-  assignedAgents: string[];
-  requiredVolunteers: number;
-  skillsRequired: string[];
-  coordinator: {
-    name: string;
-    phone: string;
-    email: string;
-  };
-}
+import { CampaignFormData } from "../../../types/campaign.type";
 
 class CampaignController {
   /**
@@ -45,7 +9,8 @@ class CampaignController {
    */
   async createCampaign(req: Request, res: Response): Promise<void> {
     try {
-      const campaignData = req.body as CreateCampaignRequestBody;
+      console.log("Received body:", req.body);
+      const campaignData = req.body as CampaignFormData;
 
       // Parse dates
       const startDate = new Date(campaignData.startDate);

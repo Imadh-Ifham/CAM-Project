@@ -64,6 +64,13 @@ export default function AdminMenu() {
       onPress: () => router.push("/adminDashboard/components/campaigns"),
     },
     {
+      title: "Agent Management",
+      subtitle: "Acceptance and approving of agent to campaigns",
+      icon: "person-circle",
+      color: "#22d3ee",
+      onPress: () => router.push("/adminDashboard/components/agents" as any),
+    },
+    {
       title: "Inventory Management",
       subtitle: "Track supplies and donations",
       icon: "cube",

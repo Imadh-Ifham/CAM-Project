@@ -18,18 +18,26 @@ import CampaignResources from "./CampaignResources";
 import CampaignSchedule from "./CampaignSchedule";
 import CampaignTeam from "./CampaignTeam";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
-import { updateFormData } from "@/src/store/slices/campaignSlice";
+import {
+  updateFormData,
+  clearErrors,
+  setSelectedCampaign,
+} from "@/src/store/slices/campaignSlice";
 import { selectCampaignFormData } from "@/src/store/selectors";
+import { createCampaignThunk } from "@/src/store/thunks/campaignThunk";
 import { CampaignFormData } from "@/src/types/campaign.type";
+import { auth } from "@/src/services/firebase";
 
 export default function CreateCampaign() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const dispatch = useAppDispatch();
 
   const campaignFormData = useAppSelector(selectCampaignFormData);
+  const { createLoading, createError } = useAppSelector(
+    (state) => state.campaign
+  );
 
   const steps = [
     { title: "Basic Info", icon: "information-circle" as const },
@@ -56,21 +64,50 @@ export default function CreateCampaign() {
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
+    // Clear any previous errors
+    dispatch(clearErrors());
+
     try {
-      // TODO: Implement API call to create campaign
       console.log("Creating campaign:", campaignFormData);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Dispatch the createCampaignThunk
+      const result = await dispatch(
+        createCampaignThunk({
+          campaignData: campaignFormData,
+        })
+      ).unwrap();
+
+      console.log("Campaign created successfully:", result);
+
+      // Set the created campaign as selected in Redux
+      dispatch(setSelectedCampaign(result));
 
       Alert.alert("Success!", "Campaign created successfully", [
-        { text: "OK", onPress: () => router.back() },
+        {
+          text: "View Campaign",
+          onPress: () => {
+            // Navigate to the campaign detail view with the created campaign ID
+            router.replace(
+              `/adminDashboard/components/campaigns/campaignDetail/CampaignDetailView` as any
+            );
+          },
+        },
+        {
+          text: "Back to List",
+          style: "cancel",
+          onPress: () => router.back(),
+        },
       ]);
-    } catch (error) {
-      Alert.alert("Error", "Failed to create campaign. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+    } catch (error: any) {
+      console.error("Failed to create campaign:", error);
+
+      // Show user-friendly error message
+      const errorMessage =
+        typeof error === "string"
+          ? error
+          : error?.message || "Failed to create campaign. Please try again.";
+
+      Alert.alert("Error", errorMessage);
     }
   };
 
@@ -174,6 +211,20 @@ export default function CreateCampaign() {
         ))}
       </View>
 
+      {/* Error Display */}
+      {createError && (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={20} color="#ff4444" />
+          <Text style={styles.errorText}>{createError}</Text>
+          <TouchableOpacity
+            onPress={() => dispatch(clearErrors())}
+            style={styles.errorCloseButton}
+          >
+            <Ionicons name="close" size={16} color="#ff4444" />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Step Content */}
       <ScrollView
         style={styles.contentContainer}
@@ -217,11 +268,20 @@ export default function CreateCampaign() {
 
         <TouchableOpacity
           onPress={isLastStep ? handleSubmit : handleNext}
-          disabled={isSubmitting}
-          style={[styles.navButton, styles.nextButton]}
+          disabled={isLastStep ? createLoading : false}
+          style={[
+            styles.navButton,
+            styles.nextButton,
+            isLastStep && createLoading && styles.navButtonDisabled,
+          ]}
         >
-          <Text style={styles.navButtonText}>
-            {isSubmitting
+          <Text
+            style={[
+              styles.navButtonText,
+              isLastStep && createLoading && styles.navButtonTextDisabled,
+            ]}
+          >
+            {isLastStep && createLoading
               ? "Creating..."
               : isLastStep
               ? "Create Campaign"
@@ -358,5 +418,25 @@ const styles = StyleSheet.create({
     color: "#888",
     fontSize: 14,
     fontWeight: "500",
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ff444420",
+    borderColor: "#ff4444",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 20,
+    marginVertical: 8,
+    gap: 8,
+  },
+  errorText: {
+    color: "#ff4444",
+    fontSize: 14,
+    flex: 1,
+  },
+  errorCloseButton: {
+    padding: 4,
   },
 });
