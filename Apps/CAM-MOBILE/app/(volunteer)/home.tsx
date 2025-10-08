@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { colors } from "../../src/styles/colors";
 import { spacing } from "../../src/styles/spacing";
 import { typography } from "../../src/styles/typography";
@@ -8,13 +8,47 @@ import { Button } from "../../src/components/ui/Button";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { getVolunteerProfile } from "../../src/api/volunteer";
 
 export default function VolunteerHome() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const data = await getVolunteerProfile();
+      setProfile(data.volunteer || data);
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Failed to load profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Mocked data; wire to API later
-  const tasksCompleted = 8;
-  const tasksActive = 2;
-  const hoursVolunteered = 24;
+  const tasksCompleted = profile?.tasksCompleted || 0;
+  const tasksActive = profile?.activeTasks || 0;
+  const hoursVolunteered = profile?.hoursVolunteered || 0;
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.cardForeground} />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -24,6 +58,12 @@ export default function VolunteerHome() {
           paddingBottom: spacing.xl,
         }}
       >
+        {/* Welcome message */}
+        <Text style={[typography.h2, { marginBottom: spacing.sm }]}>
+          Welcome back,{" "}
+          {profile?.fullName?.split(" ")[0] || "Volunteer"}!
+        </Text>
+
         {/* Quick Stats */}
         <View
           style={{
@@ -186,63 +226,83 @@ export default function VolunteerHome() {
           </Card>
         </View>
 
-        {/* Current Campaign */}
-        <Card style={{ borderRadius: 20, marginTop: spacing.xl }}>
-          <CardHeader>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Ionicons
-                name="briefcase-outline"
-                size={18}
-                color={colors.muted}
-              />
-              <Text style={[typography.h3, { marginLeft: spacing.sm }]}>
-                Current Campaign
-              </Text>
-            </View>
-          </CardHeader>
-          <CardContent>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Text style={{ color: colors.cardForeground }}>
-                Winter Relief 2024
-              </Text>
+        {/* Current Campaign - show first assigned campaign */}
+        {profile?.assignedCampaigns && profile.assignedCampaigns.length > 0 ? (
+          <Card style={{ borderRadius: 20, marginTop: spacing.xl }}>
+            <CardHeader>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons
+                  name="briefcase-outline"
+                  size={18}
+                  color={colors.muted}
+                />
+                <Text style={[typography.h3, { marginLeft: spacing.sm }]}>
+                  Current Campaign
+                </Text>
+              </View>
+            </CardHeader>
+            <CardContent>
+              <View
+                style={{ flexDirection: "row", justifyContent: "space-between" }}
+              >
+                <Text style={{ color: colors.cardForeground }}>
+                  {profile.assignedCampaigns[0].name || "Active Campaign"}
+                </Text>
+                <Text
+                  style={{
+                    backgroundColor: colors.blue,
+                    color: "#fff",
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                    fontSize: 12,
+                    overflow: "hidden",
+                  }}
+                >
+                  Active
+                </Text>
+              </View>
               <Text
                 style={{
-                  backgroundColor: colors.blue,
-                  color: "#fff",
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
+                  color: colors.muted,
+                  marginTop: 4,
                   fontSize: 12,
-                  overflow: "hidden",
                 }}
               >
-                Active
+                Working with Agent: John Doe
               </Text>
-            </View>
-            <Text style={{ color: colors.muted, marginTop: 4, fontSize: 12 }}>
-              Working with Agent: John Doe
-            </Text>
-            <View
-              style={{
-                height: 8,
-                backgroundColor: colors.mutedBackground,
-                borderRadius: 999,
-                marginTop: spacing.sm,
-              }}
-            >
               <View
                 style={{
                   height: 8,
+                  backgroundColor: colors.mutedBackground,
                   borderRadius: 999,
-                  width: `75%`,
-                  backgroundColor: colors.cardForeground,
+                  marginTop: spacing.sm,
                 }}
-              />
-            </View>
-          </CardContent>
-        </Card>
+              >
+                <View
+                  style={{
+                    height: 8,
+                    borderRadius: 999,
+                    width: `75%`,
+                    backgroundColor: colors.cardForeground,
+                  }}
+                />
+              </View>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card style={{ borderRadius: 20, marginTop: spacing.xl }}>
+            <CardContent style={{ padding: spacing.lg, alignItems: "center" }}>
+              <Text style={{ color: colors.muted }}>No active campaigns yet</Text>
+              <Button
+                style={{ marginTop: spacing.md }}
+                onPress={() => router.push("/(volunteer)/campaigns" as any)}
+              >
+                Browse Campaigns
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recent Updates (simplified) */}
         <Card style={{ borderRadius: 20, marginTop: spacing.xl }}>
