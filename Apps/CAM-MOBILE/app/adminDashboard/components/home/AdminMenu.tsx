@@ -52,7 +52,6 @@ export default function AdminMenu() {
       subtitle: "Manage volunteers, agents, and admins",
       icon: "people",
       color: "#00ff94",
-      badge: "2,847",
       onPress: () => router.push("/adminDashboard/userManagement")
     },
 
