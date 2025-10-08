@@ -1,46 +1,6 @@
+import { CampaignFormData } from "../../../types/campaign.type";
 import Campaign, { ICampaign } from "../models/Campaign.model";
 import mongoose from "mongoose";
-
-// Local CampaignFormData interface (matching the mobile app types)
-interface CampaignFormData {
-  // Basic Info
-  name: string;
-  description: string;
-  type:
-    | "disaster-relief"
-    | "medical-aid"
-    | "education"
-    | "food-distribution"
-    | "emergency-response";
-  priority: "low" | "medium" | "high" | "critical";
-
-  // Location
-  district: string;
-  city: string;
-
-  // Resources
-  resources: Array<{
-    id: string;
-    name: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    estimatedCost: number;
-    description?: string;
-  }>;
-  estimatedBudget: number;
-
-  // Schedule
-  startDate: Date;
-  endDate: Date;
-  isUrgent: boolean;
-  expectedDuration: number; // in days
-
-  // Team
-  assignedAgents: string[];
-  requiredVolunteers: number;
-  skillsRequired: string[];
-}
 
 // Interface for service responses
 interface ServiceResponse<T> {
@@ -55,11 +15,6 @@ interface CreateCampaignInput
   extends Omit<CampaignFormData, "startDate" | "endDate"> {
   startDate: Date;
   endDate: Date;
-  coordinator: {
-    name: string;
-    phone: string;
-    email: string;
-  };
 }
 
 // Interface for campaign search/filter options
@@ -145,10 +100,8 @@ class CampaignService {
           endDate: campaignData.endDate,
           isUrgent: campaignData.isUrgent,
           expectedDuration: campaignData.expectedDuration,
-          assignedAgents: campaignData.assignedAgents,
           requiredVolunteers: campaignData.requiredVolunteers,
           skillsRequired: campaignData.skillsRequired,
-          coordinator: campaignData.coordinator,
           status: campaignData.isUrgent ? "active" : "draft", // Auto-activate urgent campaigns
         });
 
@@ -469,10 +422,6 @@ class CampaignService {
 
     if (campaignData.requiredVolunteers < 1) {
       errors.push("At least 1 volunteer is required");
-    }
-
-    if (!campaignData.coordinator || !campaignData.coordinator.email) {
-      errors.push("Campaign coordinator information is required");
     }
 
     if (errors.length > 0) {
