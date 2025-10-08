@@ -63,7 +63,7 @@ export default function EditUserScreen() {
   if (loading) return <Text style={{ color: "#fff", marginTop: 20 }}>Loading users...</Text>;
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container}contentContainerStyle={{ paddingBottom: 50 }}>
       <Text style={styles.title}>Select a User to Edit</Text>
       {users.map((user) => (
         <TouchableOpacity
