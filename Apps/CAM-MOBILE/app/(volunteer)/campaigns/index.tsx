@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { colors } from "../../../src/styles/colors";
 import { spacing } from "../../../src/styles/spacing";
@@ -17,6 +18,8 @@ import { Card, CardContent, CardHeader } from "../../../src/components/ui/Card";
 import { Button } from "../../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { getCampaigns, joinCampaign } from "../../../src/api/campaign";
+import { getVolunteerProfile } from "../../../src/api/volunteer";
 
 type CampaignStatus = "Active" | "Available" | "Completed";
 
@@ -39,90 +42,9 @@ type Campaign = {
 
 export default function VolunteerCampaignsIndex() {
   const router = useRouter();
-
-  // Mock data (replace with API later)
-  const campaigns: Campaign[] = [
-    {
-      id: 1,
-      name: "Winter Relief 2024",
-      description: "Emergency winter supplies for affected families",
-      location: "Downtown Community Center",
-      startDate: "2024-01-15",
-      endDate: "2024-02-28",
-      agent: "John Doe",
-      agentPhone: "+1234567890",
-      volunteers: 12,
-      volunteersNeeded: 20,
-      status: "Active",
-      locations: 8,
-      taskTypes: "Collection, packaging, delivery",
-      resourceNeeds: { food: 500, clothes: 200, funds: 10000 },
-    },
-    {
-      id: 2,
-      name: "Flood Response",
-      description: "Flood relief operations in affected areas",
-      location: "Regional Emergency Center",
-      startDate: "2024-02-01",
-      endDate: "2024-03-15",
-      agent: "Jane Smith",
-      agentPhone: "+1234567891",
-      volunteers: 8,
-      volunteersNeeded: 15,
-      status: "Available",
-      locations: 5,
-      taskTypes: "Emergency distribution, logistics",
-      resourceNeeds: { food: 300, clothes: 150, funds: 8000 },
-    },
-    {
-      id: 3,
-      name: "Community Outreach",
-      description: "Regular community support activities",
-      location: "City Hall",
-      startDate: "2024-03-01",
-      endDate: "2024-04-30",
-      agent: "Mike Johnson",
-      agentPhone: "+1234567892",
-      volunteers: 15,
-      volunteersNeeded: 25,
-      status: "Available",
-      locations: 12,
-      taskTypes: "Door-to-door collection, community events",
-      resourceNeeds: { food: 800, clothes: 300, funds: 15000 },
-    },
-    {
-      id: 4,
-      name: "Emergency Shelter Setup",
-      description: "Temporary shelter establishment for displaced families",
-      location: "West Side Community",
-      startDate: "2023-12-15",
-      endDate: "2024-01-15",
-      agent: "Sarah Wilson",
-      agentPhone: "+1234567893",
-      volunteers: 30,
-      volunteersNeeded: 30,
-      status: "Completed",
-      locations: 6,
-      taskTypes: "Setup, maintenance, distribution",
-      resourceNeeds: { food: 800, clothes: 400, funds: 20000 },
-    },
-    {
-      id: 5,
-      name: "Spring Cleanup Initiative",
-      description: "Community cleanup and resource recovery program",
-      location: "Multiple Districts",
-      startDate: "2024-03-15",
-      endDate: "2024-04-30",
-      agent: "Tom Davis",
-      agentPhone: "+1234567894",
-      volunteers: 18,
-      volunteersNeeded: 25,
-      status: "Available",
-      locations: 10,
-      taskTypes: "Collection, sorting, environmental cleanup",
-      resourceNeeds: { food: 200, clothes: 600, funds: 8000 },
-    },
-  ];
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [volunteerId, setVolunteerId] = useState<string>("");
 
   type FilterKey = "all" | "available" | "active" | "completed";
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -145,6 +67,47 @@ export default function VolunteerCampaignsIndex() {
     emergencyContact: "",
     emergencyPhone: "",
   });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [campaignsData, profileData] = await Promise.all([
+        getCampaigns(),
+        getVolunteerProfile(),
+      ]);
+
+      // Map backend data to frontend format
+      const mappedCampaigns = (campaignsData.campaigns || []).map((c: any) => ({
+        id: c._id || c.id,
+        name: c.name || "Unnamed Campaign",
+        description: c.description || "",
+        location: c.location || "Location TBD",
+        startDate: c.startDate
+          ? new Date(c.startDate).toISOString().split("T")[0]
+          : "",
+        endDate: c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "",
+        agent: c.agentName || "Agent TBD",
+        agentPhone: c.agentPhone || "",
+        volunteers: c.assignedVolunteers?.length || 0,
+        volunteersNeeded: c.volunteersNeeded || 10,
+        status: c.status || "Available",
+        locations: c.locations || 1,
+        taskTypes: c.taskTypes || "General tasks",
+        resourceNeeds: c.resourceNeeds || { food: 0, clothes: 0, funds: 0 },
+      }));
+
+      setCampaigns(mappedCampaigns);
+      setVolunteerId(profileData.volunteer?._id || profileData._id || "");
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Failed to load campaigns");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     if (filter === "all") return campaigns;
@@ -267,29 +230,54 @@ export default function VolunteerCampaignsIndex() {
     setShowJoinModal(true);
   };
 
-  const handleVolunteerApplication = () => {
-    // Placeholder submit; wire to API later
-    setShowJoinModal(false);
-    const name = selectedCampaign?.name || "Campaign";
-    setSelectedCampaign(null);
-    Alert.alert(
-      "Application submitted",
-      `Your request to join ${name} has been sent.`
-    );
-    setVolunteerApplication({
-      fullName: "Alice Johnson",
-      age: "",
-      email: "",
-      phone: "+1234567893",
-      skills: "",
-      experience: "",
-      preferredTasks: "",
-      availability: "",
-      motivation: "",
-      emergencyContact: "",
-      emergencyPhone: "",
-    });
+  const handleVolunteerApplication = async () => {
+    if (!selectedCampaign || !volunteerId) {
+      Alert.alert("Error", "Missing campaign or volunteer information");
+      return;
+    }
+
+    try {
+      await joinCampaign(String(selectedCampaign.id), volunteerId, "volunteer");
+      setShowJoinModal(false);
+      Alert.alert(
+        "Application submitted",
+        `Your request to join ${selectedCampaign.name} has been sent.`
+      );
+      setSelectedCampaign(null);
+      setVolunteerApplication({
+        fullName: "Alice Johnson",
+        age: "",
+        email: "",
+        phone: "+1234567893",
+        skills: "",
+        experience: "",
+        preferredTasks: "",
+        availability: "",
+        motivation: "",
+        emergencyContact: "",
+        emergencyPhone: "",
+      });
+      // Reload campaigns to update status
+      loadData();
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Failed to submit application");
+    }
   };
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.cardForeground} />
+      </View>
+    );
+  }
 
   return (
     <>
