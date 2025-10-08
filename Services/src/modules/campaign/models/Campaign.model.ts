@@ -60,7 +60,6 @@ export interface ICampaign extends Document {
   progress: number; // 0-100
 
   // Audit fields
-  updatedBy?: string; // User ID who last updated
   createdAt: Date;
   updatedAt: Date;
 }
@@ -301,10 +300,6 @@ const CampaignSchema = new Schema<ICampaign>(
       default: 0,
       min: [0, "Progress cannot be negative"],
       max: [100, "Progress cannot exceed 100%"],
-    },
-    updatedBy: {
-      type: String,
-      ref: "User",
     },
   },
   {

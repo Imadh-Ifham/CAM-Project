@@ -1,7 +1,12 @@
 import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { useRouter } from "expo-router";
 
 export default function AdminHeader() {
+  const [showLogoutMenu, setShowLogoutMenu] = useState(false);
+  const router = useRouter();
+
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -13,6 +18,21 @@ export default function AdminHeader() {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  const handleSettingsPress = () => {
+    setShowLogoutMenu(!showLogoutMenu);
+  };
+
+  const handleLogout = () => {
+    // Close the menu first
+    setShowLogoutMenu(false);
+
+    // Navigate back to auth index page
+    router.push("/(auth)" as any);
+
+    // Add any additional logout logic here (clear storage, reset state, etc.)
+    console.log("Admin logged out");
+  };
 
   return (
     <View style={styles.headerContainer}>
@@ -36,9 +56,27 @@ export default function AdminHeader() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={24} color="#00ff94" />
-          </TouchableOpacity>
+          <View style={styles.settingsContainer}>
+            <TouchableOpacity
+              style={styles.settingsButton}
+              onPress={handleSettingsPress}
+            >
+              <Ionicons name="settings-outline" size={24} color="#00ff94" />
+            </TouchableOpacity>
+
+            {/* Floating Logout Menu */}
+            {showLogoutMenu && (
+              <View style={styles.logoutMenu}>
+                <TouchableOpacity
+                  style={styles.logoutButton}
+                  onPress={handleLogout}
+                >
+                  <Ionicons name="log-out-outline" size={18} color="#ff4444" />
+                  <Text style={styles.logoutText}>Logout</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </View>
       </View>
 
@@ -127,10 +165,44 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
   },
+  settingsContainer: {
+    position: "relative",
+  },
   settingsButton: {
     padding: 8,
     backgroundColor: "#333",
     borderRadius: 12,
+  },
+  logoutMenu: {
+    position: "absolute",
+    top: 50, // Position below the settings button
+    right: 0,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#444",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1000,
+    minWidth: 120,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  logoutText: {
+    color: "#ff4444",
+    fontSize: 14,
+    fontWeight: "500",
   },
   bottomRow: {
     flexDirection: "row",
