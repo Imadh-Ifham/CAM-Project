@@ -3,8 +3,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 
-// ACTUAL BACKEND URL
-const API_URL = "http://localhost:8000/api/users"; // IP & port!
+//BACKEND URL
+const API_URL = `${process.env.EXPO_PUBLIC_API_URL}/api/users`;
+
 
 export default function AllUsersScreen() {
   const router = useRouter();
