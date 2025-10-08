@@ -1,17 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { CampaignFormData } from "../../../types/campaign.type";
 
-// Basic validation functions
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-const isValidPhoneNumber = (phone: string): boolean => {
-  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-  return phoneRegex.test(phone.replace(/\s+/g, ""));
-};
-
 const isValidDate = (dateString: string): boolean => {
   const date = new Date(dateString);
   return !isNaN(date.getTime());
