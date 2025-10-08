@@ -3,14 +3,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 
-//BACKEND URL
+// BACKEND URL
 const API_URL = `${process.env.EXPO_PUBLIC_API_URL}/api/users`;
-
 
 export default function AllUsersScreen() {
   const router = useRouter();
   const [users, setUsers] = useState<any[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedRole, setSelectedRole] = useState<string>("all");
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -19,6 +20,7 @@ export default function AllUsersScreen() {
         const data = await response.json();
         if (data.success) {
           setUsers(data.data);
+          setFilteredUsers(data.data);
         }
       } catch (error) {
         console.error("Fetch error:", error);
@@ -26,11 +28,18 @@ export default function AllUsersScreen() {
         setLoading(false);
       }
     };
-
     fetchUsers();
   }, []);
 
-  // Helper: Get role-specific details
+  // 🔍 Filter users when role changes
+  useEffect(() => {
+    if (selectedRole === "all") {
+      setFilteredUsers(users);
+    } else {
+      setFilteredUsers(users.filter((u) => u.role === selectedRole));
+    }
+  }, [selectedRole, users]);
+
   const getProfileInfo = (user: any) => {
     if (user.role === "agent" && user.agentProfile) {
       return `Organization: ${user.agentProfile.organization}`;
@@ -41,19 +50,26 @@ export default function AllUsersScreen() {
     return "";
   };
 
-  // Helper: Get badge color based on role
   const getRoleColor = (role: string) => {
     switch (role) {
       case "volunteer":
-        return "#00ff94"; // green
+        return "#00ff94";
       case "agent":
-        return "#c771f8ff"; // red
+        return "#c771f8ff";
       case "admin":
-        return "#f59e0b"; // orange
+        return "#f59e0b";
       default:
-        return "#888"; // gray
+        return "#888";
     }
   };
+
+  // 🎚️ Roles for filter buttons
+  const roles = [
+    { label: "All", value: "all", icon: "people" },
+    { label: "Admins", value: "admin", icon: "shield-checkmark" },
+    { label: "Agents", value: "agent", icon: "briefcase" },
+    { label: "Volunteers", value: "volunteer", icon: "hand-left" },
+  ];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
@@ -65,7 +81,36 @@ export default function AllUsersScreen() {
         <Text style={styles.headerTitle}>All Users</Text>
       </View>
 
-      {/* Loading */}
+      {/* Filter Buttons */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar}>
+        {roles.map((role) => (
+          <TouchableOpacity
+            key={role.value}
+            style={[
+              styles.filterButton,
+              selectedRole === role.value && { backgroundColor: "#00ff94" },
+            ]}
+            onPress={() => setSelectedRole(role.value)}
+          >
+            <Ionicons
+              name={role.icon as any}
+              size={18}
+              color={selectedRole === role.value ? "#000" : "#00ff94"}
+              style={{ marginRight: 5 }}
+            />
+            <Text
+              style={[
+                styles.filterText,
+                selectedRole === role.value && { color: "#000" },
+              ]}
+            >
+              {role.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* User List */}
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#00ff94" />
@@ -73,16 +118,23 @@ export default function AllUsersScreen() {
         </View>
       ) : (
         <View style={styles.listContainer}>
-          {users.length === 0 ? (
+          {filteredUsers.length === 0 ? (
             <Text style={styles.emptyText}>No users found.</Text>
           ) : (
-            users.map((user) => (
+            filteredUsers.map((user) => (
               <View key={user._id} style={styles.userCard}>
                 <Text style={styles.userName}>{user.fullName}</Text>
                 <Text style={styles.userEmail}>{user.email}</Text>
                 <Text style={styles.profileText}>{getProfileInfo(user)}</Text>
-                 <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) }]}>
-                  <Text style={styles.roleText}>{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</Text>
+                <View
+                  style={[
+                    styles.roleBadge,
+                    { backgroundColor: getRoleColor(user.role) },
+                  ]}
+                >
+                  <Text style={styles.roleText}>
+                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                  </Text>
                 </View>
               </View>
             ))
@@ -103,13 +155,31 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 16,
   },
   headerTitle: {
     color: "#fff",
     fontSize: 22,
     fontWeight: "bold",
     marginLeft: 12,
+  },
+  filterBar: {
+    flexDirection: "row",
+    marginBottom: 20,
+  },
+  filterButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#00ff94",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 10,
+  },
+  filterText: {
+    color: "#00ff94",
+    fontWeight: "600",
   },
   centered: {
     flex: 1,
@@ -147,7 +217,7 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 6,
   },
-   roleBadge: {
+  roleBadge: {
     alignSelf: "flex-start",
     marginTop: 8,
     paddingHorizontal: 8,
@@ -155,7 +225,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   roleText: {
-    color: "#000000ff",
+    color: "#000",
     fontSize: 12,
     fontWeight: "600",
   },
