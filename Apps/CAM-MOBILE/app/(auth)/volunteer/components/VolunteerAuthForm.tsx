@@ -195,6 +195,60 @@ export default function VolunteerAuthForm({ onSubmit, onRegister }: Props) {
           </Text>
         </Button>
       </View>
+
+      {/* Testing bypass button - Remove in production */}
+      <View
+        style={{
+          marginTop: spacing.xl,
+          paddingTop: spacing.lg,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          alignItems: "center",
+        }}
+      >
+        <Text
+          style={{
+            color: colors.muted,
+            marginBottom: spacing.sm,
+            fontSize: 12,
+          }}
+        >
+          Development Testing Only
+        </Text>
+        <Button
+          variant="outline"
+          onPress={async () => {
+            try {
+              onSubmit({
+                email: "amanmohamedwork101@gmail.com",
+                password: "Aman14924",
+              });
+            } catch (error) {
+              console.error("Volunteer bypass onSubmit failed:", error);
+            }
+          }}
+          style={{
+            height: 40,
+            borderColor: "#f59e0b",
+            backgroundColor: "#fef3c7",
+            borderWidth: 1,
+            borderStyle: "dashed",
+          }}
+          textStyle={{ color: "#92400e", fontSize: 12, fontWeight: "600" }}
+        >
+          <Feather name="zap" size={14} color="#92400e" />
+          <Text
+            style={{
+              marginLeft: spacing.xs,
+              color: "#92400e",
+              fontSize: 12,
+              fontWeight: "600",
+            }}
+          >
+            Bypass Auth (Testing)
+          </Text>
+        </Button>
+      </View>
     </View>
   );
 }
