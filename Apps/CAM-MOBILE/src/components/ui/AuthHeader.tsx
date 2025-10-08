@@ -1,9 +1,6 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { colors } from "../../styles/colors";
