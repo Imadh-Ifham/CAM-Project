@@ -1,6 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import UserCount from "./userCounter";
+import UserStats from "./userStats";
 
 export default function UserManagement() {
     const router = useRouter();
@@ -19,17 +21,23 @@ export default function UserManagement() {
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Manage Users</Text>
 
-                <TouchableOpacity style={styles.actionButton}>
+                <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => router.push("/adminDashboard/userManagement/addUser")}>
                     <Ionicons name="person-add" size={20} color="#00ff94" />
                     <Text style={styles.actionText}>Add New User</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionButton}>
-                    <Ionicons name="create" size={20} color="#4ade80" />
+                <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => router.push("/adminDashboard/userManagement/editUser")}>
+                    <Ionicons name="create" size={20} color="#b5b30fff" />
                     <Text style={styles.actionText}>Edit User Details</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionButton}>
+                <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => router.push("/adminDashboard/userManagement/removeUser")}>
                     <Ionicons name="trash" size={20} color="#f87171" />
                     <Text style={styles.actionText}>Remove User</Text>
                 </TouchableOpacity>
@@ -41,7 +49,12 @@ export default function UserManagement() {
                     <Ionicons name="people" size={20} color="#60a5fa" />
                     <Text style={styles.actionText}>View All Users</Text>
                 </TouchableOpacity>
-                
+
+                <UserCount />
+                <View style={{ marginTop: 20 }}>
+                    <UserStats />
+                </View>
+
             </View>
         </ScrollView>
     );
