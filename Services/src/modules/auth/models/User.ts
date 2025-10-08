@@ -8,6 +8,7 @@ export interface IUserBase {
   phoneNumber?: string;
   role: UserRole;
   fullName: string;
+  agentId?: string; // Human-friendly unique ID for agents (e.g., AGT-7F3K2C)
 }
 
 export interface IAgentProfile {
@@ -52,6 +53,7 @@ const UserSchema = new Schema<IUserDocument>(
     phoneNumber: { type: String },
     role: { type: String, enum: ["agent", "volunteer"], required: true },
     fullName: { type: String, required: true },
+    agentId: { type: String, unique: true, sparse: true, index: true },
     agentProfile: { type: AgentProfileSchema, required: false },
     volunteerProfile: { type: VolunteerProfileSchema, required: false },
   },
