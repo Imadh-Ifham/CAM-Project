@@ -5,7 +5,6 @@ import {
   mockCampaignDetail,
 } from "@/src/types/campaign.type";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "../store";
 
 interface CampaignState {
   campaignList: Campaign[] | null;
