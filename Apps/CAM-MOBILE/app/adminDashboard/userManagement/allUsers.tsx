@@ -41,6 +41,20 @@ export default function AllUsersScreen() {
     return "";
   };
 
+  // Helper: Get badge color based on role
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case "volunteer":
+        return "#00ff94"; // green
+      case "agent":
+        return "#c771f8ff"; // red
+      case "admin":
+        return "#f59e0b"; // orange
+      default:
+        return "#888"; // gray
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -67,10 +81,8 @@ export default function AllUsersScreen() {
                 <Text style={styles.userName}>{user.fullName}</Text>
                 <Text style={styles.userEmail}>{user.email}</Text>
                 <Text style={styles.profileText}>{getProfileInfo(user)}</Text>
-                <View style={styles.roleBadge}>
-                  <Text style={styles.roleText}>
-                    {user.role === "agent" ? "Agent" : "Volunteer"}
-                  </Text>
+                 <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) }]}>
+                  <Text style={styles.roleText}>{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</Text>
                 </View>
               </View>
             ))
@@ -135,16 +147,15 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 6,
   },
-  roleBadge: {
+   roleBadge: {
     alignSelf: "flex-start",
     marginTop: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    backgroundColor: "#2a2a2a",
     borderRadius: 4,
   },
   roleText: {
-    color: "#00ff94",
+    color: "#000000ff",
     fontSize: 12,
     fontWeight: "600",
   },
