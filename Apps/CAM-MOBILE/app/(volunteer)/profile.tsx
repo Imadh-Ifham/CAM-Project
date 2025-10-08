@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Alert, ActivityIndicator } from "react-native";
 import { colors } from "../../src/styles/colors";
 import { spacing } from "../../src/styles/spacing";
 import { typography } from "../../src/styles/typography";
@@ -8,19 +8,28 @@ import { Button } from "../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { logout } from "../../src/api/auth";
+import { getVolunteerProfile } from "../../src/api/volunteer";
 
 export default function VolunteerProfile() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [volunteerProfile, setVolunteerProfile] = useState<any>(null);
 
-  // Mock profile data – replace with API values later
-  const volunteerProfile = {
-    name: "Alice Johnson",
-    phone: "+1234567893",
-    campaigns: ["Winter Relief 2024"],
-    agent: "John Doe",
-    tasksCompleted: 8,
-    hoursVolunteered: 24,
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      setProfileLoading(true);
+      const data = await getVolunteerProfile();
+      setVolunteerProfile(data.volunteer || data);
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Failed to load profile");
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -60,6 +69,21 @@ export default function VolunteerProfile() {
       />
     </View>
   );
+
+  if (profileLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.cardForeground} />
+      </View>
+    );
+  }
 
   return (
     <View
@@ -103,10 +127,12 @@ export default function VolunteerProfile() {
                   color: colors.cardForeground,
                 }}
               >
-                {volunteerProfile.name}
+                {volunteerProfile?.fullName || "Volunteer"}
               </Text>
               <Text style={{ color: colors.muted, marginTop: 2 }}>
-                {volunteerProfile.phone}
+                {volunteerProfile?.phoneNumber ||
+                  volunteerProfile?.email ||
+                  "No contact info"}
               </Text>
             </View>
           </View>
@@ -128,105 +154,84 @@ export default function VolunteerProfile() {
                 Active Campaigns
               </Text>
               <Text style={{ fontWeight: "700", color: colors.cardForeground }}>
-                {volunteerProfile.campaigns.length}
+                {volunteerProfile?.assignedCampaigns?.length || 0}
               </Text>
             </View>
 
-            {/* Tasks Completed */}
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingVertical: spacing.sm,
-                borderBottomWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              <Text style={{ color: colors.cardForeground }}>
-                Tasks Completed
-              </Text>
-              <Text style={{ fontWeight: "700", color: colors.cardForeground }}>
-                {volunteerProfile.tasksCompleted}
-              </Text>
-            </View>
+            {/* Age */}
+            {volunteerProfile?.age && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  paddingVertical: spacing.sm,
+                  borderBottomWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <Text style={{ color: colors.cardForeground }}>Age</Text>
+                <Text style={{ fontWeight: "700", color: colors.cardForeground }}>
+                  {volunteerProfile.age}
+                </Text>
+              </View>
+            )}
 
-            {/* Hours Volunteered */}
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingVertical: spacing.sm,
-                borderBottomWidth: 1,
-                borderColor: colors.border,
-              }}
-            >
-              <Text style={{ color: colors.cardForeground }}>
-                Hours Volunteered
-              </Text>
-              <Text style={{ fontWeight: "700", color: colors.cardForeground }}>
-                {volunteerProfile.hoursVolunteered}h
-              </Text>
-            </View>
+            {/* Skills & Interest */}
+            {volunteerProfile?.skillsAndInterest && (
+              <View
+                style={{
+                  paddingVertical: spacing.sm,
+                  borderBottomWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.muted,
+                    fontSize: 12,
+                    marginBottom: 4,
+                  }}
+                >
+                  Skills & Interests
+                </Text>
+                <Text style={{ color: colors.cardForeground }}>
+                  {volunteerProfile.skillsAndInterest}
+                </Text>
+              </View>
+            )}
 
-            {/* Current Agent */}
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingVertical: spacing.sm,
-              }}
-            >
-              <Text style={{ color: colors.cardForeground }}>
-                Current Agent
-              </Text>
-              <Text style={{ fontWeight: "700", color: colors.cardForeground }}>
-                {volunteerProfile.agent}
-              </Text>
-            </View>
+            {/* Availability */}
+            {volunteerProfile?.availability && (
+              <View style={{ paddingVertical: spacing.sm }}>
+                <Text
+                  style={{
+                    color: colors.muted,
+                    fontSize: 12,
+                    marginBottom: 4,
+                  }}
+                >
+                  Availability
+                </Text>
+                <Text style={{ color: colors.cardForeground }}>
+                  {volunteerProfile.availability}
+                </Text>
+              </View>
+            )}
           </View>
         </CardContent>
       </Card>
 
-      {/* Volunteer Impact */}
-      <Card style={{ borderRadius: 16, marginTop: spacing.lg }}>
-        <CardHeader>
-          <Text style={[typography.h3]}>Volunteer Impact</Text>
-        </CardHeader>
-        <CardContent>
-          {/* Task Completion Rate */}
-          <View style={{ marginBottom: spacing.lg }}>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Text style={{ color: colors.cardForeground }}>
-                Task Completion Rate
-              </Text>
-              <Text style={{ color: colors.muted }}>85%</Text>
-            </View>
-            <ProgressBar percent={85} color={colors.cardForeground} />
-          </View>
-
-          {/* Community Impact Score */}
-          <View>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Text style={{ color: colors.cardForeground }}>
-                Community Impact Score
-              </Text>
-              <Text style={{ color: colors.muted }}>92%</Text>
-            </View>
-            <ProgressBar percent={92} color={colors.cardForeground} />
-          </View>
-        </CardContent>
-      </Card>
+      {/* Volunteer Impact - can be enhanced later with real metrics */}
+      {/* ...existing code... */}
 
       {/* Buttons */}
       <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
-        <Button variant="outline" style={{ width: "100%" }}>
+        <Button
+          variant="outline"
+          style={{ width: "100%" }}
+          onPress={() => router.push("/(volunteer)/edit-profile" as any)}
+        >
           Edit Profile
         </Button>
         <Button
