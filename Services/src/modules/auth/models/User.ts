@@ -8,7 +8,6 @@ export interface IUserBase {
   phoneNumber?: string;
   role: UserRole;
   fullName: string;
-  agentId?: string;
   status: "active" | "inactive";
   agentId?: string; // Human-friendly unique ID for agents (e.g., AGT-7F3K2C)
 }
