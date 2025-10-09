@@ -318,6 +318,8 @@ export const campaignsApi = createApi({
       invalidatesTags: (_res, _err, arg) => [
         { type: "Campaign" as const, id: arg.campaignId },
         { type: "Campaign" as const, id: "LIST" },
+        // Also invalidate admin pending list so it refetches quickly within the same session
+        { type: "AgentRequests" as const, id: "LIST" },
       ],
     }),
   }),

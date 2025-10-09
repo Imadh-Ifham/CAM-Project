@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import {
 } from "../../../../src/components/ui/Card";
 import { Button } from "../../../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import {
   useGetPendingAgentRequestsQuery,
   useApproveAgentRequestMutation,
@@ -153,12 +153,30 @@ export default function AgentsList() {
   >("all");
   const [campaignFilter, setCampaignFilter] = useState<string>("all");
   const [showFilter, setShowFilter] = useState(false);
+  const [pollMs, setPollMs] = useState<number>(0);
+
   // Load pending requests from server
   const {
     data: pendingServer,
     isFetching: isFetchingPending,
     error: pendingError,
-  } = useGetPendingAgentRequestsQuery();
+    refetch: refetchPending,
+  } = useGetPendingAgentRequestsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    pollingInterval: pollMs,
+  } as any);
+
+  // Refetch and burst-poll when screen gains focus to pick up latest requests quickly
+  useFocusEffect(
+    useCallback(() => {
+      refetchPending();
+      setPollMs(3000); // poll every 3s briefly after focusing
+      const t = setTimeout(() => setPollMs(0), 30000); // stop polling after 30s
+      return () => clearTimeout(t);
+    }, [refetchPending])
+  );
 
   const pendingMapped: PendingRequest[] = useMemo(() => {
     if (!pendingServer) return [];
@@ -280,6 +298,8 @@ export default function AgentsList() {
                 agentId: r.agentId!,
                 requestId: r.requestId,
               }).unwrap();
+              // Ensure pending list updates immediately
+              refetchPending();
               Alert.alert(
                 "Approved",
                 `${r.name} is now coordinator of ${r.campaignName}.`
@@ -314,6 +334,8 @@ export default function AgentsList() {
                 requestId: r.requestId,
                 agentId: r.agentId,
               }).unwrap();
+              // Ensure pending list updates immediately
+              refetchPending();
               Alert.alert("Rejected", `Request from ${r.name} was rejected.`);
             } catch (e: any) {
               const msg = e?.data?.message || e?.error || "Failed to reject";
@@ -722,6 +744,16 @@ export default function AgentsList() {
                   {filteredPending.length} Pending
                 </Text>
               </View>
+              <Pressable
+                onPress={() => refetchPending()}
+                style={{ marginLeft: "auto", padding: 6 }}
+              >
+                <Ionicons
+                  name={isFetchingPending ? "refresh" : "refresh"}
+                  size={16}
+                  color="#60a5fa"
+                />
+              </Pressable>
             </View>
           </CardHeader>
           <CardContent>
