@@ -21,9 +21,10 @@ import {
 import { Button } from "../../../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useGetPendingAgentRequestsQuery } from "../../../../src/store/services/campaignsApi";
 
 type PendingRequest = {
-  id: number;
+  id: string; // backend ObjectId
   name: string;
   email: string;
   phone: string;
@@ -31,6 +32,8 @@ type PendingRequest = {
   skills: string[];
   campaignName: string;
   experience: string;
+  motivation: string;
+  availability: string;
   appliedDate: string; // ISO
 };
 
@@ -54,43 +57,6 @@ type ApprovedAgent = {
 };
 
 const MOCK = {
-  pendingRequests: [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      email: "sarah.johnson@email.com",
-      phone: "+94 77 123 4567",
-      avatar:
-        "https://images.unsplash.com/photo-1701463387028-3947648f1337?auto=format&fit=crop&w=80&q=60",
-      skills: ["Medical Aid", "Emergency Response", "Logistics"],
-      campaignName: "Flood Relief - Colombo",
-      experience: "3 years in disaster response",
-      appliedDate: "2024-01-05",
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      email: "michael.chen@email.com",
-      phone: "+94 76 987 6543",
-      avatar:
-        "https://images.unsplash.com/photo-1543132220-7bc04a0e790a?auto=format&fit=crop&w=80&q=60",
-      skills: ["Food Distribution", "Community Outreach", "Data Collection"],
-      campaignName: "Medical Aid - Kandy",
-      experience: "2 years in humanitarian work",
-      appliedDate: "2024-01-06",
-    },
-    {
-      id: 3,
-      name: "Priya Perera",
-      email: "priya.perera@email.com",
-      phone: "+94 71 555 8888",
-      avatar: "",
-      skills: ["Translation", "Medical Aid", "Education"],
-      campaignName: "Education Initiative - Galle",
-      experience: "5 years in education sector",
-      appliedDate: "2024-01-07",
-    },
-  ] as PendingRequest[],
   approvedAgents: [
     {
       id: 101,
@@ -179,23 +145,45 @@ export default function AgentsList() {
   >("all");
   const [campaignFilter, setCampaignFilter] = useState<string>("all");
   const [showFilter, setShowFilter] = useState(false);
+  // Load pending requests from server
+  const {
+    data: pendingServer,
+    isFetching: isFetchingPending,
+    error: pendingError,
+  } = useGetPendingAgentRequestsQuery();
 
-  const [pending, setPending] = useState<PendingRequest[]>(
-    MOCK.pendingRequests
-  );
+  const pendingMapped: PendingRequest[] = useMemo(() => {
+    if (!pendingServer) return [];
+    return pendingServer.map((r: any) => ({
+      id: String(r._id || `${r.agentId}-${r.campaignId}`),
+      name: r.agent?.fullName || r.agentId || "Unknown Agent",
+      email: r.agent?.email || "",
+      phone: r.agent?.phoneNumber || "",
+      avatar: "",
+      skills: [],
+      campaignName: r.campaign?.name || r.campaignId,
+      experience: r.experience || "",
+      motivation: r.motivation || "",
+      availability: r.availability || "",
+      appliedDate: r.createdAt
+        ? new Date(r.createdAt).toISOString().slice(0, 10)
+        : "",
+    }));
+  }, [pendingServer]);
+
   const [approved, setApproved] = useState<ApprovedAgent[]>(
     MOCK.approvedAgents
   );
 
   const filteredPending = useMemo(
     () =>
-      pending.filter(
+      pendingMapped.filter(
         (r) =>
           r.name.toLowerCase().includes(search.toLowerCase()) ||
           r.email.toLowerCase().includes(search.toLowerCase()) ||
           r.campaignName.toLowerCase().includes(search.toLowerCase())
       ),
-    [pending, search]
+    [pendingMapped, search]
   );
 
   const filteredApproved = useMemo(() => {
@@ -213,35 +201,12 @@ export default function AgentsList() {
     });
   }, [approved, search, statusFilter, roleFilter, campaignFilter]);
 
-  const approve = (id: number) => {
-    const req = pending.find((p) => p.id === id);
-    if (!req) return;
-    setPending((arr) => arr.filter((p) => p.id !== id));
-    setApproved((arr) => [
-      {
-        id: Date.now(),
-        name: req.name,
-        email: req.email,
-        phone: req.phone,
-        campaignName: req.campaignName,
-        campaignType: "Disaster Relief",
-        role: "Both",
-        joinDate: new Date().toISOString().slice(0, 10),
-        status: "active",
-        performance: {
-          collectionsCompleted: 0,
-          collectionsTarget: 0,
-          distributionsCompleted: 0,
-          distributionsTarget: 0,
-        },
-      },
-      ...arr,
-    ]);
+  const approve = (id: string) => {
+    Alert.alert("Approve", `Approve request ${id} (coming soon)`);
   };
 
-  const rejectReq = (id: number) => {
-    setPending((arr) => arr.filter((p) => p.id !== id));
-    Alert.alert("Request rejected");
+  const rejectReq = (id: string) => {
+    Alert.alert("Reject", `Reject request ${id} (coming soon)`);
   };
 
   const openAgent = (agent: ApprovedAgent) => {
@@ -260,6 +225,35 @@ export default function AgentsList() {
           paddingBottom: spacing.xl,
         }}
       >
+        {/* Pending fetch error banner */}
+        {pendingError ? (
+          <View
+            style={{
+              padding: spacing.md,
+              borderRadius: 12,
+              backgroundColor: "#fee2e2",
+              borderWidth: 1,
+              borderColor: "#ef4444",
+            }}
+          >
+            <Text style={{ color: "#991b1b", fontWeight: "700" }}>
+              Failed to load pending agent requests
+            </Text>
+            <Text style={{ color: "#991b1b" }}>
+              {(() => {
+                const err: any = pendingError as any;
+                const status = err?.status || err?.originalStatus;
+                const detail =
+                  typeof err?.data === "string"
+                    ? err.data
+                    : JSON.stringify(err?.data);
+                return `Status ${status || "unknown"}${
+                  detail ? `: ${detail}` : ""
+                }`;
+              })()}
+            </Text>
+          </View>
+        ) : null}
         {/* Header */}
         <View style={{ marginTop: spacing.md }}>
           <View
@@ -691,60 +685,175 @@ export default function AgentsList() {
                       <Text style={{ color: "#fff" }}>{r.campaignName}</Text>
                     </View>
 
-                    {/* Skills */}
-                    <View style={{ marginBottom: spacing.sm }}>
+                    {/* Details */}
+                    <View style={{ marginBottom: spacing.sm, gap: 10 }}>
                       <Text
                         style={{
                           color: "#9ca3af",
                           fontSize: 12,
-                          marginBottom: 6,
+                          marginBottom: 2,
                         }}
                       >
-                        Skills & Experience:
+                        Details
                       </Text>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          flexWrap: "wrap",
-                          gap: 6,
-                          marginBottom: 6,
-                        }}
-                      >
-                        {r.skills.slice(0, 2).map((s, idx) => (
-                          <View
-                            key={idx}
-                            style={{
-                              borderColor: "#4b5563",
-                              borderWidth: 1,
-                              borderRadius: 999,
-                              paddingHorizontal: 8,
-                              paddingVertical: 2,
-                            }}
-                          >
-                            <Text style={{ color: "#d1d5db", fontSize: 12 }}>
-                              {s}
+                      {/* Availability */}
+                      {r.availability ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons name="time" size={14} color="#60a5fa" />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                color: "#cbd5e1",
+                                fontSize: 12,
+                                marginBottom: 4,
+                              }}
+                            >
+                              Availability
+                            </Text>
+                            <View
+                              style={{
+                                alignSelf: "flex-start",
+                                backgroundColor: "#1e293b",
+                                borderColor: "#334155",
+                                borderWidth: 1,
+                                paddingHorizontal: 8,
+                                paddingVertical: 2,
+                                borderRadius: 999,
+                              }}
+                            >
+                              <Text style={{ color: "#93c5fd", fontSize: 12 }}>
+                                {r.availability}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      ) : null}
+
+                      {/* Experience */}
+                      {r.experience ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons
+                            name="book-outline"
+                            size={14}
+                            color="#a78bfa"
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                color: "#cbd5e1",
+                                fontSize: 12,
+                                marginBottom: 4,
+                              }}
+                            >
+                              Experience
+                            </Text>
+                            <Text style={{ color: "#e5e7eb" }}>
+                              {r.experience}
                             </Text>
                           </View>
-                        ))}
-                        {r.skills.length > 2 && (
-                          <View
-                            style={{
-                              borderColor: "#4b5563",
-                              borderWidth: 1,
-                              borderRadius: 999,
-                              paddingHorizontal: 8,
-                              paddingVertical: 2,
-                            }}
-                          >
-                            <Text style={{ color: "#d1d5db", fontSize: 12 }}>
-                              +{r.skills.length - 2} more
+                        </View>
+                      ) : null}
+
+                      {/* Motivation */}
+                      {r.motivation ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons
+                            name="heart-outline"
+                            size={14}
+                            color="#f472b6"
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                color: "#cbd5e1",
+                                fontSize: 12,
+                                marginBottom: 4,
+                              }}
+                            >
+                              Motivation
+                            </Text>
+                            <Text style={{ color: "#e5e7eb" }}>
+                              {r.motivation}
                             </Text>
                           </View>
-                        )}
-                      </View>
-                      <Text style={{ color: "#9ca3af", fontSize: 12 }}>
-                        {r.experience}
-                      </Text>
+                        </View>
+                      ) : null}
+
+                      {/* Optional Skills chips if provided */}
+                      {r.skills && r.skills.length > 0 ? (
+                        <View style={{ marginTop: 4 }}>
+                          <Text
+                            style={{
+                              color: "#9ca3af",
+                              fontSize: 12,
+                              marginBottom: 6,
+                            }}
+                          >
+                            Skills
+                          </Text>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              flexWrap: "wrap",
+                              gap: 6,
+                            }}
+                          >
+                            {r.skills.slice(0, 4).map((s, idx) => (
+                              <View
+                                key={idx}
+                                style={{
+                                  borderColor: "#4b5563",
+                                  borderWidth: 1,
+                                  borderRadius: 999,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 2,
+                                }}
+                              >
+                                <Text
+                                  style={{ color: "#d1d5db", fontSize: 12 }}
+                                >
+                                  {s}
+                                </Text>
+                              </View>
+                            ))}
+                            {r.skills.length > 4 && (
+                              <View
+                                style={{
+                                  borderColor: "#4b5563",
+                                  borderWidth: 1,
+                                  borderRadius: 999,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 2,
+                                }}
+                              >
+                                <Text
+                                  style={{ color: "#d1d5db", fontSize: 12 }}
+                                >
+                                  +{r.skills.length - 4} more
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      ) : null}
                     </View>
 
                     {/* Applied date */}

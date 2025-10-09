@@ -131,6 +131,44 @@ export const campaignsApi = createApi({
   }),
   tagTypes: ["Campaign"],
   endpoints: (builder) => ({
+    // Admin: list pending agent requests
+    getPendingAgentRequests: builder.query<
+      Array<{
+        _id: string;
+        agentId: string;
+        campaignId: string;
+        status: string;
+        experience?: string;
+        motivation?: string;
+        availability?: string;
+        createdAt: string;
+        agent?: {
+          agentId?: string;
+          fullName?: string;
+          email?: string;
+          phoneNumber?: string;
+        } | null;
+        campaign?: {
+          campaignID: string;
+          name: string;
+          type?: string;
+          city?: string;
+          district?: string;
+          status?: string;
+        } | null;
+      }>,
+      { campaignId?: string; page?: number; limit?: number } | void
+    >({
+      query: (args) => ({
+        url: `campaigns/agent-requests`,
+        params: cleanParams(args || {}),
+      }),
+      transformResponse: (resp: any) => {
+        if (Array.isArray(resp)) return resp;
+        if (Array.isArray(resp?.data)) return resp.data;
+        return [];
+      },
+    }),
     getCampaigns: builder.query<ServerCampaign[], GetCampaignsParams | void>({
       query: (args) => ({
         url: "campaigns",
@@ -206,4 +244,5 @@ export const {
   useGetCampaignByIdQuery,
   useJoinCampaignMutation,
   useGetMeQuery,
+  useGetPendingAgentRequestsQuery,
 } = campaignsApi;
