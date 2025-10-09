@@ -129,8 +129,44 @@ export const campaignsApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Campaign", "AgentRequests", "Assignment"],
+  tagTypes: ["Campaign", "AgentRequests", "Assignment", "AssignmentsList"],
   endpoints: (builder) => ({
+    // Admin: list coordinator assignments (active coordinators)
+    getCoordinatorAssignments: builder.query<
+      Array<{
+        campaignId: string;
+        agentId: string;
+        status: string;
+        startedAt?: string;
+        campaign?: {
+          name?: string;
+          city?: string;
+          district?: string;
+          type?: string;
+        };
+        coordinatorProfile?: {
+          fullName?: string;
+          email?: string;
+          phoneNumber?: string;
+        };
+        stats?: {
+          collections?: { completed?: number; target?: number };
+          distributions?: { completed?: number; target?: number };
+        };
+      }>,
+      { status?: string; page?: number; limit?: number } | void
+    >({
+      query: (args) => ({
+        url: `campaigns/assignments`,
+        params: cleanParams(args || {}),
+      }),
+      providesTags: [{ type: "AssignmentsList", id: "LIST" }],
+      transformResponse: (resp: any) => {
+        if (Array.isArray(resp)) return resp;
+        if (Array.isArray(resp?.data)) return resp.data;
+        return [];
+      },
+    }),
     // Admin: list pending agent requests
     getPendingAgentRequests: builder.query<
       Array<{
@@ -193,6 +229,7 @@ export const campaignsApi = createApi({
         { type: "Campaign" as const, id: "LIST" },
         { type: "AgentRequests" as const, id: "LIST" },
         { type: "Assignment" as const, id: arg.campaignId },
+        { type: "AssignmentsList" as const, id: "LIST" },
       ],
     }),
     // Admin: reject agent request
@@ -295,4 +332,5 @@ export const {
   useApproveAgentRequestMutation,
   useRejectAgentRequestMutation,
   useGetCoordinatorAssignmentQuery,
+  useGetCoordinatorAssignmentsQuery,
 } = campaignsApi;

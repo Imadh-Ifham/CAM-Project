@@ -25,6 +25,7 @@ import {
   useGetPendingAgentRequestsQuery,
   useApproveAgentRequestMutation,
   useRejectAgentRequestMutation,
+  useGetCoordinatorAssignmentsQuery,
 } from "../../../../src/store/services/campaignsApi";
 
 type PendingRequest = {
@@ -181,9 +182,49 @@ export default function AgentsList() {
     }));
   }, [pendingServer]);
 
+  const {
+    data: assignments,
+    isFetching: isFetchingAssignments,
+    error: assignmentsError,
+  } = useGetCoordinatorAssignmentsQuery({ status: "active", limit: 50 });
+
+  // Map assignments to approved agent card model
+  const approvedFromServer = useMemo(() => {
+    if (!assignments) return [] as ApprovedAgent[];
+    return assignments.map((a: any, idx: number) => ({
+      id: idx + 1, // local key only; we will pass real identifiers via navigation params
+      name: a?.coordinatorProfile?.fullName || a.agentId || "Unknown",
+      email: a?.coordinatorProfile?.email || "",
+      phone: a?.coordinatorProfile?.phoneNumber || "",
+      campaignName: `${a?.campaign?.name || a.campaignId}${
+        a?.campaign?.city ? ` - ${a.campaign.city}` : ""
+      }${a?.campaign?.district ? `, ${a.campaign.district}` : ""}`,
+      campaignType: a?.campaign?.type || "",
+      role: "Both",
+      joinDate: a?.startedAt || new Date().toISOString(),
+      status: a?.status === "active" ? "active" : "inactive",
+      performance: {
+        collectionsCompleted: a?.stats?.collections?.completed || 0,
+        collectionsTarget: a?.stats?.collections?.target || 0,
+        distributionsCompleted: a?.stats?.distributions?.completed || 0,
+        distributionsTarget: a?.stats?.distributions?.target || 0,
+      },
+      // carry-through identifiers for navigation
+      _campaignId: a.campaignId,
+      _agentId: a.agentId,
+    }));
+  }, [assignments]);
+
   const [approved, setApproved] = useState<ApprovedAgent[]>(
     MOCK.approvedAgents
   );
+
+  // Use server data when available; fallback to mock if empty
+  const approvedList: ApprovedAgent[] = useMemo(() => {
+    return approvedFromServer.length > 0
+      ? (approvedFromServer as any)
+      : approved;
+  }, [approvedFromServer, approved]);
 
   const filteredPending = useMemo(
     () =>
@@ -197,7 +238,8 @@ export default function AgentsList() {
   );
 
   const filteredApproved = useMemo(() => {
-    return approved.filter((a) => {
+    const list = approvedList;
+    return list.filter((a) => {
       const matchesSearch =
         a.name.toLowerCase().includes(search.toLowerCase()) ||
         a.email.toLowerCase().includes(search.toLowerCase());
@@ -209,7 +251,7 @@ export default function AgentsList() {
         a.campaignName.toLowerCase().includes(campaignFilter.toLowerCase());
       return matchesSearch && matchesStatus && matchesRole && matchesCampaign;
     });
-  }, [approved, search, statusFilter, roleFilter, campaignFilter]);
+  }, [approvedList, search, statusFilter, roleFilter, campaignFilter]);
 
   const [approveReq, { isLoading: isApproving }] =
     useApproveAgentRequestMutation();
@@ -283,10 +325,14 @@ export default function AgentsList() {
     );
   };
 
-  const openAgent = (agent: ApprovedAgent) => {
+  const openAgent = (agent: any) => {
     router.push({
       pathname: "/adminDashboard/components/agents/ApprovedAgent",
-      params: { id: String(agent.id) },
+      params: {
+        id: String(agent._agentId || agent.id),
+        campaignId: String(agent._campaignId || ""),
+        agentId: String(agent._agentId || ""),
+      },
     } as any);
   };
 
@@ -316,6 +362,36 @@ export default function AgentsList() {
             <Text style={{ color: "#991b1b" }}>
               {(() => {
                 const err: any = pendingError as any;
+                const status = err?.status || err?.originalStatus;
+                const detail =
+                  typeof err?.data === "string"
+                    ? err.data
+                    : JSON.stringify(err?.data);
+                return `Status ${status || "unknown"}${
+                  detail ? `: ${detail}` : ""
+                }`;
+              })()}
+            </Text>
+          </View>
+        ) : null}
+        {/* Assignments fetch error banner */}
+        {assignmentsError ? (
+          <View
+            style={{
+              marginTop: spacing.sm,
+              padding: spacing.md,
+              borderRadius: 12,
+              backgroundColor: "#fef3c7",
+              borderWidth: 1,
+              borderColor: "#f59e0b",
+            }}
+          >
+            <Text style={{ color: "#78350f", fontWeight: "700" }}>
+              Failed to load active coordinators
+            </Text>
+            <Text style={{ color: "#78350f" }}>
+              {(() => {
+                const err: any = assignmentsError as any;
                 const status = err?.status || err?.originalStatus;
                 const detail =
                   typeof err?.data === "string"
@@ -1058,8 +1134,8 @@ export default function AgentsList() {
               <View style={{ gap: spacing.md }}>
                 {filteredApproved.map((a) => (
                   <Pressable
-                    key={a.id}
-                    onPress={() => openAgent(a)}
+                    key={`${a.name}-${a.campaignName}-${a.email}-${a.phone}`}
+                    onPress={() => openAgent(a as any)}
                     style={{
                       backgroundColor: "#111827",
                       borderColor: "#374151",
@@ -1119,8 +1195,8 @@ export default function AgentsList() {
                             fontSize: 12,
                           }}
                         >
-                          {a.performance.collectionsCompleted}/
-                          {a.performance.collectionsTarget}
+                          {a.performance.collectionsCompleted || 0}/
+                          {a.performance.collectionsTarget || 0}
                         </Text>
                         <Text style={{ color: "#9ca3af", fontSize: 12 }}>
                           Collections
@@ -1133,8 +1209,8 @@ export default function AgentsList() {
                             marginTop: 4,
                           }}
                         >
-                          {a.performance.distributionsCompleted}/
-                          {a.performance.distributionsTarget}
+                          {a.performance.distributionsCompleted || 0}/
+                          {a.performance.distributionsTarget || 0}
                         </Text>
                         <Text style={{ color: "#9ca3af", fontSize: 12 }}>
                           Distributions

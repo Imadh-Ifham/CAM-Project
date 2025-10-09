@@ -3,6 +3,60 @@ import AgentCampaignRequestService from "../services/agentCampaignRequest.servic
 import CoordinatorAssignment from "../../coordinator-assignments/models/CoordinatorAssignment.model";
 
 export default class AgentCampaignRequestController {
+  static async listAssignments(req: Request, res: Response) {
+    try {
+      const { status = "active", page, limit } = req.query as any;
+      const pg = page ? parseInt(String(page), 10) : 1;
+      const lm = limit ? parseInt(String(limit), 10) : 50;
+      const skip = (Math.max(1, pg) - 1) * Math.max(1, lm);
+
+      const filter: any = {};
+      if (status) filter.status = status;
+
+      const [items, total] = await Promise.all([
+        CoordinatorAssignment.find(filter)
+          .select(
+            [
+              "campaignId",
+              "agentId",
+              "status",
+              "startedAt",
+              "campaign.name",
+              "campaign.city",
+              "campaign.district",
+              "campaign.type",
+              "coordinatorProfile.fullName",
+              "coordinatorProfile.email",
+              "coordinatorProfile.phoneNumber",
+              // keep stats minimal; values may be zeroed for now
+              "stats.collections.completed",
+              "stats.collections.target",
+              "stats.distributions.completed",
+              "stats.distributions.target",
+            ].join(" ")
+          )
+          .sort({ startedAt: -1 })
+          .skip(skip)
+          .limit(Math.max(1, lm))
+          .lean(),
+        CoordinatorAssignment.countDocuments(filter),
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        data: items,
+        pagination: {
+          page: Math.max(1, pg),
+          limit: Math.max(1, lm),
+          total,
+          totalPages: Math.ceil(total / Math.max(1, lm)),
+        },
+      });
+    } catch (err) {
+      console.error("[listAssignments]", err);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
   static async listPending(req: Request, res: Response) {
     try {
       const { campaignId, page, limit } = req.query as any;

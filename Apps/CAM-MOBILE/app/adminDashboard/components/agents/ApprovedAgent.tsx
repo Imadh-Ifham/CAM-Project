@@ -1,5 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Card,
@@ -14,96 +20,66 @@ import CollectionsTab, { Collection } from "./CollectionsTab";
 import DistributionsTab, { Distribution } from "./DistributionsTab";
 import VolunteersTab, { Volunteer } from "./VolunteersTab";
 import StatsTab from "./StatsTab";
+import { useGetCoordinatorAssignmentQuery } from "@/src/store/services/campaignsApi";
 
 export default function ApprovedAgent() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const id = params.id as string | undefined;
+  const campaignId =
+    (params.campaignId as string) || (params.id as string) || "";
+  const agentId = (params.agentId as string) || "";
   const [tab, setTab] = useState<ApprovedAgentTab>("collections");
+  const {
+    data: assignment,
+    isFetching,
+    error,
+  } = useGetCoordinatorAssignmentQuery(campaignId, {
+    skip: !campaignId,
+  });
 
-  // Mock agent data (could be fetched by id in the future)
-  const agent = useMemo(
-    () => ({
-      id: Number(id) || 101,
-      name: "John Williams",
-      email: "john.williams@email.com",
-      phone: "+94 77 456 7890",
-      campaignName: "Flood Relief - Colombo",
-      campaignType: "Disaster Relief",
+  // Map assignment to the UI model
+  const agent = useMemo(() => {
+    const a: any = assignment || {};
+    const collectionsCompleted = a?.stats?.collections?.completed || 0;
+    const collectionsTarget = a?.stats?.collections?.target || 0;
+    const distributionsCompleted = a?.stats?.distributions?.completed || 0;
+    const distributionsTarget = a?.stats?.distributions?.target || 0;
+    const volunteersArr: any[] = Array.isArray(a?.volunteers)
+      ? a.volunteers
+      : [];
+    const volunteersMapped: Volunteer[] = volunteersArr.map(
+      (v: any, idx: number) => ({
+        id: idx + 1,
+        name: v?.volunteerId || `Volunteer ${idx + 1}`,
+        role: "Volunteer",
+        status: v?.leftAt ? ("inactive" as const) : ("active" as const),
+      })
+    );
+
+    return {
+      id: Number(id) || 0,
+      name: a?.coordinatorProfile?.fullName || agentId || "",
+      email: a?.coordinatorProfile?.email || "",
+      phone: a?.coordinatorProfile?.phoneNumber || "",
+      campaignName: `${a?.campaign?.name || a?.campaignId || ""}${
+        a?.campaign?.city ? ` - ${a.campaign.city}` : ""
+      }${a?.campaign?.district ? `, ${a.campaign.district}` : ""}`,
+      campaignType: a?.campaign?.type || "",
       role: "Both",
-      joinDate: "2024-01-01",
-      status: "active",
+      joinDate: a?.startedAt || new Date().toISOString(),
+      status: a?.status === "active" ? "active" : "inactive",
       performance: {
-        collectionsCompleted: 8,
-        collectionsTarget: 10,
-        distributionsCompleted: 12,
-        distributionsTarget: 15,
+        collectionsCompleted,
+        collectionsTarget,
+        distributionsCompleted,
+        distributionsTarget,
       },
-      collections: [
-        {
-          id: "c1",
-          resourceName: "Rice Packets",
-          quantity: 500,
-          date: "2024-01-15",
-          volunteersAssigned: 12,
-          status: "completed" as const,
-        },
-        {
-          id: "c2",
-          resourceName: "Water Bottles",
-          quantity: 1000,
-          date: "2024-01-18",
-          volunteersAssigned: 8,
-          status: "in-progress" as const,
-        },
-      ] as Collection[],
-      distributions: [
-        {
-          id: "d1",
-          resourceName: "Food Packages",
-          deliveryStatus: "delivered" as const,
-          destination: "Colombo District",
-          date: "2024-01-16",
-          quantity: 300,
-        },
-        {
-          id: "d2",
-          resourceName: "Medical Supplies",
-          deliveryStatus: "in-transit" as const,
-          destination: "Western Province",
-          date: "2024-01-19",
-          quantity: 150,
-        },
-      ] as Distribution[],
-      volunteers: [
-        {
-          id: 1,
-          name: "Alice Johnson",
-          role: "Field Worker",
-          status: "active" as const,
-        },
-        {
-          id: 2,
-          name: "Bob Smith",
-          role: "Logistics",
-          status: "active" as const,
-        },
-        {
-          id: 3,
-          name: "Carol Brown",
-          role: "Coordinator",
-          status: "inactive" as const,
-        },
-        {
-          id: 4,
-          name: "David Wilson",
-          role: "Driver",
-          status: "active" as const,
-        },
-      ] as Volunteer[],
-    }),
-    [id]
-  );
+      collections: [] as Collection[],
+      distributions: [] as Distribution[],
+      volunteers: volunteersMapped,
+    };
+  }, [assignment, id, agentId]);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#0b0f15" }}>
@@ -130,9 +106,34 @@ export default function ApprovedAgent() {
             <Ionicons name="chevron-back" size={20} color="#22c55e" />
           </Pressable>
           <Text style={{ color: "#fff", fontSize: 18, fontWeight: "700" }}>
-            {agent.name}
+            {agent.name || "Coordinator"}
           </Text>
         </View>
+
+        {/* Loading / Error states */}
+        {isFetching ? (
+          <View style={{ paddingVertical: 24, alignItems: "center" }}>
+            <ActivityIndicator color="#22c55e" />
+            <Text style={{ color: "#9ca3af", marginTop: 8 }}>
+              Loading assignment...
+            </Text>
+          </View>
+        ) : null}
+        {error && !isFetching ? (
+          <View
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              backgroundColor: "#fee2e2",
+              borderColor: "#ef4444",
+              borderWidth: 1,
+            }}
+          >
+            <Text style={{ color: "#991b1b", fontWeight: "700" }}>
+              Failed to load coordinator details
+            </Text>
+          </View>
+        ) : null}
 
         {/* Profile card */}
         <Card
@@ -183,26 +184,34 @@ export default function ApprovedAgent() {
                     </Text>
                   </View>
                 </View>
-                <Text style={{ color: "#9ca3af" }}>{agent.campaignName}</Text>
-                <Text style={{ color: "#6b7280", fontSize: 12 }}>
-                  {agent.campaignType}
-                </Text>
+                {agent.campaignName ? (
+                  <Text style={{ color: "#9ca3af" }}>{agent.campaignName}</Text>
+                ) : null}
+                {agent.campaignType ? (
+                  <Text style={{ color: "#6b7280", fontSize: 12 }}>
+                    {agent.campaignType}
+                  </Text>
+                ) : null}
               </View>
             </View>
 
             <View style={{ marginTop: spacing.md, gap: 6 }}>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-              >
-                <Ionicons name="mail-outline" size={14} color="#22c55e" />
-                <Text style={{ color: "#d1d5db" }}>{agent.email}</Text>
-              </View>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-              >
-                <Ionicons name="call-outline" size={14} color="#22c55e" />
-                <Text style={{ color: "#d1d5db" }}>{agent.phone}</Text>
-              </View>
+              {agent.email ? (
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
+                  <Ionicons name="mail-outline" size={14} color="#22c55e" />
+                  <Text style={{ color: "#d1d5db" }}>{agent.email}</Text>
+                </View>
+              ) : null}
+              {agent.phone ? (
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
+                  <Ionicons name="call-outline" size={14} color="#22c55e" />
+                  <Text style={{ color: "#d1d5db" }}>{agent.phone}</Text>
+                </View>
+              ) : null}
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
               >

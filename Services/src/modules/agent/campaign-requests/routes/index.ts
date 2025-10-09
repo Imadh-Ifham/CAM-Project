@@ -4,6 +4,14 @@ import { authenticate, authorizeRoles } from "../../../auth/middleware/auth";
 
 const router = Router({ mergeParams: true });
 
+// GET /api/campaigns/assignments?status=active
+router.get(
+  "/assignments",
+  authenticate,
+  authorizeRoles("admin"),
+  AgentCampaignRequestController.listAssignments
+);
+
 // GET /api/campaigns/agent-requests?status=pending&campaignId=DIS-123
 router.get(
   "/agent-requests",
