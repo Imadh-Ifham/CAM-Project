@@ -8,6 +8,7 @@ export interface IUserBase {
   phoneNumber?: string;
   role: UserRole;
   fullName: string;
+  agentId?: string;
   status: "active" | "inactive";
 }
 
