@@ -4,6 +4,15 @@ import { authenticate, authorizeRoles } from "../../../auth/middleware/auth";
 
 const router = Router({ mergeParams: true });
 
+// GET /api/campaigns/agent-requests?status=pending&campaignId=DIS-123
+router.get(
+  "/agent-requests",
+  authenticate,
+  // Only admins should access the admin agent management pending list
+  authorizeRoles("admin"),
+  AgentCampaignRequestController.listPending
+);
+
 // POST /api/campaigns/:campaignId/join-requests
 router.post(
   "/:campaignId/join-requests",
