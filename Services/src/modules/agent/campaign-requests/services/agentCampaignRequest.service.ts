@@ -6,6 +6,70 @@ import AgentCampaignRequest, {
 import User from "../../../auth/models/User";
 
 export default class AgentCampaignRequestService {
+  static async listRequests(options?: {
+    status?: "pending" | "approved" | "rejected" | "canceled";
+    campaignId?: string; // campaignID
+    page?: number;
+    limit?: number;
+  }) {
+    const status = options?.status || "pending";
+    const campaignId = options?.campaignId;
+    const page = Math.max(1, options?.page || 1);
+    const limit = Math.max(1, Math.min(100, options?.limit || 50));
+    const skip = (page - 1) * limit;
+
+    const filter: any = { status };
+    if (campaignId) filter.campaignId = campaignId;
+
+    const [items, total] = await Promise.all([
+      AgentCampaignRequest.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      AgentCampaignRequest.countDocuments(filter),
+    ]);
+
+    // Batch load related users and campaigns
+    const agentIds = Array.from(new Set(items.map((i) => i.agentId)));
+    const campaignIds = Array.from(new Set(items.map((i) => i.campaignId)));
+
+    const [users, campaigns] = await Promise.all([
+      User.find({ agentId: { $in: agentIds } })
+        .select("agentId fullName email phoneNumber uid role")
+        .lean(),
+      Campaign.find({ campaignID: { $in: campaignIds } })
+        .select("campaignID name type city district status")
+        .lean(),
+    ]);
+
+    const userByAgentId = new Map(users.map((u: any) => [u.agentId, u]));
+    const campaignById = new Map(campaigns.map((c: any) => [c.campaignID, c]));
+
+    const enriched = items.map((i) => ({
+      _id: i._id,
+      agentId: i.agentId,
+      campaignId: i.campaignId,
+      status: i.status,
+      experience: i.experience,
+      motivation: i.motivation,
+      availability: i.availability,
+      createdAt: i.createdAt,
+      updatedAt: i.updatedAt,
+      agent: userByAgentId.get(i.agentId) || null,
+      campaign: campaignById.get(i.campaignId) || null,
+    }));
+
+    return {
+      items: enriched,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
   static async createOrGetJoinRequest(
     campaignId: string,
     agentId: string,
