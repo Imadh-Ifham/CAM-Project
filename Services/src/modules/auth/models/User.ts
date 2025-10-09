@@ -54,6 +54,7 @@ const UserSchema = new Schema<IUserDocument>(
     phoneNumber: { type: String },
     role: { type: String, enum: ["admin", "agent", "volunteer"], required: true },
     fullName: { type: String, required: true },
+    agentId: { type: String, unique: true, sparse: true, index: true },
     status: { 
       type: String, 
       enum: ["active", "inactive"], 
