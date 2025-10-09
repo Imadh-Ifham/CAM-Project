@@ -32,6 +32,8 @@ type PendingRequest = {
   skills: string[];
   campaignName: string;
   experience: string;
+  motivation: string;
+  availability: string;
   appliedDate: string; // ISO
 };
 
@@ -161,6 +163,8 @@ export default function AgentsList() {
       skills: [],
       campaignName: r.campaign?.name || r.campaignId,
       experience: r.experience || "",
+      motivation: r.motivation || "",
+      availability: r.availability || "",
       appliedDate: r.createdAt
         ? new Date(r.createdAt).toISOString().slice(0, 10)
         : "",
@@ -681,60 +685,175 @@ export default function AgentsList() {
                       <Text style={{ color: "#fff" }}>{r.campaignName}</Text>
                     </View>
 
-                    {/* Skills */}
-                    <View style={{ marginBottom: spacing.sm }}>
+                    {/* Details */}
+                    <View style={{ marginBottom: spacing.sm, gap: 10 }}>
                       <Text
                         style={{
                           color: "#9ca3af",
                           fontSize: 12,
-                          marginBottom: 6,
+                          marginBottom: 2,
                         }}
                       >
-                        Skills & Experience:
+                        Details
                       </Text>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          flexWrap: "wrap",
-                          gap: 6,
-                          marginBottom: 6,
-                        }}
-                      >
-                        {r.skills.slice(0, 2).map((s, idx) => (
-                          <View
-                            key={idx}
-                            style={{
-                              borderColor: "#4b5563",
-                              borderWidth: 1,
-                              borderRadius: 999,
-                              paddingHorizontal: 8,
-                              paddingVertical: 2,
-                            }}
-                          >
-                            <Text style={{ color: "#d1d5db", fontSize: 12 }}>
-                              {s}
+                      {/* Availability */}
+                      {r.availability ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons name="time" size={14} color="#60a5fa" />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                color: "#cbd5e1",
+                                fontSize: 12,
+                                marginBottom: 4,
+                              }}
+                            >
+                              Availability
+                            </Text>
+                            <View
+                              style={{
+                                alignSelf: "flex-start",
+                                backgroundColor: "#1e293b",
+                                borderColor: "#334155",
+                                borderWidth: 1,
+                                paddingHorizontal: 8,
+                                paddingVertical: 2,
+                                borderRadius: 999,
+                              }}
+                            >
+                              <Text style={{ color: "#93c5fd", fontSize: 12 }}>
+                                {r.availability}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      ) : null}
+
+                      {/* Experience */}
+                      {r.experience ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons
+                            name="book-outline"
+                            size={14}
+                            color="#a78bfa"
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                color: "#cbd5e1",
+                                fontSize: 12,
+                                marginBottom: 4,
+                              }}
+                            >
+                              Experience
+                            </Text>
+                            <Text style={{ color: "#e5e7eb" }}>
+                              {r.experience}
                             </Text>
                           </View>
-                        ))}
-                        {r.skills.length > 2 && (
-                          <View
-                            style={{
-                              borderColor: "#4b5563",
-                              borderWidth: 1,
-                              borderRadius: 999,
-                              paddingHorizontal: 8,
-                              paddingVertical: 2,
-                            }}
-                          >
-                            <Text style={{ color: "#d1d5db", fontSize: 12 }}>
-                              +{r.skills.length - 2} more
+                        </View>
+                      ) : null}
+
+                      {/* Motivation */}
+                      {r.motivation ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons
+                            name="heart-outline"
+                            size={14}
+                            color="#f472b6"
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                color: "#cbd5e1",
+                                fontSize: 12,
+                                marginBottom: 4,
+                              }}
+                            >
+                              Motivation
+                            </Text>
+                            <Text style={{ color: "#e5e7eb" }}>
+                              {r.motivation}
                             </Text>
                           </View>
-                        )}
-                      </View>
-                      <Text style={{ color: "#9ca3af", fontSize: 12 }}>
-                        {r.experience}
-                      </Text>
+                        </View>
+                      ) : null}
+
+                      {/* Optional Skills chips if provided */}
+                      {r.skills && r.skills.length > 0 ? (
+                        <View style={{ marginTop: 4 }}>
+                          <Text
+                            style={{
+                              color: "#9ca3af",
+                              fontSize: 12,
+                              marginBottom: 6,
+                            }}
+                          >
+                            Skills
+                          </Text>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              flexWrap: "wrap",
+                              gap: 6,
+                            }}
+                          >
+                            {r.skills.slice(0, 4).map((s, idx) => (
+                              <View
+                                key={idx}
+                                style={{
+                                  borderColor: "#4b5563",
+                                  borderWidth: 1,
+                                  borderRadius: 999,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 2,
+                                }}
+                              >
+                                <Text
+                                  style={{ color: "#d1d5db", fontSize: 12 }}
+                                >
+                                  {s}
+                                </Text>
+                              </View>
+                            ))}
+                            {r.skills.length > 4 && (
+                              <View
+                                style={{
+                                  borderColor: "#4b5563",
+                                  borderWidth: 1,
+                                  borderRadius: 999,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 2,
+                                }}
+                              >
+                                <Text
+                                  style={{ color: "#d1d5db", fontSize: 12 }}
+                                >
+                                  +{r.skills.length - 4} more
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      ) : null}
                     </View>
 
                     {/* Applied date */}
