@@ -25,10 +25,24 @@ router.post(
 router.patch(
   "/:campaignId/approve-agent",
   authenticate,
-  // In future we may have "admin" role in UserRole; for now permit agent for development if needed
-  // Replace with authorizeRoles("admin") once admin role is implemented
-  authorizeRoles("agent"),
+  authorizeRoles("admin"),
   AgentCampaignRequestController.approveAgent
+);
+
+// PATCH /api/campaigns/:campaignId/reject-request
+router.patch(
+  "/:campaignId/reject-request",
+  authenticate,
+  authorizeRoles("admin"),
+  AgentCampaignRequestController.rejectRequest
+);
+
+// GET /api/campaigns/:campaignId/assignment
+router.get(
+  "/:campaignId/assignment",
+  authenticate,
+  // authorization is checked in controller (admin or coordinator)
+  AgentCampaignRequestController.getAssignment
 );
 
 export default router;

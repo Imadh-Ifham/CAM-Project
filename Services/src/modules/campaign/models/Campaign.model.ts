@@ -286,7 +286,20 @@ const CampaignSchema = new Schema<ICampaign>(
       phone: {
         type: String,
         trim: true,
-        match: [/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"],
+        // Accept E.164 (e.g. +94771234567) or common local formats starting with 0 (e.g. 0771234567)
+        // Also tolerate digits with spaces, dashes, or parentheses for flexibility.
+        validate: {
+          validator: function (v: string) {
+            if (!v) return true; // optional field
+            const e164 = /^\+?[1-9]\d{6,14}$/; // + and 7-15 digits total, no leading zero after +
+            const localLeadingZero = /^0\d{9,14}$/; // local numbers starting with 0, length 10-15
+            const looseReadable = /^[0-9\s\-()]{7,20}$/; // fallback readable pattern
+            return (
+              e164.test(v) || localLeadingZero.test(v) || looseReadable.test(v)
+            );
+          },
+          message: "Invalid phone number format",
+        },
       },
       email: {
         type: String,
@@ -350,6 +363,22 @@ CampaignSchema.pre("save", function (this: ICampaign, next) {
     const prefix = this.type.substring(0, 3).toUpperCase();
     const timestamp = Date.now().toString().substring(-6);
     this.campaignID = `${prefix}-${timestamp}`;
+  }
+
+  // Keep coordinator.isAssigned in sync with coordinatorAgentId
+  try {
+    const assigned = Boolean(this.coordinatorAgentId);
+    if (!this.coordinator) {
+      // create a minimal object to hold the flag without forcing other fields
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      this.coordinator = {};
+    }
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    this.coordinator.isAssigned = assigned;
+  } catch (_) {
+    // no-op: do not block save if coordinator is undefined
   }
 
   next();

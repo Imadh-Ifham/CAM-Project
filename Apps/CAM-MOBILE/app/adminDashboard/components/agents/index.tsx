@@ -21,10 +21,17 @@ import {
 import { Button } from "../../../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useGetPendingAgentRequestsQuery } from "../../../../src/store/services/campaignsApi";
+import {
+  useGetPendingAgentRequestsQuery,
+  useApproveAgentRequestMutation,
+  useRejectAgentRequestMutation,
+} from "../../../../src/store/services/campaignsApi";
 
 type PendingRequest = {
   id: string; // backend ObjectId
+  requestId?: string;
+  agentId?: string;
+  campaignId?: string;
   name: string;
   email: string;
   phone: string;
@@ -156,6 +163,9 @@ export default function AgentsList() {
     if (!pendingServer) return [];
     return pendingServer.map((r: any) => ({
       id: String(r._id || `${r.agentId}-${r.campaignId}`),
+      requestId: r._id,
+      agentId: r.agentId,
+      campaignId: r.campaign?.campaignID || r.campaignId,
       name: r.agent?.fullName || r.agentId || "Unknown Agent",
       email: r.agent?.email || "",
       phone: r.agent?.phoneNumber || "",
@@ -201,12 +211,76 @@ export default function AgentsList() {
     });
   }, [approved, search, statusFilter, roleFilter, campaignFilter]);
 
-  const approve = (id: string) => {
-    Alert.alert("Approve", `Approve request ${id} (coming soon)`);
+  const [approveReq, { isLoading: isApproving }] =
+    useApproveAgentRequestMutation();
+  const [rejectReqMut, { isLoading: isRejecting }] =
+    useRejectAgentRequestMutation();
+
+  const approve = (r: PendingRequest) => {
+    if (!r.campaignId || !r.agentId) {
+      Alert.alert(
+        "Missing data",
+        "Cannot approve: missing campaign or agent id."
+      );
+      return;
+    }
+    Alert.alert(
+      "Approve agent",
+      `Approve ${r.name} as coordinator for ${r.campaignName}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Approve",
+          onPress: async () => {
+            try {
+              await approveReq({
+                campaignId: r.campaignId!,
+                agentId: r.agentId!,
+                requestId: r.requestId,
+              }).unwrap();
+              Alert.alert(
+                "Approved",
+                `${r.name} is now coordinator of ${r.campaignName}.`
+              );
+            } catch (e: any) {
+              const msg = e?.data?.message || e?.error || "Failed to approve";
+              Alert.alert("Approve failed", String(msg));
+            }
+          },
+        },
+      ]
+    );
   };
 
-  const rejectReq = (id: string) => {
-    Alert.alert("Reject", `Reject request ${id} (coming soon)`);
+  const rejectReq = (r: PendingRequest) => {
+    if (!r.campaignId || (!r.requestId && !r.agentId)) {
+      Alert.alert("Missing data", "Cannot reject: missing identifiers.");
+      return;
+    }
+    Alert.alert(
+      "Reject request",
+      `Reject ${r.name}'s request for ${r.campaignName}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reject",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await rejectReqMut({
+                campaignId: r.campaignId!,
+                requestId: r.requestId,
+                agentId: r.agentId,
+              }).unwrap();
+              Alert.alert("Rejected", `Request from ${r.name} was rejected.`);
+            } catch (e: any) {
+              const msg = e?.data?.message || e?.error || "Failed to reject";
+              Alert.alert("Reject failed", String(msg));
+            }
+          },
+        },
+      ]
+    );
   };
 
   const openAgent = (agent: ApprovedAgent) => {
@@ -870,8 +944,9 @@ export default function AgentsList() {
                     {/* Actions */}
                     <View style={{ flexDirection: "row", gap: spacing.md }}>
                       <Button
-                        onPress={() => approve(r.id)}
+                        onPress={() => approve(r)}
                         style={{ flex: 1, backgroundColor: "#16a34a" }}
+                        disabled={isApproving}
                       >
                         <View
                           style={{
@@ -888,13 +963,14 @@ export default function AgentsList() {
                         </View>
                       </Button>
                       <Button
-                        onPress={() => rejectReq(r.id)}
+                        onPress={() => rejectReq(r)}
                         variant="outline"
                         style={{
                           flex: 1,
                           backgroundColor: "#ef444433",
                           borderColor: "#ef4444",
                         }}
+                        disabled={isRejecting}
                       >
                         <View
                           style={{
