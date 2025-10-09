@@ -9,6 +9,7 @@ import meRoute from "./modules/auth/routes/me";
 import { InventoryService } from "./modules/Inventory/services/inventoryService";
 import volunteerCampaignRoutes from "./modules/volunteer/routes/campaigns";
 import { campaignRoutes } from "./modules/campaign";
+import userRoutes from './modules/userManagement/routes/userRoutes';
 import agentCampaignRequestRoutes from "./modules/agent/campaign-requests/routes";
 
 const app: Application = express();
@@ -44,5 +45,6 @@ app.use("/api/campaigns", agentCampaignRequestRoutes);
 app.use("/api/agent", agentAuthRoutes);
 app.use("/api/volunteer", volunteerAuthRoutes);
 app.use("/api/auth", meRoute);
+app.use('/api/users', userRoutes);
 
 export default app;
