@@ -4,6 +4,7 @@ import AgentCampaignRequest, {
   IAgentCampaignRequest,
 } from "../models/AgentCampaignRequest.model";
 import User from "../../../auth/models/User";
+import CoordinatorAssignment from "../../coordinator-assignments/models/CoordinatorAssignment.model";
 
 export default class AgentCampaignRequestService {
   static async listRequests(options?: {
@@ -113,7 +114,11 @@ export default class AgentCampaignRequestService {
     return { request, campaign };
   }
 
-  static async approveAgent(campaignId: string, agentId: string) {
+  static async approveAgent(
+    campaignId: string,
+    agentId: string,
+    opts?: { approvedByUid?: string; approvedByEmail?: string }
+  ) {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
@@ -126,14 +131,30 @@ export default class AgentCampaignRequestService {
 
       // Set coordinator agent id
       campaign.coordinatorAgentId = agentId;
+      // ensure coordinator object exists
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      campaign.coordinator = campaign.coordinator || {};
+      // flag will be synced by pre-save as well, but set it explicitly for readability
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       campaign.coordinator.isAssigned = true;
 
       // Populate coordinator contact from agent profile if available
       const userDoc = await User.findOne({ agentId }).session(session);
       if (userDoc) {
-        campaign.coordinator.email = userDoc.email;
-        campaign.coordinator.phone =
-          userDoc.phoneNumber || campaign.coordinator.phone;
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        campaign.coordinator.email =
+          userDoc.email || campaign.coordinator.email;
+        // only set phone if present; validation is relaxed but still may fail on garbage
+        if (userDoc.phoneNumber) {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          campaign.coordinator.phone = userDoc.phoneNumber;
+        }
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         campaign.coordinator.name =
           userDoc.fullName || campaign.coordinator.name;
       }
@@ -156,9 +177,121 @@ export default class AgentCampaignRequestService {
         { session }
       );
 
+      // Create CoordinatorAssignment (unique per campaign)
+      const resourcesSnapshot = (campaign.resources || []).map((r: any) => ({
+        resourceId: r.id,
+        name: r.name,
+        unit: r.unit,
+        targetQty: typeof r.quantity === "number" ? r.quantity : undefined,
+      }));
+
+      const assignmentDoc = await CoordinatorAssignment.create(
+        [
+          {
+            campaignId,
+            agentId,
+            role: "coordinator",
+            status: "active",
+            audit: {
+              approvedByUid: opts?.approvedByUid || "unknown",
+              approvedByEmail: opts?.approvedByEmail,
+              approvedAt: new Date(),
+            },
+            campaign: {
+              name: campaign.name,
+              type: campaign.type,
+              district: campaign.district,
+              city: campaign.city,
+              location: campaign.location,
+            },
+            coordinatorProfile: {
+              fullName: userDoc?.fullName,
+              email: userDoc?.email,
+              phoneNumber: userDoc?.phoneNumber,
+            },
+            resourcesSnapshot,
+            stats: {
+              progress: { overallPercent: 0 },
+              collections: {
+                completed: 0,
+                target: undefined,
+                byResource: resourcesSnapshot.map((r) => ({
+                  resourceId: r.resourceId,
+                  name: r.name,
+                  unit: r.unit,
+                  collectedQty: 0,
+                  targetQty: r.targetQty,
+                })),
+              },
+              distributions: {
+                completed: 0,
+                target: undefined,
+                byResource: resourcesSnapshot.map((r) => ({
+                  resourceId: r.resourceId,
+                  name: r.name,
+                  unit: r.unit,
+                  distributedQty: 0,
+                  targetQty: r.targetQty,
+                })),
+              },
+              tasks: { open: 0, completed: 0 },
+            },
+          },
+        ],
+        { session }
+      );
+
       await session.commitTransaction();
       session.endSession();
-      return { campaign, approvedReq };
+      return { campaign, approvedReq, assignment: assignmentDoc?.[0] };
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      throw err;
+    }
+  }
+
+  static async rejectRequest(
+    campaignId: string,
+    params: { requestId?: string; agentId?: string }
+  ) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      // Find request
+      let reqDoc: any = null;
+      if (params.requestId) {
+        reqDoc = await AgentCampaignRequest.findOne({
+          _id: params.requestId,
+          campaignId,
+        }).session(session);
+      } else if (params.agentId) {
+        reqDoc = await AgentCampaignRequest.findOne({
+          agentId: params.agentId,
+          campaignId,
+        }).session(session);
+      }
+
+      if (!reqDoc) throw new Error("REQUEST_NOT_FOUND");
+      if (reqDoc.status !== "pending") throw new Error("REQUEST_NOT_PENDING");
+
+      // Mark as rejected
+      reqDoc.status = "rejected";
+      await reqDoc.save({ session });
+
+      // Pull from campaign.requestedAgent
+      const campaign = await Campaign.findOne({
+        campaignID: campaignId,
+      }).session(session);
+      if (!campaign) throw new Error("CAMPAIGN_NOT_FOUND");
+      campaign.requestedAgent = (campaign.requestedAgent || []).filter(
+        (a) => a !== reqDoc.agentId
+      );
+      await campaign.save({ session });
+
+      await session.commitTransaction();
+      session.endSession();
+      return { request: reqDoc, campaign };
     } catch (err) {
       await session.abortTransaction();
       session.endSession();
