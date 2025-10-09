@@ -140,9 +140,9 @@ class CampaignService {
     campaignId: string
   ): Promise<ServiceResponse<ICampaign>> {
     try {
-      const campaign = await Campaign.findOne({ campaignID: campaignId })
-        .populate("assignedAgents", "name email phone role")
-        .exec();
+      const campaign = await Campaign.findOne({
+        campaignID: campaignId,
+      }).exec();
 
       if (!campaign) {
         return {
@@ -212,12 +212,7 @@ class CampaignService {
 
       // Execute queries
       const [campaigns, totalCount] = await Promise.all([
-        Campaign.find(query)
-          .populate("assignedAgents", "name email phone role")
-          .sort(sort)
-          .skip(skip)
-          .limit(limit)
-          .exec(),
+        Campaign.find(query).sort(sort).skip(skip).limit(limit).exec(),
         Campaign.countDocuments(query),
       ]);
 
