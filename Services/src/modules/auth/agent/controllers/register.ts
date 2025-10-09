@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import User from "../../models/User";
+import { generateUniqueAgentId } from "../../utils/id";
 
 type AuthenticatedRequest = Request & { user?: any };
 
@@ -15,22 +16,38 @@ export async function registerAgent(req: AuthenticatedRequest, res: Response) {
   if (!uid) return res.status(401).json({ message: "Unauthorized" });
 
   try {
-    // If user exists, update role and profile; else create new
-    const update = {
-      uid,
-      email: email || req.user?.email || "",
-      phoneNumber: phoneNumber || req.user?.phone_number,
-      role: "agent" as const,
-      fullName,
-      agentProfile: { organization, experienceAndMotivation },
-      volunteerProfile: undefined,
-    };
+    // Find existing user by Firebase UID
+    let user = await User.findOne({ uid });
 
-    const user = await User.findOneAndUpdate(
-      { uid },
-      { $set: update },
-      { new: true, upsert: true }
-    );
+    if (!user) {
+      // Create new user as agent
+      user = new (User as any)({
+        uid,
+        email: email || req.user?.email || "",
+        phoneNumber: phoneNumber || req.user?.phone_number,
+        role: "agent" as const,
+        fullName,
+        agentProfile: { organization, experienceAndMotivation },
+        volunteerProfile: undefined,
+      });
+      // Assign a unique agentId
+      user.agentId = await generateUniqueAgentId();
+      await user.save();
+    } else {
+      // Update to agent and set profile fields
+      user.email = email || user.email || req.user?.email || "";
+      user.phoneNumber =
+        phoneNumber || user.phoneNumber || req.user?.phone_number;
+      user.role = "agent" as const;
+      user.fullName = fullName ?? user.fullName;
+      user.agentProfile = { organization, experienceAndMotivation };
+      user.volunteerProfile = undefined;
+      // Ensure agentId exists (set once)
+      if (!user.agentId) {
+        user.agentId = await generateUniqueAgentId();
+      }
+      await user.save();
+    }
 
     return res.status(201).json({ user });
   } catch (err) {
