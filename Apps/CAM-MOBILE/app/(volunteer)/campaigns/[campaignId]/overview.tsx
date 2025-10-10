@@ -28,7 +28,19 @@ export default function VolunteerCampaignOverview() {
     try {
       setLoading(true);
       const data = await getCampaign(campaignId);
-      setCampaign(data.campaign || data);
+      const c = data.data || data.campaign || data;
+      
+      // ✅ Map campaign data from campaign module
+      setCampaign({
+        ...c,
+        location: c.location || `${c.city || ""}, ${c.district || ""}`.trim(),
+        startDate: c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : "",
+        endDate: c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "",
+        agent: c.assignedAgents?.[0]?.name || "Agent TBD",
+        agentPhone: c.assignedAgents?.[0]?.phone || "",
+        volunteers: c.assignedVolunteers?.length || 0,
+        volunteersNeeded: c.requiredVolunteers || 10,
+      });
     } catch (e: any) {
       Alert.alert("Error", e?.message || "Failed to load campaign");
     } finally {

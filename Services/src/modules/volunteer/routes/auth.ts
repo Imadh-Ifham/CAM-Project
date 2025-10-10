@@ -13,8 +13,17 @@ const JWT_SECRET = process.env.JWT_SECRET || "changeme";
 // ✅ REGISTER
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, phone, preferredType } = req.body;
-    if (!name || !email || !password)
+    const {
+      fullName,
+      age,
+      email,
+      password,
+      phoneNumber,
+      preferredType,
+      skillsAndInterest,
+      availability,
+    } = req.body;
+    if (!fullName || !email || !password)
       return res.status(400).json({ message: "Missing required fields" });
 
     const existing = await Volunteer.findOne({ email });
@@ -23,11 +32,14 @@ router.post("/register", async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const volunteer = new Volunteer({
-      name,
+      fullName,
+      age,
       email,
       passwordHash,
-      phone,
+      phoneNumber,
       preferredType,
+      skillsAndInterest,
+      availability,
     });
     await volunteer.save();
 
@@ -89,10 +101,17 @@ router.get("/me", authMiddleware, async (req: any, res) => {
 // ✅ UPDATE volunteer profile
 router.put("/me", authMiddleware, async (req: any, res) => {
   try {
-    const { name, phone, preferredType } = req.body;
+    const {
+      fullName,
+      age,
+      phoneNumber,
+      preferredType,
+      skillsAndInterest,
+      availability,
+    } = req.body;
     const updated = await Volunteer.findByIdAndUpdate(
       req.volunteer._id,
-      { name, phone, preferredType },
+      { fullName, age, phoneNumber, preferredType, skillsAndInterest, availability },
       { new: true }
     ).select("-passwordHash");
 

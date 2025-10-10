@@ -1,23 +1,24 @@
-const EXPO_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:7000";
-const API_URL = `${EXPO_URL}/api`;
+// Get your computer's IP address and update this default
+const EXPO_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.1.2:5000/api";
 
 const API = {
   CAMPAIGN: {
-    CREATE_CAMPAIGN: `${API_URL}/campaigns/`,
-    LIST_CAMPAIGNS: `${API_URL}/campaigns/`,
-    GET_CAMPAIGN: (id: string) => `${API_URL}/campaigns/${id}`,
+    CREATE_CAMPAIGN: `${EXPO_URL}/campaigns`,
+    LIST_CAMPAIGNS: `${EXPO_URL}/campaigns`,
+    GET_CAMPAIGN: (id: string) => `${EXPO_URL}/campaigns/${id}`,
   },
   VOLUNTEER: {
-    PROFILE: `${API_URL}/auth/me`,
-    REGISTER: `${API_URL}/volunteer/register`,
-    LIST: `${API_URL}/volunteers/`,
-    ASSIGN_TO_CAMPAIGN: `${API_URL}/volunteers/assign`,
+    PROFILE: `${EXPO_URL}/volunteer/me`,
+    REGISTER: `${EXPO_URL}/volunteer/register`,
+    LOGIN: `${EXPO_URL}/volunteer/login`,
+    ASSIGN_TO_CAMPAIGN: `${EXPO_URL}/volunteer/assign`,
   },
   AGENT: {
-    REGISTER: `${API_URL}/agent/register`,
+    REGISTER: `${EXPO_URL}/agent/register`,
+    LOGIN: `${EXPO_URL}/agent/login`,
   },
   AUTH: {
-    ME: `${API_URL}/auth/me`,
+    ME: `${EXPO_URL}/volunteer/me`,
   },
 };
 

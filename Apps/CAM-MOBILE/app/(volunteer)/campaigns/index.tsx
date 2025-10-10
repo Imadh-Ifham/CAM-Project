@@ -80,24 +80,26 @@ export default function VolunteerCampaignsIndex() {
         getVolunteerProfile(),
       ]);
 
-      // Map backend data to frontend format
-      const mappedCampaigns = (campaignsData.campaigns || []).map((c: any) => ({
+      // ✅ Map backend campaign data to frontend format
+      const mappedCampaigns = ((campaignsData.data?.data || campaignsData.campaigns || []) as any[]).map((c: any) => ({
         id: c._id || c.id,
         name: c.name || "Unnamed Campaign",
         description: c.description || "",
-        location: c.location || "Location TBD",
-        startDate: c.startDate
-          ? new Date(c.startDate).toISOString().split("T")[0]
-          : "",
+        location: c.location || `${c.city || ""}, ${c.district || ""}`.trim() || "Location TBD",
+        startDate: c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : "",
         endDate: c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "",
-        agent: c.agentName || "Agent TBD",
-        agentPhone: c.agentPhone || "",
+        agent: c.assignedAgents?.[0]?.name || "Agent TBD",
+        agentPhone: c.assignedAgents?.[0]?.phone || "",
         volunteers: c.assignedVolunteers?.length || 0,
-        volunteersNeeded: c.volunteersNeeded || 10,
-        status: c.status || "Available",
-        locations: c.locations || 1,
-        taskTypes: c.taskTypes || "General tasks",
-        resourceNeeds: c.resourceNeeds || { food: 0, clothes: 0, funds: 0 },
+        volunteersNeeded: c.requiredVolunteers || 10,
+        status: (c.status === "active" ? "Active" : c.status === "completed" ? "Completed" : "Available") as CampaignStatus,
+        locations: 1,
+        taskTypes: c.type || "General tasks",
+        resourceNeeds: { 
+          food: c.resources?.filter((r: any) => r.category === "food").length || 0,
+          clothes: c.resources?.filter((r: any) => r.category === "clothing").length || 0,
+          funds: c.estimatedBudget || 0,
+        },
       }));
 
       setCampaigns(mappedCampaigns);

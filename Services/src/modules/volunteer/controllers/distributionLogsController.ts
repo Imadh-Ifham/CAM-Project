@@ -20,7 +20,7 @@ export const listDistributionLogs = async (req: Request, res: Response) => {
     const { campaignId } = req.params;
     const q: any = {};
     if (campaignId) q.campaignId = campaignId;
-    const logs = await DistributionLog.find(q).populate("volunteerId", "name email").lean();
+    const logs = await DistributionLog.find(q).populate("volunteerId", "fullName email").lean();
     res.json({ logs });
   } catch (err: any) {
     console.error(err);
