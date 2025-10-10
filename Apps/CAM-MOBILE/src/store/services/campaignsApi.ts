@@ -335,4 +335,6 @@ export const {
   useRejectAgentRequestMutation,
   useGetCoordinatorAssignmentQuery,
   useGetCoordinatorAssignmentsQuery,
+  // Lazy variants for prefetching before navigation
+  useLazyGetCoordinatorAssignmentQuery,
 } = campaignsApi;

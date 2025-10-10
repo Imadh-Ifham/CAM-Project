@@ -21,6 +21,7 @@ import {
   useGetCampaignsQuery,
   useJoinCampaignMutation,
   useGetMeQuery,
+  useLazyGetCoordinatorAssignmentQuery,
 } from "../../../src/store/services/campaignsApi";
 import { useAppSelector } from "../../../src/store/hooks";
 import { selectCurrentAgent } from "../../../src/store/selectors/agentSelectors";
@@ -79,6 +80,8 @@ export default function AgentCampaigns() {
   const agentId = useAppSelector(selectCurrentAgent)?.id; // mock agent id in current slice
   const currentUid = (auth as any)?.currentUser?.uid as string | undefined;
   const [joinCampaign, { isLoading: isJoining }] = useJoinCampaignMutation();
+  const [triggerGetAssignment, assignmentState] =
+    useLazyGetCoordinatorAssignmentQuery();
   // Resolve authoritative identity from server (contains agentId if mapped)
   const { data: meData } = useGetMeQuery();
   const effectiveAgentId = meData?.user?.agentId || meData?.agentId;
@@ -226,6 +229,28 @@ export default function AgentCampaigns() {
     const id = c.coordinatorAgentId;
     if (!id) return false;
     return identityCandidates.includes(id);
+  };
+
+  // Consider "joined and accepted" as the coordinator for now (backend assigns coordinatorAgentId)
+  const canManage = (c: UiCampaign) => isCoordinator(c);
+
+  const handleManagePress = async (c: UiCampaign) => {
+    try {
+      // Prefetch assignment to ensure access and data exists
+      const resp = await triggerGetAssignment(c.id, true).unwrap();
+      if (!resp) throw new Error("Assignment not found");
+      router.replace(`/(agent)/campaigns/${c.id}/overview` as any);
+    } catch (e: any) {
+      const status = e?.status;
+      const msg =
+        e?.data?.message ||
+        (status === 403
+          ? "You don't have access to manage this campaign."
+          : status === 404
+          ? "Coordinator assignment not found for this campaign."
+          : "Unable to open campaign. Please try again.");
+      Alert.alert("Cannot open", String(msg));
+    }
   };
   const isRequestedByMe = (c: UiCampaign) => {
     const arr = c.requestedAgent || [];
@@ -598,12 +623,11 @@ export default function AgentCampaigns() {
               </View>
 
               {/* CTA: Manage if current agent is coordinator */}
-              {c.status === "active" && isCoordinator(c) && (
+              {c.status === "active" && canManage(c) && (
                 <Button
                   style={{ width: "100%", backgroundColor: "#16a34a" }}
-                  onPress={() =>
-                    router.replace(`/(agent)/campaigns/${c.id}/overview` as any)
-                  }
+                  loading={assignmentState.isFetching}
+                  onPress={() => handleManagePress(c)}
                 >
                   Manage Campaign
                 </Button>

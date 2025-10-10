@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import React, { useMemo } from "react";
+import { View, Text, ScrollView, ActivityIndicator } from "react-native";
 import { colors } from "../../../../src/styles/colors";
 import { spacing } from "../../../../src/styles/spacing";
 import { typography } from "../../../../src/styles/typography";
@@ -9,23 +9,70 @@ import {
   CardHeader,
 } from "../../../../src/components/ui/Card";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
+import { useGetCoordinatorAssignmentQuery } from "../../../../src/store/services/campaignsApi";
 
 export default function CampaignOverview() {
-  // TODO: wire to API by campaignId from params
-  const campaign = {
-    name: "Winter Relief 2024",
-    description:
-      "Emergency winter supplies distribution for affected families in downtown area",
-    location: "Downtown Community Center",
-    startDate: "2024-01-15",
-    endDate: "2024-02-28",
-    volunteersJoined: 12,
-    volunteersNeeded: 20,
-    resourceNeeds: { food: 500, clothes: 200, funds: 10000 },
-    resourcesCollected: { food: 320, clothes: 140, funds: 6500 },
-  };
+  const { campaignId } = useLocalSearchParams<{ campaignId: string }>();
+  const { data, isFetching, error } = useGetCoordinatorAssignmentQuery(
+    campaignId as string,
+    { skip: !campaignId }
+  );
 
-  const pct = (a: number, b: number) => Math.round((a / b) * 100);
+  const assignment = data as any;
+  const campaign = useMemo(() => {
+    return {
+      name: assignment?.campaign?.name || "Campaign",
+      description:
+        assignment?.campaign?.description ||
+        "Overview of the campaign progress and key stats",
+      location:
+        assignment?.campaign?.location ||
+        [assignment?.campaign?.city, assignment?.campaign?.district]
+          .filter(Boolean)
+          .join(", ") ||
+        "",
+      startDate: assignment?.startedAt
+        ? new Date(assignment.startedAt).toLocaleDateString()
+        : "",
+      endDate: assignment?.endedAt
+        ? new Date(assignment.endedAt).toLocaleDateString()
+        : "",
+      volunteersJoined: assignment?.volunteers?.length || 0,
+      volunteersNeeded: 0,
+      resourceNeeds: {
+        food:
+          assignment?.stats?.collections?.byResource?.find?.(
+            (r: any) => r.name?.toLowerCase?.() === "food"
+          )?.targetQty ||
+          assignment?.stats?.collections?.target ||
+          0,
+        clothes:
+          assignment?.stats?.collections?.byResource?.find?.(
+            (r: any) => r.name?.toLowerCase?.() === "clothes"
+          )?.targetQty || 0,
+        funds: 0,
+      },
+      resourcesCollected: {
+        food:
+          assignment?.stats?.collections?.byResource?.find?.(
+            (r: any) => r.name?.toLowerCase?.() === "food"
+          )?.collectedQty ||
+          assignment?.stats?.collections?.completed ||
+          0,
+        clothes:
+          assignment?.stats?.collections?.byResource?.find?.(
+            (r: any) => r.name?.toLowerCase?.() === "clothes"
+          )?.collectedQty || 0,
+        funds: 0,
+      },
+    };
+  }, [assignment]);
+
+  const pct = (a: number, b: number) => {
+    if (!b) return 0;
+    return Math.max(0, Math.min(100, Math.round((a / b) * 100)));
+  };
 
   const Row = ({ icon, text }: { icon: any; text: string }) => (
     <View
@@ -59,6 +106,40 @@ export default function CampaignOverview() {
       />
     </View>
   );
+
+  if (isFetching) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator />
+        <Text style={{ marginTop: 8, color: colors.muted }}>
+          Loading overview…
+        </Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    const err: any = error;
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: spacing.lg,
+        }}
+      >
+        <Text style={{ color: "#991b1b", fontWeight: "700", marginBottom: 6 }}>
+          Failed to load campaign overview
+        </Text>
+        <Text style={{ color: colors.muted, textAlign: "center" }}>
+          {typeof err?.data === "string"
+            ? err.data
+            : err?.data?.message || "Unknown error"}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
