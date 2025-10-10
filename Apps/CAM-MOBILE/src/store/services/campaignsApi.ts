@@ -1,39 +1,7 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { auth } from "@/src/services/firebase";
-import { Platform } from "react-native";
-import Constants from "expo-constants";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { apiBaseQuery } from "./baseApi";
 
-function resolveBaseUrl(): string {
-  const envUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (envUrl && envUrl.trim()) return envUrl.trim();
-  // In Expo dev, derive LAN host to avoid using localhost on device
-  if (Platform.OS !== "web") {
-    const hostUri = (Constants as any)?.expoConfig?.hostUri as
-      | string
-      | undefined;
-    if (hostUri) {
-      const host = hostUri.split(":")[0];
-      if (host && /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
-        return `http://${host}:5000`;
-      }
-    }
-  }
-  // Fallback
-  return "http://localhost:5000";
-}
-
-// Keep base URL consistent with backend (defaults to port 5000)
-const RAW_URL = resolveBaseUrl();
-// Handle Android emulator 'localhost' redirection
-let resolvedHost = RAW_URL;
-if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\\d+)?$/i.test(RAW_URL)) {
-  if (Platform.OS === "android") {
-    // Android emulator needs 10.0.2.2 to reach host machine
-    const port = RAW_URL.split(":").pop() || "5000";
-    resolvedHost = `http://10.0.2.2:${port}`;
-  }
-}
-const BASE_URL = `${resolvedHost}/api`;
+// BaseQuery moved to shared baseApi
 
 export type ServerCampaign = {
   campaignID: string;
@@ -115,20 +83,7 @@ function cleanParams(params: Record<string, any>) {
 
 export const campaignsApi = createApi({
   reducerPath: "campaignsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: BASE_URL,
-    prepareHeaders: async (headers) => {
-      const user: any = (auth as any).currentUser;
-      if (user) {
-        try {
-          const token = await user.getIdToken?.(true);
-          if (token) headers.set("Authorization", `Bearer ${token}`);
-        } catch {}
-      }
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: apiBaseQuery,
   tagTypes: ["Campaign", "AgentRequests", "Assignment", "AssignmentsList"],
   endpoints: (builder) => ({
     // Admin: list coordinator assignments (active coordinators)

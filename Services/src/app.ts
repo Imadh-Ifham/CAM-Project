@@ -11,6 +11,9 @@ import volunteerCampaignRoutes from "./modules/volunteer/routes/campaigns";
 import { campaignRoutes } from "./modules/campaign";
 import userRoutes from "./modules/userManagement/routes/userRoutes";
 import agentCampaignRequestRoutes from "./modules/agent/campaign-requests/routes";
+import { collectionRoutes } from "./modules/collections";
+import { distributionRoutes } from "./modules/distributions";
+import { progressRoutes } from "./modules/progress";
 
 const app: Application = express();
 
@@ -40,9 +43,13 @@ app.get("/", (req, res) => {
 // Routes
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/volunteer/campaigns", volunteerCampaignRoutes);
-// Specific agent-campaign request endpoints should come before generic campaign routes
+
+// NOTE: After finishing all campaign-header related routes, we can consolidate these into a single campaignsRouter and mount once at /api/campaigns
 app.use("/api/campaigns", agentCampaignRequestRoutes);
+app.use("/api/campaigns", collectionRoutes);
+app.use("/api/campaigns", distributionRoutes);
 app.use("/api/campaigns", campaignRoutes);
+app.use("/api/progress", progressRoutes);
 app.use("/api/agent", agentAuthRoutes);
 app.use("/api/volunteer", volunteerAuthRoutes);
 app.use("/api/auth", meRoute);

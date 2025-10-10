@@ -318,30 +318,6 @@ export default function VolunteerCampaignCollect() {
                           Update Progress
                         </Text>
                       </Button>
-                      <Button variant="outline">
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <Ionicons
-                            name="camera-outline"
-                            size={14}
-                            color={colors.cardForeground}
-                          />
-                          <Text
-                            style={{
-                              color: colors.cardForeground,
-                              fontWeight: "700",
-                            }}
-                          >
-                            Add Photo
-                          </Text>
-                        </View>
-                      </Button>
                     </View>
                   )}
                   {c.status === "Completed" && (
