@@ -31,7 +31,7 @@ export default function AllUsersScreen() {
     fetchUsers();
   }, []);
 
-  // 🔍 Filter users when role changes
+  // Filter users by role
   useEffect(() => {
     if (selectedRole === "all") {
       setFilteredUsers(users);
@@ -40,14 +40,30 @@ export default function AllUsersScreen() {
     }
   }, [selectedRole, users]);
 
+  // 🔍 Combine all role details neatly
   const getProfileInfo = (user: any) => {
+    let info = [`📧 Email: ${user.email}`];
+    if (user.phoneNumber) info.push(`📞 Phone: ${user.phoneNumber}`);
+
+    if (user.role === "admin") {
+      info.push("🛡 Role: Admin (Full access to system)");
+    }
+
     if (user.role === "agent" && user.agentProfile) {
-      return `Organization: ${user.agentProfile.organization}`;
+      const { organization, experienceAndMotivation } = user.agentProfile;
+      if (organization) info.push(`🏢 Organization: ${organization}`);
+      if (experienceAndMotivation)
+        info.push(`💡 Experience: ${experienceAndMotivation}`);
     }
+
     if (user.role === "volunteer" && user.volunteerProfile) {
-      return `Skills: ${user.volunteerProfile.skillsAndInterest}`;
+      const { age, skillsAndInterest, availability } = user.volunteerProfile;
+      if (age) info.push(`🎂 Age: ${age}`);
+      if (skillsAndInterest) info.push(`🛠 Skills: ${skillsAndInterest}`);
+      if (availability) info.push(`📅 Availability: ${availability}`);
     }
-    return "";
+
+    return info.join("\n");
   };
 
   const getRoleColor = (role: string) => {
@@ -63,7 +79,7 @@ export default function AllUsersScreen() {
     }
   };
 
-  // 🎚️ Roles for filter buttons
+  // Filter buttons
   const roles = [
     { label: "All", value: "all", icon: "people" },
     { label: "Admins", value: "admin", icon: "shield-checkmark" },
@@ -123,8 +139,21 @@ export default function AllUsersScreen() {
           ) : (
             filteredUsers.map((user) => (
               <View key={user._id} style={styles.userCard}>
-                <Text style={styles.userName}>{user.fullName}</Text>
-                <Text style={styles.userEmail}>{user.email}</Text>
+                <View style={styles.userHeader}>
+                  <Ionicons
+                    name={
+                      user.role === "admin"
+                        ? "shield-checkmark"
+                        : user.role === "agent"
+                        ? "briefcase"
+                        : "hand-left"
+                    }
+                    size={20}
+                    color={getRoleColor(user.role)}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={styles.userName}>{user.fullName}</Text>
+                </View>
                 <Text style={styles.profileText}>{getProfileInfo(user)}</Text>
                 <View
                   style={[
@@ -201,21 +230,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#333",
   },
+  userHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   userName: {
     color: "#fff",
     fontSize: 17,
     fontWeight: "600",
   },
-  userEmail: {
-    color: "#999",
-    fontSize: 14,
-    marginTop: 4,
-  },
   profileText: {
     color: "#cbd5e1",
     fontSize: 13,
     fontStyle: "italic",
-    marginTop: 6,
+    marginTop: 8,
+    lineHeight: 20,
   },
   roleBadge: {
     alignSelf: "flex-start",
