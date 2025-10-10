@@ -5,6 +5,7 @@ import agentReducer from "./slices/agentSlice";
 import { campaignsApi } from "./services/campaignsApi";
 import { collectionsApi } from "./services/collectionsApi";
 import { distributionsApi } from "./services/distributionsApi";
+import { progressApi } from "./services/progressApi";
 
 export const store = configureStore({
   reducer: {
@@ -13,12 +14,14 @@ export const store = configureStore({
     [campaignsApi.reducerPath]: campaignsApi.reducer,
     [collectionsApi.reducerPath]: collectionsApi.reducer,
     [distributionsApi.reducerPath]: distributionsApi.reducer,
+    [progressApi.reducerPath]: progressApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       campaignsApi.middleware,
       collectionsApi.middleware,
-      distributionsApi.middleware
+      distributionsApi.middleware,
+      progressApi.middleware
     ),
 });
 

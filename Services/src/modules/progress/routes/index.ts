@@ -9,4 +9,16 @@ router.post("/ledger", authenticate, (req, res) =>
   controller.postLedger(req, res)
 );
 
+// Fetch all snapshots for a campaign
+router.get("/:campaignId/snapshots", authenticate, (req, res) =>
+  controller.getSnapshots(req, res)
+);
+
+// Fetch a specific resource snapshot for a campaign
+router.get(
+  "/:campaignId/resources/:resourceId/snapshot",
+  authenticate,
+  (req, res) => controller.getResourceSnapshot(req, res)
+);
+
 export default router;

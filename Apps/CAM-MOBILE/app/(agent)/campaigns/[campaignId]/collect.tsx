@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -30,6 +30,11 @@ import {
 } from "@/src/store/services/collectionsApi";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useGetCollectionJobRecordsQuery } from "@/src/store/services/collectionsApi";
+import {
+  useGetCampaignSnapshotsQuery,
+  useGetResourceSnapshotQuery,
+} from "@/src/store/services/progressApi";
+import ProgressHeader from "@/src/components/ui/ProgressHeader";
 
 type CollectionStatus =
   | "draft"
@@ -45,6 +50,19 @@ export default function CampaignCollect() {
   const { data: campaign } = useGetCampaignByIdQuery(campaignId, {
     skip: !campaignId,
   });
+  // Resource selection must be declared before hooks that depend on it
+  const [resourceId, setResourceId] = useState<string | undefined>();
+  const { data: snapshots = [], refetch: refetchSnapshots } =
+    useGetCampaignSnapshotsQuery(campaignId!, {
+      skip: !campaignId,
+      // Enable background refresh when screen refocuses
+      pollingInterval: 15000,
+      refetchOnFocus: true,
+    } as any);
+  const { data: resSnapshot } = useGetResourceSnapshotQuery(
+    resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
+    { skip: !campaignId || !resourceId } as any
+  );
   const [createJob, { isLoading: creating }] = useCreateCollectionJobMutation();
   const { data: jobs } = useGetCollectionsByCampaignQuery(
     { campaignId },
@@ -55,7 +73,6 @@ export default function CampaignCollect() {
   const [updateJob] = useUpdateCollectionJobMutation();
   const [cancelJob] = useCancelCollectionJobMutation();
 
-  const [resourceId, setResourceId] = useState<string | undefined>();
   const [targetQty, setTargetQty] = useState("");
   const [notes, setNotes] = useState("");
   const [plannedStartAt, setPlannedStartAt] = useState<string | undefined>();
@@ -101,6 +118,11 @@ export default function CampaignCollect() {
   );
 
   const collections = jobs || [];
+
+  // Refresh snapshots when collections list changes
+  useEffect(() => {
+    if (refetchSnapshots) refetchSnapshots();
+  }, [collections]);
 
   const Badge = ({
     children,
@@ -175,6 +197,58 @@ export default function CampaignCollect() {
           gap: spacing.lg,
         }}
       >
+        {/* Progress summary header */}
+        <ProgressHeader
+          title={
+            resourceId
+              ? `Progress · ${
+                  resourceOptions.find((r) => r.key === resourceId)?.label ||
+                  "Selected"
+                }`
+              : "Campaign Progress"
+          }
+          target={
+            resSnapshot?.targetQty ??
+            (resourceId
+              ? 0
+              : snapshots.reduce(
+                  (acc: number, s: any) => acc + (s.targetQty || 0),
+                  0
+                ))
+          }
+          collected={
+            resSnapshot?.collectedQty ??
+            (resourceId
+              ? 0
+              : snapshots.reduce(
+                  (acc: number, s: any) => acc + (s.collectedQty || 0),
+                  0
+                ))
+          }
+          distributed={
+            resSnapshot?.distributedQty ??
+            (resourceId
+              ? 0
+              : snapshots.reduce(
+                  (acc: number, s: any) => acc + (s.distributedQty || 0),
+                  0
+                ))
+          }
+          available={
+            resSnapshot?.availableQty ??
+            (resourceId
+              ? 0
+              : snapshots.reduce(
+                  (acc: number, s: any) => acc + (s.availableQty || 0),
+                  0
+                ))
+          }
+          unitLabel={
+            resourceId
+              ? resourceOptions.find((r) => r.key === resourceId)?.unit
+              : ""
+          }
+        />
         {/* Title row */}
         <View
           style={{

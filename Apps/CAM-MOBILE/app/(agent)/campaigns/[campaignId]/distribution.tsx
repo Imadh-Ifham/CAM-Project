@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -29,6 +29,11 @@ import {
   useCancelDistributionJobMutation,
   useGetDistributionJobRecordsQuery,
 } from "@/src/store/services/distributionsApi";
+import {
+  useGetCampaignSnapshotsQuery,
+  useGetResourceSnapshotQuery,
+} from "@/src/store/services/progressApi";
+import ProgressHeader from "@/src/components/ui/ProgressHeader";
 
 type DistStatus =
   | "draft"
@@ -45,12 +50,28 @@ export default function CampaignDistribution() {
   const { data: campaign } = useGetCampaignByIdQuery(campaignId, {
     skip: !campaignId,
   });
+  // Resource selection must be declared before hooks that depend on it
+  const [resourceId, setResourceId] = useState<string | undefined>();
+  const { data: snapshots = [], refetch: refetchSnapshots } =
+    useGetCampaignSnapshotsQuery(campaignId!, {
+      skip: !campaignId,
+      pollingInterval: 15000,
+      refetchOnFocus: true,
+    } as any);
+  const { data: resSnapshot } = useGetResourceSnapshotQuery(
+    resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
+    { skip: !campaignId || !resourceId } as any
+  );
 
   // Backend hooks
   const { data: distributions = [] } = useGetDistributionsByCampaignQuery(
     { campaignId },
     { skip: !campaignId }
   );
+  // Refresh snapshots when distributions list changes
+  useEffect(() => {
+    if (refetchSnapshots) refetchSnapshots();
+  }, [distributions]);
   const [createJob, { isLoading: creating }] =
     useCreateDistributionJobMutation();
   const [startJob] = useStartDistributionJobMutation();
@@ -58,7 +79,6 @@ export default function CampaignDistribution() {
   const [cancelJob] = useCancelDistributionJobMutation();
 
   // Form state
-  const [resourceId, setResourceId] = useState<string | undefined>();
   const [targetQty, setTargetQty] = useState("");
   const [notes, setNotes] = useState("");
   const [plannedStartAt, setPlannedStartAt] = useState<string | undefined>();
@@ -156,6 +176,58 @@ export default function CampaignDistribution() {
           gap: spacing.lg,
         }}
       >
+        {/* Progress summary header */}
+        <ProgressHeader
+          title={
+            resourceId
+              ? `Progress · ${
+                  resourceOptions.find((r) => r.key === resourceId)?.label ||
+                  "Selected"
+                }`
+              : "Campaign Progress"
+          }
+          target={
+            resSnapshot?.targetQty ??
+            (resourceId
+              ? 0
+              : snapshots.reduce(
+                  (acc: number, s: any) => acc + (s.targetQty || 0),
+                  0
+                ))
+          }
+          collected={
+            resSnapshot?.collectedQty ??
+            (resourceId
+              ? 0
+              : snapshots.reduce(
+                  (acc: number, s: any) => acc + (s.collectedQty || 0),
+                  0
+                ))
+          }
+          distributed={
+            resSnapshot?.distributedQty ??
+            (resourceId
+              ? 0
+              : snapshots.reduce(
+                  (acc: number, s: any) => acc + (s.distributedQty || 0),
+                  0
+                ))
+          }
+          available={
+            resSnapshot?.availableQty ??
+            (resourceId
+              ? 0
+              : snapshots.reduce(
+                  (acc: number, s: any) => acc + (s.availableQty || 0),
+                  0
+                ))
+          }
+          unitLabel={
+            resourceId
+              ? resourceOptions.find((r) => r.key === resourceId)?.unit
+              : ""
+          }
+        />
         {/* Title row */}
         <View
           style={{

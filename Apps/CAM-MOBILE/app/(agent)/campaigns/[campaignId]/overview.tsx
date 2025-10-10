@@ -11,12 +11,18 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useGetCoordinatorAssignmentQuery } from "../../../../src/store/services/campaignsApi";
+import { useGetCampaignSnapshotsQuery } from "../../../../src/store/services/progressApi";
+import ProgressHeader from "../../../../src/components/ui/ProgressHeader";
 
 export default function CampaignOverview() {
   const { campaignId } = useLocalSearchParams<{ campaignId: string }>();
   const { data, isFetching, error } = useGetCoordinatorAssignmentQuery(
     campaignId as string,
     { skip: !campaignId }
+  );
+  const { data: snapshots = [] } = useGetCampaignSnapshotsQuery(
+    (campaignId as string)!,
+    { skip: !campaignId, pollingInterval: 15000, refetchOnFocus: true } as any
   );
 
   const assignment = data as any;
@@ -150,6 +156,26 @@ export default function CampaignOverview() {
           gap: spacing.lg,
         }}
       >
+        {/* Live progress summary */}
+        <ProgressHeader
+          title="Campaign Progress"
+          target={snapshots.reduce(
+            (acc: number, s: any) => acc + (s.targetQty || 0),
+            0
+          )}
+          collected={snapshots.reduce(
+            (acc: number, s: any) => acc + (s.collectedQty || 0),
+            0
+          )}
+          distributed={snapshots.reduce(
+            (acc: number, s: any) => acc + (s.distributedQty || 0),
+            0
+          )}
+          available={snapshots.reduce(
+            (acc: number, s: any) => acc + (s.availableQty || 0),
+            0
+          )}
+        />
         {/* Campaign Overview */}
         <Card style={{ borderRadius: 16 }}>
           <CardHeader>
