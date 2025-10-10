@@ -52,9 +52,9 @@ export default function AdminMenu() {
       subtitle: "Manage volunteers, agents, and admins",
       icon: "people",
       color: "#00ff94",
-      badge: "2,847",
-      onPress: () => console.log("User Management pressed"),
+      onPress: () => router.push("/adminDashboard/userManagement")
     },
+
     {
       title: "Campaign Management",
       subtitle: "Create and monitor relief campaigns",
@@ -62,6 +62,13 @@ export default function AdminMenu() {
       color: "#4ade80",
       badge: "23",
       onPress: () => router.push("/adminDashboard/components/campaigns"),
+    },
+    {
+      title: "Agent Management",
+      subtitle: "Acceptance and approving of agent to campaigns",
+      icon: "person-circle",
+      color: "#22d3ee",
+      onPress: () => router.push("/adminDashboard/components/agents" as any),
     },
     {
       title: "Inventory Management",

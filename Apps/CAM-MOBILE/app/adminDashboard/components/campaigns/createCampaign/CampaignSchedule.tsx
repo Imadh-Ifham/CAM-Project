@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Switch,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { CampaignFormData } from ".";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { CampaignFormData } from "@/src/types/campaign.type";
 
 interface CampaignScheduleProps {
   formData: CampaignFormData;
@@ -22,8 +24,9 @@ export default function CampaignSchedule({
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    return dateObj.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -31,9 +34,16 @@ export default function CampaignSchedule({
   };
 
   const calculateDuration = () => {
-    const diffTime = Math.abs(
-      formData.endDate.getTime() - formData.startDate.getTime()
-    );
+    const startDate =
+      typeof formData.startDate === "string"
+        ? new Date(formData.startDate)
+        : formData.startDate;
+    const endDate =
+      typeof formData.endDate === "string"
+        ? new Date(formData.endDate)
+        : formData.endDate;
+
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
@@ -48,9 +58,53 @@ export default function CampaignSchedule({
   ];
 
   const setDuration = (days: number) => {
-    const endDate = new Date(formData.startDate);
+    const startDate =
+      typeof formData.startDate === "string"
+        ? new Date(formData.startDate)
+        : formData.startDate;
+    const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + days);
-    updateFormData({ endDate, expectedDuration: days });
+    updateFormData({ endDate: endDate.toISOString(), expectedDuration: days });
+  };
+
+  const handleStartDateChange = (event: any, selectedDate?: Date) => {
+    setShowStartDatePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      // Ensure end date is after start date
+      const currentEndDate =
+        typeof formData.endDate === "string"
+          ? new Date(formData.endDate)
+          : formData.endDate;
+
+      if (selectedDate >= currentEndDate) {
+        // If start date is after or equal to end date, set end date to start date + 1 day
+        const newEndDate = new Date(selectedDate);
+        newEndDate.setDate(newEndDate.getDate() + 1);
+        updateFormData({
+          startDate: selectedDate.toISOString(),
+          endDate: newEndDate.toISOString(),
+        });
+      } else {
+        updateFormData({ startDate: selectedDate.toISOString() });
+      }
+    }
+  };
+
+  const handleEndDateChange = (event: any, selectedDate?: Date) => {
+    setShowEndDatePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      const currentStartDate =
+        typeof formData.startDate === "string"
+          ? new Date(formData.startDate)
+          : formData.startDate;
+
+      // Ensure end date is after start date
+      if (selectedDate <= currentStartDate) {
+        // If end date is before or equal to start date, don't update
+        return;
+      }
+      updateFormData({ endDate: selectedDate.toISOString() });
+    }
   };
 
   return (
@@ -209,6 +263,41 @@ export default function CampaignSchedule({
           </View>
         </View>
       </View>
+
+      {/* Date Pickers */}
+      {showStartDatePicker && (
+        <DateTimePicker
+          value={
+            typeof formData.startDate === "string"
+              ? new Date(formData.startDate)
+              : formData.startDate
+          }
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={handleStartDateChange}
+          minimumDate={new Date()}
+          textColor="#fff"
+        />
+      )}
+
+      {showEndDatePicker && (
+        <DateTimePicker
+          value={
+            typeof formData.endDate === "string"
+              ? new Date(formData.endDate)
+              : formData.endDate
+          }
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={handleEndDateChange}
+          minimumDate={
+            typeof formData.startDate === "string"
+              ? new Date(formData.startDate)
+              : formData.startDate
+          }
+          textColor="#fff"
+        />
+      )}
     </ScrollView>
   );
 }

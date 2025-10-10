@@ -17,73 +17,27 @@ import CampaignLocation from "./CampaignLocation";
 import CampaignResources from "./CampaignResources";
 import CampaignSchedule from "./CampaignSchedule";
 import CampaignTeam from "./CampaignTeam";
-
-export interface CampaignFormData {
-  // Basic Info
-  name: string;
-  description: string;
-  type:
-    | "disaster-relief"
-    | "medical-aid"
-    | "education"
-    | "food-distribution"
-    | "emergency-response";
-  priority: "low" | "medium" | "high" | "critical";
-
-  // Location
-  district: string;
-  city: string;
-  address: string;
-  coordinates?: { latitude: number; longitude: number };
-
-  // Resources
-  resources: Array<{
-    id: string;
-    name: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    estimatedCost: number;
-    description?: string;
-  }>;
-  estimatedBudget: number;
-
-  // Schedule
-  startDate: Date;
-  endDate: Date;
-  isUrgent: boolean;
-  expectedDuration: number; // in days
-
-  // Team
-  assignedAgents: string[];
-  requiredVolunteers: number;
-  skillsRequired: string[];
-}
-
-const initialFormData: CampaignFormData = {
-  name: "",
-  description: "",
-  type: "disaster-relief",
-  priority: "medium",
-  district: "",
-  city: "",
-  address: "",
-  resources: [],
-  estimatedBudget: 0,
-  startDate: new Date(),
-  endDate: new Date(),
-  isUrgent: false,
-  expectedDuration: 7,
-  assignedAgents: [],
-  requiredVolunteers: 10,
-  skillsRequired: [],
-};
+import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
+import {
+  updateFormData,
+  clearErrors,
+  setSelectedCampaign,
+} from "@/src/store/slices/campaignSlice";
+import { selectCampaignFormData } from "@/src/store/selectors";
+import { createCampaignThunk } from "@/src/store/thunks/campaignThunk";
+import { CampaignFormData } from "@/src/types/campaign.type";
+import { auth } from "@/src/services/firebase";
 
 export default function CreateCampaign() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<CampaignFormData>(initialFormData);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const dispatch = useAppDispatch();
+
+  const campaignFormData = useAppSelector(selectCampaignFormData);
+  const { createLoading, createError } = useAppSelector(
+    (state) => state.campaign
+  );
 
   const steps = [
     { title: "Basic Info", icon: "information-circle" as const },
@@ -93,8 +47,8 @@ export default function CreateCampaign() {
     { title: "Team", icon: "people" as const },
   ];
 
-  const updateFormData = (updates: Partial<CampaignFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+  const updateFormDataHandler = (updates: Partial<CampaignFormData>) => {
+    dispatch(updateFormData(updates));
   };
 
   const handleNext = () => {
@@ -110,21 +64,50 @@ export default function CreateCampaign() {
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-      // TODO: Implement API call to create campaign
-      console.log("Creating campaign:", formData);
+    // Clear any previous errors
+    dispatch(clearErrors());
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      console.log("Creating campaign:", campaignFormData);
+
+      // Dispatch the createCampaignThunk
+      const result = await dispatch(
+        createCampaignThunk({
+          campaignData: campaignFormData,
+        })
+      ).unwrap();
+
+      console.log("Campaign created successfully:", result);
+
+      // Set the created campaign as selected in Redux
+      dispatch(setSelectedCampaign(result));
 
       Alert.alert("Success!", "Campaign created successfully", [
-        { text: "OK", onPress: () => router.back() },
+        {
+          text: "View Campaign",
+          onPress: () => {
+            // Navigate to the campaign detail view with the created campaign ID
+            router.replace(
+              `/adminDashboard/components/campaigns/campaignDetail/CampaignDetailView` as any
+            );
+          },
+        },
+        {
+          text: "Back to List",
+          style: "cancel",
+          onPress: () => router.back(),
+        },
       ]);
-    } catch (error) {
-      Alert.alert("Error", "Failed to create campaign. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+    } catch (error: any) {
+      console.error("Failed to create campaign:", error);
+
+      // Show user-friendly error message
+      const errorMessage =
+        typeof error === "string"
+          ? error
+          : error?.message || "Failed to create campaign. Please try again.";
+
+      Alert.alert("Error", errorMessage);
     }
   };
 
@@ -133,34 +116,37 @@ export default function CreateCampaign() {
       case 0:
         return (
           <CampaignBasicInfo
-            formData={formData}
-            updateFormData={updateFormData}
+            formData={campaignFormData}
+            updateFormData={updateFormDataHandler}
           />
         );
       case 1:
         return (
           <CampaignLocation
-            formData={formData}
-            updateFormData={updateFormData}
+            formData={campaignFormData}
+            updateFormData={updateFormDataHandler}
           />
         );
       case 2:
         return (
           <CampaignResources
-            formData={formData}
-            updateFormData={updateFormData}
+            formData={campaignFormData}
+            updateFormData={updateFormDataHandler}
           />
         );
       case 3:
         return (
           <CampaignSchedule
-            formData={formData}
-            updateFormData={updateFormData}
+            formData={campaignFormData}
+            updateFormData={updateFormDataHandler}
           />
         );
       case 4:
         return (
-          <CampaignTeam formData={formData} updateFormData={updateFormData} />
+          <CampaignTeam
+            formData={campaignFormData}
+            updateFormData={updateFormDataHandler}
+          />
         );
       default:
         return null;
@@ -225,6 +211,20 @@ export default function CreateCampaign() {
         ))}
       </View>
 
+      {/* Error Display */}
+      {createError && (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={20} color="#ff4444" />
+          <Text style={styles.errorText}>{createError}</Text>
+          <TouchableOpacity
+            onPress={() => dispatch(clearErrors())}
+            style={styles.errorCloseButton}
+          >
+            <Ionicons name="close" size={16} color="#ff4444" />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Step Content */}
       <ScrollView
         style={styles.contentContainer}
@@ -268,11 +268,20 @@ export default function CreateCampaign() {
 
         <TouchableOpacity
           onPress={isLastStep ? handleSubmit : handleNext}
-          disabled={isSubmitting}
-          style={[styles.navButton, styles.nextButton]}
+          disabled={isLastStep ? createLoading : false}
+          style={[
+            styles.navButton,
+            styles.nextButton,
+            isLastStep && createLoading && styles.navButtonDisabled,
+          ]}
         >
-          <Text style={styles.navButtonText}>
-            {isSubmitting
+          <Text
+            style={[
+              styles.navButtonText,
+              isLastStep && createLoading && styles.navButtonTextDisabled,
+            ]}
+          >
+            {isLastStep && createLoading
               ? "Creating..."
               : isLastStep
               ? "Create Campaign"
@@ -409,5 +418,25 @@ const styles = StyleSheet.create({
     color: "#888",
     fontSize: 14,
     fontWeight: "500",
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ff444420",
+    borderColor: "#ff4444",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 20,
+    marginVertical: 8,
+    gap: 8,
+  },
+  errorText: {
+    color: "#ff4444",
+    fontSize: 14,
+    flex: 1,
+  },
+  errorCloseButton: {
+    padding: 4,
   },
 });

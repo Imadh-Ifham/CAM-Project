@@ -98,7 +98,7 @@ export default function VolunteerLoginScreen() {
             await login({ email: data.email, password: data.password });
             setSuccess("Login successful! Redirecting...");
             setTimeout(() => {
-              router.replace("/tempHome" as any);
+              router.replace("/adminDashboard" as any);
             }, 1000);
           } catch (e: any) {
             setDetail(e);
