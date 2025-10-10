@@ -47,4 +47,14 @@ router.post("/:campaignId/distributions/:id/cancel", authenticate, (req, res) =>
   controller.cancel(req, res)
 );
 
+// Records
+router.post(
+  "/:campaignId/distributions/:id/records",
+  authenticate,
+  (req, res) => controller.createRecord(req, res)
+);
+router.get("/:campaignId/distributions/:id/records", authenticate, (req, res) =>
+  controller.listRecords(req, res)
+);
+
 export default router;

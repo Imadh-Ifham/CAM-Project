@@ -17,89 +17,88 @@ import {
 } from "../../../../src/components/ui/Card";
 import { Button } from "../../../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
+import { Alert } from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useGetCampaignByIdQuery } from "@/src/store/services/campaignsApi";
+import {
+  useCreateDistributionJobMutation,
+  useGetDistributionsByCampaignQuery,
+  useStartDistributionJobMutation,
+  useCompleteDistributionJobMutation,
+  useCancelDistributionJobMutation,
+  useGetDistributionJobRecordsQuery,
+} from "@/src/store/services/distributionsApi";
 
-type DistStatus = "Delivered" | "In Transit" | "Scheduled";
+type DistStatus =
+  | "draft"
+  | "scheduled"
+  | "blocked_insufficient_stock"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
 
 export default function CampaignDistribution() {
+  // Params and campaign
+  const params = useLocalSearchParams<{ campaignId: string }>();
+  const campaignId = params.campaignId as string;
+  const { data: campaign } = useGetCampaignByIdQuery(campaignId, {
+    skip: !campaignId,
+  });
+
+  // Backend hooks
+  const { data: distributions = [] } = useGetDistributionsByCampaignQuery(
+    { campaignId },
+    { skip: !campaignId }
+  );
+  const [createJob, { isLoading: creating }] =
+    useCreateDistributionJobMutation();
+  const [startJob] = useStartDistributionJobMutation();
+  const [completeJob] = useCompleteDistributionJobMutation();
+  const [cancelJob] = useCancelDistributionJobMutation();
+
   // Form state
-  const [resource, setResource] = useState<string | undefined>();
-  const [quantity, setQuantity] = useState("");
-  const [deliveryDate, setDeliveryDate] = useState("");
-  const [deliveryLocation, setDeliveryLocation] = useState<
-    string | undefined
-  >();
-  const [recipient, setRecipient] = useState("");
-  const [assignee, setAssignee] = useState<string | undefined>();
-  const [instructions, setInstructions] = useState("");
+  const [resourceId, setResourceId] = useState<string | undefined>();
+  const [targetQty, setTargetQty] = useState("");
+  const [notes, setNotes] = useState("");
+  const [plannedStartAt, setPlannedStartAt] = useState<string | undefined>();
+  const [plannedEndAt, setPlannedEndAt] = useState<string | undefined>();
+  const [destinationName, setDestinationName] = useState<string>("");
+  const [destinationAddress, setDestinationAddress] = useState<string>("");
+  const [receiverName, setReceiverName] = useState<string>("");
+  const [receiverPhone, setReceiverPhone] = useState<string>("");
+  const [noVolunteer, setNoVolunteer] = useState<boolean>(true);
+  const [volunteerId, setVolunteerId] = useState<string | undefined>();
 
-  // pickers
+  // UI state
   const [resourcePicker, setResourcePicker] = useState(false);
-  const [locationPicker, setLocationPicker] = useState(false);
   const [volPicker, setVolPicker] = useState(false);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [detailsModal, setDetailsModal] = useState<{
+    open: boolean;
+    job?: any;
+  }>({ open: false });
 
-  const resourceOptions = [
-    { key: "food", label: "Food Packages" },
-    { key: "clothes", label: "Clothing Items" },
-    { key: "medical", label: "Medical Supplies" },
-    { key: "blankets", label: "Blankets" },
-    { key: "other", label: "Other Supplies" },
-  ];
-
-  const campaign = useMemo(
-    () => ({
-      locations: [
-        "Downtown Community Center",
-        "East Side School",
-        "West Park Shelter",
-        "North District Hospital",
-      ],
-    }),
-    []
+  // Options
+  const resourceOptions = useMemo(
+    () =>
+      (campaign?.resources || []).map((r) => ({
+        key: r.id,
+        label: `${r.name} (${r.unit})`,
+        unit: r.unit,
+        target: r.quantity,
+      })),
+    [campaign]
   );
+  const volunteerOptions: Array<{ key: string; label: string }> = [];
 
-  const volunteers = useMemo(
-    () => [
-      { id: 1, name: "Alice Johnson" },
-      { id: 2, name: "Bob Wilson" },
-      { id: 3, name: "Carol Davis" },
-    ],
-    []
-  );
-
-  const distributions = useMemo(
-    () => [
-      {
-        id: 1,
-        resource: "Food Packages",
-        quantity: 45,
-        location: "East Side School",
-        recipient: "School Administration",
-        status: "Delivered" as DistStatus,
-        deliveryDate: "2024-01-18",
-        volunteer: "Alice Johnson",
-      },
-      {
-        id: 2,
-        resource: "Blankets",
-        quantity: 30,
-        location: "West Park Shelter",
-        recipient: "Shelter Manager",
-        status: "In Transit" as DistStatus,
-        deliveryDate: "2024-01-20",
-        volunteer: "Bob Wilson",
-      },
-      {
-        id: 3,
-        resource: "Medical Supplies",
-        quantity: 15,
-        location: "North District Hospital",
-        recipient: "Emergency Dept.",
-        status: "Scheduled" as DistStatus,
-        deliveryDate: "2024-01-22",
-        volunteer: "Carol Davis",
-      },
-    ],
-    []
+  // Details records hook at top-level
+  const detailsJob: any | undefined = detailsModal.job;
+  const detailsId: string | undefined = detailsJob?._id;
+  const { data: detailsRecords = [] } = useGetDistributionJobRecordsQuery(
+    detailsId ? { campaignId, id: detailsId } : ({} as any),
+    { skip: !detailsModal.open || !detailsId }
   );
 
   const OutlineBadge = ({
@@ -124,10 +123,13 @@ export default function CampaignDistribution() {
 
   const StatusBadge = ({ status }: { status: DistStatus }) => {
     const map: Record<DistStatus, { bg: string; fg: string }> = {
-      Delivered: { bg: colors.green, fg: "#fff" },
-      "In Transit": { bg: colors.blue, fg: "#fff" },
-      Scheduled: { bg: "#f59e0b", fg: "#fff" },
-    };
+      draft: { bg: colors.mutedBackground, fg: colors.muted },
+      scheduled: { bg: "#e0e7ff", fg: "#4338ca" },
+      blocked_insufficient_stock: { bg: "#fee2e2", fg: "#991b1b" },
+      in_progress: { bg: "#e9d5ff", fg: "#6b21a8" },
+      completed: { bg: "#dcfce7", fg: "#166534" },
+      cancelled: { bg: "#fee2e2", fg: "#991b1b" },
+    } as any;
     const s = map[status];
     return (
       <View
@@ -162,15 +164,17 @@ export default function CampaignDistribution() {
             justifyContent: "space-between",
           }}
         >
-          <Text style={[typography.h3]}>Distribution Management</Text>
-          <OutlineBadge color={colors.blue}>3 Active</OutlineBadge>
+          <Text style={[typography.h3]}>Distribute Resources</Text>
+          <OutlineBadge color={colors.blue}>
+            {distributions.length} Jobs
+          </OutlineBadge>
         </View>
 
         {/* Schedule New Distribution */}
         <Card>
           <CardHeader>
             <Text style={[typography.h3, { fontSize: 18 }]}>
-              Schedule New Distribution
+              Add New Distribution
             </Text>
             <Text style={{ color: colors.muted, marginTop: 4 }}>
               Plan and schedule resource distribution
@@ -180,7 +184,7 @@ export default function CampaignDistribution() {
             {/* Resource to Distribute */}
             <View>
               <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-                Resource to Distribute
+                Resource
               </Text>
               <Pressable
                 onPress={() => setResourcePicker(true)}
@@ -198,10 +202,11 @@ export default function CampaignDistribution() {
               >
                 <Text
                   style={{
-                    color: resource ? colors.cardForeground : colors.muted,
+                    color: resourceId ? colors.cardForeground : colors.muted,
                   }}
                 >
-                  {resource || "Select resource"}
+                  {resourceOptions.find((r) => r.key === resourceId)?.label ||
+                    "Select resource"}
                 </Text>
                 <Ionicons
                   name="chevron-down-outline"
@@ -215,11 +220,11 @@ export default function CampaignDistribution() {
             <View style={{ flexDirection: "row", gap: spacing.md }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-                  Quantity
+                  Target Quantity
                 </Text>
                 <TextInput
-                  value={quantity}
-                  onChangeText={setQuantity}
+                  value={targetQty}
+                  onChangeText={setTargetQty}
                   keyboardType="numeric"
                   placeholder="Amount"
                   placeholderTextColor={colors.muted}
@@ -236,13 +241,10 @@ export default function CampaignDistribution() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-                  Delivery Date
+                  Planned Start
                 </Text>
-                <TextInput
-                  value={deliveryDate}
-                  onChangeText={setDeliveryDate}
-                  placeholder="mm/dd/yyyy"
-                  placeholderTextColor={colors.muted}
+                <Pressable
+                  onPress={() => setShowStartPicker(true)}
                   style={{
                     height: 44,
                     borderRadius: 12,
@@ -250,19 +252,66 @@ export default function CampaignDistribution() {
                     borderColor: colors.border,
                     backgroundColor: colors.mutedBackground,
                     paddingHorizontal: spacing.md,
-                    color: colors.cardForeground,
+                    justifyContent: "center",
                   }}
-                />
+                >
+                  <Text
+                    style={{
+                      color: plannedStartAt
+                        ? colors.cardForeground
+                        : colors.muted,
+                    }}
+                  >
+                    {plannedStartAt
+                      ? new Date(plannedStartAt).toLocaleDateString()
+                      : "YYYY-MM-DD"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+            {/* Planned End */}
+            <View style={{ flexDirection: "row", gap: spacing.md }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                  Planned End
+                </Text>
+                <Pressable
+                  onPress={() => setShowEndPicker(true)}
+                  style={{
+                    height: 44,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.mutedBackground,
+                    paddingHorizontal: spacing.md,
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: plannedEndAt
+                        ? colors.cardForeground
+                        : colors.muted,
+                    }}
+                  >
+                    {plannedEndAt
+                      ? new Date(plannedEndAt).toLocaleDateString()
+                      : "YYYY-MM-DD"}
+                  </Text>
+                </Pressable>
               </View>
             </View>
 
-            {/* Delivery Location */}
+            {/* Destination */}
             <View>
               <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-                Delivery Location
+                Destination Details (Optional)
               </Text>
-              <Pressable
-                onPress={() => setLocationPicker(true)}
+              <TextInput
+                value={destinationName}
+                onChangeText={setDestinationName}
+                placeholder="Location name"
+                placeholderTextColor={colors.muted}
                 style={{
                   height: 44,
                   borderRadius: 12,
@@ -270,26 +319,25 @@ export default function CampaignDistribution() {
                   borderColor: colors.border,
                   backgroundColor: colors.mutedBackground,
                   paddingHorizontal: spacing.md,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  color: colors.cardForeground,
                 }}
-              >
-                <Text
-                  style={{
-                    color: deliveryLocation
-                      ? colors.cardForeground
-                      : colors.muted,
-                  }}
-                >
-                  {deliveryLocation || "Select location"}
-                </Text>
-                <Ionicons
-                  name="chevron-down-outline"
-                  size={16}
-                  color={colors.muted}
-                />
-              </Pressable>
+              />
+              <View style={{ height: spacing.sm }} />
+              <TextInput
+                value={destinationAddress}
+                onChangeText={setDestinationAddress}
+                placeholder="Address"
+                placeholderTextColor={colors.muted}
+                style={{
+                  height: 44,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.mutedBackground,
+                  paddingHorizontal: spacing.md,
+                  color: colors.cardForeground,
+                }}
+              />
             </View>
 
             {/* Recipient */}
@@ -298,9 +346,25 @@ export default function CampaignDistribution() {
                 Recipient Contact
               </Text>
               <TextInput
-                value={recipient}
-                onChangeText={setRecipient}
-                placeholder="Contact person or organization"
+                value={receiverName}
+                onChangeText={setReceiverName}
+                placeholder="Name"
+                placeholderTextColor={colors.muted}
+                style={{
+                  height: 44,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.mutedBackground,
+                  paddingHorizontal: spacing.md,
+                  color: colors.cardForeground,
+                }}
+              />
+              <View style={{ height: spacing.sm }} />
+              <TextInput
+                value={receiverPhone}
+                onChangeText={setReceiverPhone}
+                placeholder="Phone"
                 placeholderTextColor={colors.muted}
                 style={{
                   height: 44,
@@ -317,17 +381,39 @@ export default function CampaignDistribution() {
             {/* Assign Volunteer */}
             <View>
               <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-                Assign Volunteer
+                Assigned Volunteer (optional)
               </Text>
               <Pressable
+                onPress={() => setNoVolunteer(!noVolunteer)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <Ionicons
+                  name={noVolunteer ? "checkbox-outline" : "square-outline"}
+                  size={18}
+                  color={noVolunteer ? colors.primary : colors.muted}
+                />
+                <Text style={{ color: colors.cardForeground }}>
+                  No volunteer (agent will deliver)
+                </Text>
+              </Pressable>
+              <Pressable
+                disabled={noVolunteer}
                 onPress={() => setVolPicker(true)}
                 style={{
                   height: 44,
                   borderRadius: 12,
                   borderWidth: 1,
                   borderColor: colors.border,
-                  backgroundColor: colors.mutedBackground,
+                  backgroundColor: noVolunteer
+                    ? colors.background
+                    : colors.mutedBackground,
                   paddingHorizontal: spacing.md,
+                  opacity: noVolunteer ? 0.6 : 1,
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -335,10 +421,11 @@ export default function CampaignDistribution() {
               >
                 <Text
                   style={{
-                    color: assignee ? colors.cardForeground : colors.muted,
+                    color: volunteerId ? colors.cardForeground : colors.muted,
                   }}
                 >
-                  {assignee || "Select volunteer"}
+                  {volunteerOptions.find((v) => v.key === volunteerId)?.label ||
+                    "Select volunteer"}
                 </Text>
                 <Ionicons
                   name="chevron-down-outline"
@@ -354,8 +441,8 @@ export default function CampaignDistribution() {
                 Delivery Instructions
               </Text>
               <TextInput
-                value={instructions}
-                onChangeText={setInstructions}
+                value={notes}
+                onChangeText={setNotes}
                 placeholder="Special instructions for delivery..."
                 placeholderTextColor={colors.muted}
                 multiline
@@ -374,7 +461,70 @@ export default function CampaignDistribution() {
               />
             </View>
 
-            <Button style={{ width: "100%" }}>
+            <Button
+              disabled={!resourceId || !targetQty || creating}
+              style={{ width: "100%" }}
+              onPress={async () => {
+                if (!resourceId || !targetQty) return;
+                try {
+                  const selected = resourceOptions.find(
+                    (r) => r.key === resourceId
+                  );
+                  await createJob({
+                    campaignId,
+                    resourceId,
+                    targetQty: Number(targetQty),
+                    resourceSnapshot: selected
+                      ? {
+                          id: selected.key,
+                          name: selected.label.split(" (")[0],
+                          unit: selected.unit,
+                          targetQty: Number(targetQty),
+                        }
+                      : undefined,
+                    assignedVolunteerId: noVolunteer
+                      ? undefined
+                      : volunteerId || undefined,
+                    receiverName: receiverName || undefined,
+                    receiverPhone: receiverPhone || undefined,
+                    deliveryInstructions: notes || undefined,
+                    destination:
+                      destinationName || destinationAddress
+                        ? {
+                            locationName: destinationName || undefined,
+                            address: destinationAddress || undefined,
+                          }
+                        : undefined,
+                    schedule:
+                      plannedStartAt || plannedEndAt
+                        ? { plannedStartAt, plannedEndAt }
+                        : undefined,
+                    notes: notes || undefined,
+                  }).unwrap();
+                  // reset
+                  setResourceId(undefined);
+                  setTargetQty("");
+                  setNotes("");
+                  setPlannedStartAt(undefined);
+                  setPlannedEndAt(undefined);
+                  setDestinationName("");
+                  setDestinationAddress("");
+                  setReceiverName("");
+                  setReceiverPhone("");
+                  setNoVolunteer(true);
+                  setVolunteerId(undefined);
+                } catch (e: any) {
+                  const msg =
+                    e?.data?.error ||
+                    e?.data?.message ||
+                    e?.error ||
+                    "Failed to create distribution";
+                  Alert.alert("Error", String(msg));
+                  return;
+                }
+                Alert.alert("Success", "Distribution job created.");
+              }}
+            >
               <Ionicons
                 name="bus-outline"
                 size={16}
@@ -387,7 +537,7 @@ export default function CampaignDistribution() {
                   marginLeft: 6,
                 }}
               >
-                Schedule Distribution
+                Create Distribution Job
               </Text>
             </Button>
           </CardContent>
@@ -397,13 +547,13 @@ export default function CampaignDistribution() {
         <Card>
           <CardHeader>
             <Text style={[typography.h3, { fontSize: 18 }]}>
-              Active Distributions
+              Recent Distributions
             </Text>
           </CardHeader>
           <CardContent style={{ gap: spacing.md }}>
-            {distributions.map((d) => (
+            {distributions.map((d: any) => (
               <View
-                key={d.id}
+                key={d._id}
                 style={{
                   borderWidth: 1,
                   borderColor: colors.border,
@@ -420,107 +570,412 @@ export default function CampaignDistribution() {
                   }}
                 >
                   <View>
-                    <Text style={{ fontWeight: "700" }}>{d.resource}</Text>
+                    <Text style={{ fontWeight: "700" }}>
+                      {d.resourceSnapshot?.name || d.resourceId}
+                    </Text>
                     <Text style={{ color: colors.muted, fontSize: 12 }}>
-                      Qty: {d.quantity}
+                      Target: {d.targetQty} {d.resourceSnapshot?.unit || ""}
                     </Text>
                   </View>
                   <StatusBadge status={d.status} />
                 </View>
                 <View style={{ gap: 6 }}>
-                  <Row icon="location-outline" text={d.location} />
+                  {!!d.destination?.locationName && (
+                    <Row
+                      icon="location-outline"
+                      text={d.destination.locationName}
+                    />
+                  )}
                   <Row
                     icon="person-outline"
-                    text={`Recipient: ${d.recipient}`}
+                    text={`Recipient: ${d.receiverName || "N/A"}`}
                   />
-                  <Row
-                    icon="calendar-outline"
-                    text={`Due: ${d.deliveryDate}`}
-                  />
-                  <Row
-                    icon="people-outline"
-                    text={`Assigned: ${d.volunteer}`}
-                  />
+                  {!!d.schedule?.plannedStartAt && (
+                    <Row
+                      icon="calendar-outline"
+                      text={`Planned: ${new Date(
+                        d.schedule.plannedStartAt
+                      ).toLocaleDateString()}`}
+                    />
+                  )}
+                  {!!d.schedule?.startedAt && (
+                    <Row
+                      icon="time-outline"
+                      text={`Started: ${new Date(
+                        d.schedule.startedAt
+                      ).toLocaleString()}`}
+                    />
+                  )}
+                  {!!d.schedule?.completedAt && (
+                    <Row
+                      icon="checkmark-circle-outline"
+                      text={`Completed: ${new Date(
+                        d.schedule.completedAt
+                      ).toLocaleString()}`}
+                    />
+                  )}
                 </View>
-                {d.status === "Scheduled" && (
-                  <Button
-                    size="sm"
-                    style={{ width: "100%", marginTop: spacing.xs }}
-                  >
-                    <Text
-                      style={{
-                        color: colors.primaryForeground,
-                        fontWeight: "700",
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    gap: spacing.sm,
+                    marginTop: spacing.xs,
+                  }}
+                >
+                  {(d.status === "scheduled" || d.status === "draft") && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      style={{ width: "48%" }}
+                      onPress={async () => {
+                        try {
+                          await startJob({ campaignId, id: d._id }).unwrap();
+                        } catch {}
                       }}
                     >
-                      Start Delivery
-                    </Text>
-                  </Button>
-                )}
-                {d.status === "In Transit" && (
+                      <Ionicons
+                        name="play-circle-outline"
+                        size={14}
+                        color={colors.cardForeground}
+                      />
+                      <Text
+                        style={{
+                          color: colors.cardForeground,
+                          fontWeight: "600",
+                          marginLeft: 6,
+                        }}
+                      >
+                        Start
+                      </Text>
+                    </Button>
+                  )}
+                  {d.status === "in_progress" && (
+                    <Button
+                      size="sm"
+                      style={{ width: "48%" }}
+                      onPress={async () => {
+                        try {
+                          await completeJob({ campaignId, id: d._id }).unwrap();
+                        } catch {}
+                      }}
+                    >
+                      <Ionicons
+                        name="checkmark-circle-outline"
+                        size={14}
+                        color={colors.primaryForeground}
+                      />
+                      <Text
+                        style={{
+                          color: colors.primaryForeground,
+                          fontWeight: "600",
+                          marginLeft: 6,
+                        }}
+                      >
+                        Complete
+                      </Text>
+                    </Button>
+                  )}
+                  {(d.status === "draft" || d.status === "scheduled") && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      style={{ width: "48%" }}
+                      onPress={async () => {
+                        try {
+                          await cancelJob({ campaignId, id: d._id }).unwrap();
+                        } catch {}
+                      }}
+                    >
+                      <Ionicons
+                        name="close-circle-outline"
+                        size={14}
+                        color={colors.cardForeground}
+                      />
+                      <Text
+                        style={{
+                          color: colors.cardForeground,
+                          fontWeight: "600",
+                          marginLeft: 6,
+                        }}
+                      >
+                        Cancel
+                      </Text>
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
-                    style={{ width: "100%", marginTop: spacing.xs }}
+                    style={{ width: "48%" }}
+                    onPress={() => setDetailsModal({ open: true, job: d })}
                   >
                     <Ionicons
-                      name="checkmark-circle-outline"
+                      name="information-circle-outline"
                       size={14}
                       color={colors.cardForeground}
                     />
                     <Text
                       style={{
                         color: colors.cardForeground,
-                        fontWeight: "700",
+                        fontWeight: "600",
                         marginLeft: 6,
                       }}
                     >
-                      Mark Delivered
+                      View Details
                     </Text>
                   </Button>
-                )}
+                </View>
               </View>
             ))}
           </CardContent>
         </Card>
       </ScrollView>
 
+      {/* View Details modal */}
+      <Modal
+        visible={detailsModal.open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDetailsModal({ open: false })}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(15,23,42,0.15)",
+            padding: spacing.lg,
+            justifyContent: "center",
+          }}
+          onPress={() => setDetailsModal({ open: false })}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing.lg,
+              gap: spacing.md,
+            }}
+          >
+            {(() => {
+              const job = detailsModal.job;
+              if (!job)
+                return <Text style={{ color: colors.muted }}>No details</Text>;
+              type R = {
+                volunteerId?: string;
+                volunteerName?: string;
+                amountSubmitted: number;
+                completedQtyAfter: number;
+                targetQtySnapshot: number;
+                recordedAt: string;
+                note?: string;
+              };
+              const byVolunteer: Record<
+                string,
+                { name: string; entries: { time: string; qty: number }[] }
+              > = {};
+              (detailsRecords as R[]).forEach((r) => {
+                const id = r.volunteerId || "unknown";
+                const name = r.volunteerName || r.volunteerId || "Unknown";
+                if (!byVolunteer[id]) byVolunteer[id] = { name, entries: [] };
+                byVolunteer[id].entries.push({
+                  time: new Date(r.recordedAt).toLocaleString(),
+                  qty: r.amountSubmitted,
+                });
+              });
+              const groups = Object.entries(byVolunteer);
+              const totalTarget = job.targetQty || 0;
+              const totalDelivered = (detailsRecords as R[]).reduce(
+                (sum, r) => sum + (r.amountSubmitted || 0),
+                0
+              );
+              const percent =
+                totalTarget > 0
+                  ? Math.min(
+                      100,
+                      Math.round((totalDelivered / totalTarget) * 100)
+                    )
+                  : 0;
+              return (
+                <View style={{ gap: spacing.md }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <View>
+                      <Text style={[typography.h3, { fontSize: 18 }]}>
+                        {job.resourceSnapshot?.name || job.resourceId}
+                      </Text>
+                      <Text style={{ color: colors.muted, marginTop: 2 }}>
+                        Target: {totalTarget} {job.resourceSnapshot?.unit || ""}
+                      </Text>
+                    </View>
+                    <StatusBadge status={job.status} />
+                  </View>
+                  <View style={{ gap: 6 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Text style={{ color: colors.muted, fontSize: 12 }}>
+                        Progress
+                      </Text>
+                      <Text style={{ color: colors.muted, fontSize: 12 }}>
+                        {totalDelivered}/{totalTarget}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        height: 10,
+                        backgroundColor: colors.mutedBackground,
+                        borderRadius: 999,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <View
+                        style={{
+                          height: 10,
+                          width: `${percent}%`,
+                          backgroundColor: colors.primary,
+                        }}
+                      />
+                    </View>
+                  </View>
+                  <View style={{ gap: spacing.sm }}>
+                    {groups.length === 0 && (
+                      <Text style={{ color: colors.muted }}>
+                        No volunteer made any deliveries yet.
+                      </Text>
+                    )}
+                    {groups.map(([id, v]) => (
+                      <View
+                        key={id}
+                        style={{
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          borderRadius: 12,
+                          padding: spacing.md,
+                          gap: 6,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons
+                            name="person-circle-outline"
+                            size={16}
+                            color={colors.muted}
+                          />
+                          <Text style={{ fontWeight: "700" }}>{v.name}</Text>
+                        </View>
+                        {v.entries.map((e, idx) => (
+                          <View
+                            key={idx}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <Ionicons
+                              name="time-outline"
+                              size={14}
+                              color={colors.muted}
+                            />
+                            <Text
+                              style={{ color: colors.cardForeground, flex: 1 }}
+                            >
+                              {e.time} — {e.qty}{" "}
+                              {job.resourceSnapshot?.unit || ""}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+                  <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                    <Button
+                      variant="outline"
+                      style={{ flex: 1 }}
+                      onPress={() => setDetailsModal({ open: false })}
+                    >
+                      <Text
+                        style={{
+                          color: colors.cardForeground,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Close
+                      </Text>
+                    </Button>
+                  </View>
+                </View>
+              );
+            })()}
+          </View>
+        </Pressable>
+      </Modal>
+
       {/* Resource picker */}
       <PickerModal
         visible={resourcePicker}
         title="Select resource"
         options={resourceOptions.map((o) => o.label)}
-        selected={resource}
+        selected={resourceOptions.find((r) => r.key === resourceId)?.label}
         onSelect={(v) => {
-          setResource(v);
+          const match = resourceOptions.find((r) => r.label === v);
+          setResourceId(match?.key);
           setResourcePicker(false);
         }}
         onClose={() => setResourcePicker(false)}
-      />
-      {/* Location picker */}
-      <PickerModal
-        visible={locationPicker}
-        title="Select location"
-        options={campaign.locations}
-        selected={deliveryLocation}
-        onSelect={(v) => {
-          setDeliveryLocation(v);
-          setLocationPicker(false);
-        }}
-        onClose={() => setLocationPicker(false)}
       />
       {/* Volunteer picker */}
       <PickerModal
         visible={volPicker}
         title="Select volunteer"
-        options={volunteers.map((v) => v.name)}
-        selected={assignee}
+        options={volunteerOptions.map((v) => v.label)}
+        selected={volunteerOptions.find((v) => v.key === volunteerId)?.label}
         onSelect={(v) => {
-          setAssignee(v);
+          const match = volunteerOptions.find((o) => o.label === v);
+          setVolunteerId(match?.key);
           setVolPicker(false);
         }}
         onClose={() => setVolPicker(false)}
       />
+      {/* Date pickers */}
+      {showStartPicker && (
+        <DateTimePicker
+          value={
+            plannedStartAt ? new Date(plannedStartAt as string) : new Date()
+          }
+          mode="date"
+          display="default"
+          onChange={(_, date) => {
+            setShowStartPicker(false);
+            if (date) setPlannedStartAt(date.toISOString());
+          }}
+        />
+      )}
+      {showEndPicker && (
+        <DateTimePicker
+          value={plannedEndAt ? new Date(plannedEndAt as string) : new Date()}
+          mode="date"
+          display="default"
+          onChange={(_, date) => {
+            setShowEndPicker(false);
+            if (date) setPlannedEndAt(date.toISOString());
+          }}
+        />
+      )}
     </View>
   );
 }

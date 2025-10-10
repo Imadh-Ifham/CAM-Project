@@ -8,6 +8,8 @@ function mapError(err: any) {
       return { code: 404, message: msg };
     case "JOB_NOT_FOUND":
       return { code: 404, message: msg };
+    case "FORBIDDEN":
+      return { code: 403, message: msg };
     case "INSUFFICIENT_STOCK":
     case "INSUFFICIENT_STOCK_AT_COMPLETE":
       return { code: 409, message: msg };
@@ -24,7 +26,28 @@ function mapError(err: any) {
 export class DistributionJobController {
   async create(req: Request, res: Response) {
     try {
-      const doc = await distributionJobService.create(req.body);
+      const userDoc: any = (req as any).userDoc;
+      const coordinatorAgentId = userDoc?.agentId;
+      if (!coordinatorAgentId)
+        return res.status(403).json({ error: "FORBIDDEN" });
+      const body = req.body || {};
+      const doc = await distributionJobService.create({
+        campaignId: body.campaignId,
+        coordinatorAgentId,
+        resourceId: body.resourceId,
+        targetQty: body.targetQty,
+        resourceSnapshot: body.resourceSnapshot,
+        assignedVolunteerId: body.assignedVolunteerId,
+        receiverName: body.receiverName,
+        receiverPhone: body.receiverPhone,
+        deliveryInstructions: body.deliveryInstructions,
+        destination: body.destination,
+        schedule: body.schedule,
+        notes: body.notes,
+        audit: {
+          createdByUid: userDoc?.uid || (req as any).user?.uid || "unknown",
+        },
+      });
       res.status(201).json(doc);
     } catch (err) {
       const { code, message } = mapError(err);
@@ -134,6 +157,33 @@ export class DistributionJobController {
         req.body.updatedByUid
       );
       res.json(doc);
+    } catch (err) {
+      const { code, message } = mapError(err);
+      res.status(code).json({ error: message });
+    }
+  }
+
+  async createRecord(req: Request, res: Response) {
+    try {
+      const doc = await distributionJobService.addRecord({
+        id: req.params.id,
+        volunteerId: req.body.volunteerId,
+        volunteerName: req.body.volunteerName,
+        amountSubmitted: Number(req.body.amountSubmitted || 0),
+        note: req.body.note,
+        updatedByUid: req.body.updatedByUid,
+      });
+      res.status(201).json(doc);
+    } catch (err) {
+      const { code, message } = mapError(err);
+      res.status(code).json({ error: message });
+    }
+  }
+
+  async listRecords(req: Request, res: Response) {
+    try {
+      const docs = await distributionJobService.listRecords(req.params.id);
+      res.json(docs);
     } catch (err) {
       const { code, message } = mapError(err);
       res.status(code).json({ error: message });
