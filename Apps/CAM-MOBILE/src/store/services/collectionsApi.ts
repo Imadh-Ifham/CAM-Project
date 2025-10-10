@@ -119,6 +119,48 @@ export const collectionsApi = createApi({
         { type: "Collections" as const, id: "LIST" },
       ],
     }),
+    getCollectionJobRecords: builder.query<
+      Array<{
+        volunteerId?: string;
+        volunteerName?: string;
+        amountSubmitted: number;
+        completedQtyAfter: number;
+        targetQtySnapshot: number;
+        recordedAt: string;
+        note?: string;
+      }>,
+      { campaignId: string; jobId: string }
+    >({
+      query: ({ campaignId, jobId }) => ({
+        url: `campaigns/${campaignId}/collections/${jobId}/records`,
+        method: "GET",
+      }),
+      providesTags: (_res, _err, arg) => [
+        { type: "Collections" as const, id: arg.campaignId },
+      ],
+      transformResponse: (resp: any) =>
+        Array.isArray(resp?.data) ? resp.data : Array.isArray(resp) ? resp : [],
+    }),
+    createCollectionJobRecord: builder.mutation<
+      any,
+      {
+        campaignId: string;
+        jobId: string;
+        volunteerId?: string;
+        volunteerName?: string;
+        amountSubmitted: number;
+        note?: string;
+      }
+    >({
+      query: ({ campaignId, jobId, ...body }) => ({
+        url: `campaigns/${campaignId}/collections/${jobId}/records`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_res, _err, arg) => [
+        { type: "Collections" as const, id: arg.campaignId },
+      ],
+    }),
   }),
 });
 
@@ -129,4 +171,6 @@ export const {
   useCompleteCollectionJobMutation,
   useUpdateCollectionJobMutation,
   useCancelCollectionJobMutation,
+  useGetCollectionJobRecordsQuery,
+  useCreateCollectionJobRecordMutation,
 } = collectionsApi;

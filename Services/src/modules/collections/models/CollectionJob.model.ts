@@ -49,6 +49,15 @@ export interface ICollectionJob extends Document {
   };
   notes?: string;
   audit: { createdByUid: string; updatedByUid?: string };
+  records?: Array<{
+    volunteerId?: string;
+    volunteerName?: string;
+    amountSubmitted: number; // delta collected in this record
+    completedQtyAfter: number; // cumulative collected quantity after this record
+    targetQtySnapshot: number; // target at time of record
+    recordedAt: Date;
+    note?: string;
+  }>;
 }
 
 const CollectionJobSchema = new Schema<ICollectionJob>(
@@ -96,6 +105,20 @@ const CollectionJobSchema = new Schema<ICollectionJob>(
       completedAt: Date,
     },
     notes: { type: String },
+    records: [
+      new Schema(
+        {
+          volunteerId: { type: String },
+          volunteerName: { type: String },
+          amountSubmitted: { type: Number, required: true, min: 0 },
+          completedQtyAfter: { type: Number, required: true, min: 0 },
+          targetQtySnapshot: { type: Number, required: true, min: 0 },
+          recordedAt: { type: Date, required: true },
+          note: { type: String },
+        },
+        { _id: false }
+      ),
+    ],
     audit: {
       createdByUid: { type: String, required: true },
       updatedByUid: { type: String },

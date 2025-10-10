@@ -137,4 +137,47 @@ export default class CollectionJobController {
       return res.status(500).json({ message: "Internal Server Error" });
     }
   }
+
+  // POST /:campaignId/collections/:jobId/records
+  static async createRecord(req: Request, res: Response) {
+    try {
+      const { jobId } = req.params as any;
+      const body = req.body || {};
+      const userDoc: any = (req as any).userDoc;
+      const job = await CollectionJobService.addRecord({
+        jobId,
+        volunteerId: body.volunteerId,
+        volunteerName: body.volunteerName,
+        amountSubmitted: Number(body.amountSubmitted || 0),
+        note: body.note,
+        actorUid: userDoc?.uid || (req as any).user?.uid || "unknown",
+      });
+      return res.status(201).json({ success: true, data: job });
+    } catch (err: any) {
+      if (err?.message === "JOB_NOT_FOUND")
+        return res.status(404).json({ message: "Job not found" });
+      if (err?.message === "INVALID_AMOUNT")
+        return res.status(400).json({ message: "Invalid amount" });
+      if (err?.message === "INVALID_STATE")
+        return res
+          .status(400)
+          .json({ message: "Cannot add records to cancelled job" });
+      console.error("[CollectionJob.createRecord]", err);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+
+  // GET /:campaignId/collections/:jobId/records
+  static async listRecords(req: Request, res: Response) {
+    try {
+      const { jobId } = req.params as any;
+      const records = await CollectionJobService.listRecords(jobId);
+      return res.status(200).json({ success: true, data: records });
+    } catch (err: any) {
+      if (err?.message === "JOB_NOT_FOUND")
+        return res.status(404).json({ message: "Job not found" });
+      console.error("[CollectionJob.listRecords]", err);
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
 }

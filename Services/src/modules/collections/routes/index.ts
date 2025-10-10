@@ -36,4 +36,16 @@ router.post(
   CollectionJobController.cancel
 );
 
+// Records for a collection job
+router.post(
+  "/:campaignId/collections/:jobId/records",
+  authenticate,
+  CollectionJobController.createRecord
+);
+router.get(
+  "/:campaignId/collections/:jobId/records",
+  authenticate,
+  CollectionJobController.listRecords
+);
+
 export default router;

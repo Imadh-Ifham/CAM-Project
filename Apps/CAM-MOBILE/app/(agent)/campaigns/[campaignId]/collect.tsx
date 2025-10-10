@@ -29,6 +29,7 @@ import {
   useCancelCollectionJobMutation,
 } from "@/src/store/services/collectionsApi";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useGetCollectionJobRecordsQuery } from "@/src/store/services/collectionsApi";
 
 type CollectionStatus =
   | "draft"
@@ -75,6 +76,18 @@ export default function CampaignCollect() {
   });
   const [editTargetQty, setEditTargetQty] = useState<string>("");
   const [editNotes, setEditNotes] = useState<string>("");
+  const [detailsModal, setDetailsModal] = useState<{
+    open: boolean;
+    job?: any;
+  }>({ open: false });
+
+  // Details modal data fetch (must be at top level to respect Rules of Hooks)
+  const detailsJob: any | undefined = detailsModal.job;
+  const detailsJobId: string | undefined = detailsJob?._id;
+  const { data: detailsRecords = [] } = useGetCollectionJobRecordsQuery(
+    detailsJobId ? { campaignId, jobId: detailsJobId } : ({} as any),
+    { skip: !detailsModal.open || !detailsJobId }
+  );
 
   const resourceOptions = useMemo(
     () =>
@@ -750,7 +763,12 @@ export default function CampaignCollect() {
                       </Text>
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" style={{ width: "48%" }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    style={{ width: "48%" }}
+                    onPress={() => setDetailsModal({ open: true, job: c })}
+                  >
                     <Ionicons
                       name="information-circle-outline"
                       size={14}
@@ -772,6 +790,204 @@ export default function CampaignCollect() {
           </CardContent>
         </Card>
       </ScrollView>
+
+      {/* View Details modal (mocked volunteer progress) */}
+      <Modal
+        visible={detailsModal.open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDetailsModal({ open: false })}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(15,23,42,0.15)",
+            padding: spacing.lg,
+            justifyContent: "center",
+          }}
+          onPress={() => setDetailsModal({ open: false })}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing.lg,
+              gap: spacing.md,
+            }}
+          >
+            {(() => {
+              const job = detailsModal.job;
+              if (!job)
+                return <Text style={{ color: colors.muted }}>No details</Text>;
+              // Use records fetched via top-level hook
+              type R = {
+                volunteerId?: string;
+                volunteerName?: string;
+                amountSubmitted: number;
+                completedQtyAfter: number;
+                targetQtySnapshot: number;
+                recordedAt: string;
+                note?: string;
+              };
+              // Group by volunteer for display (simple group)
+              const byVolunteer: Record<
+                string,
+                { name: string; entries: { time: string; qty: number }[] }
+              > = {};
+              (detailsRecords as R[]).forEach((r) => {
+                const id = r.volunteerId || "unknown";
+                const name = r.volunteerName || r.volunteerId || "Unknown";
+                if (!byVolunteer[id]) byVolunteer[id] = { name, entries: [] };
+                byVolunteer[id].entries.push({
+                  time: new Date(r.recordedAt).toLocaleString(),
+                  qty: r.amountSubmitted,
+                });
+              });
+              const groups = Object.entries(byVolunteer);
+              const totalTarget = job.targetQty || 0;
+              const totalCollected = (detailsRecords as R[]).reduce(
+                (sum, r) => sum + (r.amountSubmitted || 0),
+                0
+              );
+              const percent =
+                totalTarget > 0
+                  ? Math.min(
+                      100,
+                      Math.round((totalCollected / totalTarget) * 100)
+                    )
+                  : 0;
+              return (
+                <View style={{ gap: spacing.md }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <View>
+                      <Text style={[typography.h3, { fontSize: 18 }]}>
+                        {job.resourceSnapshot?.name || job.resourceId}
+                      </Text>
+                      <Text style={{ color: colors.muted, marginTop: 2 }}>
+                        Target: {totalTarget} {job.resourceSnapshot?.unit || ""}
+                      </Text>
+                    </View>
+                    <StatusBadge status={job.status} />
+                  </View>
+                  {/* Progress bar */}
+                  <View style={{ gap: 6 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Text style={{ color: colors.muted, fontSize: 12 }}>
+                        Progress
+                      </Text>
+                      <Text style={{ color: colors.muted, fontSize: 12 }}>
+                        {totalCollected}/{totalTarget}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        height: 10,
+                        backgroundColor: colors.mutedBackground,
+                        borderRadius: 999,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <View
+                        style={{
+                          height: 10,
+                          width: `${percent}%`,
+                          backgroundColor: colors.primary,
+                        }}
+                      />
+                    </View>
+                  </View>
+                  {/* Volunteers list */}
+                  <View style={{ gap: spacing.sm }}>
+                    {groups.length === 0 && (
+                      <Text style={{ color: colors.muted }}>
+                        No volunteer made any collections yet.
+                      </Text>
+                    )}
+                    {groups.map(([id, v]) => (
+                      <View
+                        key={id}
+                        style={{
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          borderRadius: 12,
+                          padding: spacing.md,
+                          gap: 6,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons
+                            name="person-circle-outline"
+                            size={16}
+                            color={colors.muted}
+                          />
+                          <Text style={{ fontWeight: "700" }}>{v.name}</Text>
+                        </View>
+                        {v.entries.map((e, idx) => (
+                          <View
+                            key={idx}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <Ionicons
+                              name="time-outline"
+                              size={14}
+                              color={colors.muted}
+                            />
+                            <Text
+                              style={{ color: colors.cardForeground, flex: 1 }}
+                            >
+                              {e.time} — {e.qty}{" "}
+                              {job.resourceSnapshot?.unit || ""}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+                  <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                    <Button
+                      variant="outline"
+                      style={{ flex: 1 }}
+                      onPress={() => setDetailsModal({ open: false })}
+                    >
+                      <Text
+                        style={{
+                          color: colors.cardForeground,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Close
+                      </Text>
+                    </Button>
+                  </View>
+                </View>
+              );
+            })()}
+          </View>
+        </Pressable>
+      </Modal>
 
       {/* Resource type picker */}
       <Modal

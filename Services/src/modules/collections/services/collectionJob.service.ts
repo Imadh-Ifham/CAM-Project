@@ -159,4 +159,44 @@ export class CollectionJobService {
     if (!job) throw new Error("JOB_NOT_FOUND_OR_COMPLETED");
     return job;
   }
+
+  // Add a collection submission record (can be used while in_progress or completed)
+  static async addRecord(params: {
+    jobId: string;
+    volunteerId?: string;
+    volunteerName?: string;
+    amountSubmitted: number; // delta to add
+    note?: string;
+    actorUid: string;
+  }) {
+    const { jobId, amountSubmitted } = params;
+    if (amountSubmitted < 0) throw new Error("INVALID_AMOUNT");
+    const job = await CollectionJob.findById(jobId);
+    if (!job) throw new Error("JOB_NOT_FOUND");
+    if (job.status === "cancelled") throw new Error("INVALID_STATE");
+    const newProgress = Math.max(0, (job.progressQty || 0) + amountSubmitted);
+    const record = {
+      volunteerId: params.volunteerId,
+      volunteerName: params.volunteerName,
+      amountSubmitted,
+      completedQtyAfter: newProgress,
+      targetQtySnapshot: job.targetQty,
+      recordedAt: new Date(),
+      note: params.note,
+    } as any;
+    // push record and update progress
+    (job as any).records = Array.isArray((job as any).records)
+      ? ([...(job as any).records, record] as any)
+      : ([record] as any);
+    job.progressQty = newProgress;
+    job.audit = { ...(job.audit || {}), updatedByUid: params.actorUid } as any;
+    await job.save();
+    return job.toObject();
+  }
+
+  static async listRecords(jobId: string) {
+    const job = await CollectionJob.findById(jobId).lean();
+    if (!job) throw new Error("JOB_NOT_FOUND");
+    return (job as any).records || [];
+  }
 }
