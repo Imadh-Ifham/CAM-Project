@@ -14,7 +14,6 @@ import CampaignOverview from "./CampaignOverview";
 import CampaignTeam from "./CampaignTeam";
 import CampaignResources from "./CampaignResources";
 import CampaignProgress from "./CampaignProgress";
-import { mockCampaignDetail } from "@/src/types/campaign.type";
 import { useAppSelector } from "@/src/store/hooks";
 import { selectSelectedCampaign } from "@/src/store/selectors";
 

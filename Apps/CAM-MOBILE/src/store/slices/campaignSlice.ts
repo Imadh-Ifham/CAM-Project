@@ -1,8 +1,10 @@
 import {
   Campaign,
   CampaignFormData,
+  CampaignList,
   initialCampaignFormData,
   mockCampaignDetail,
+  mockCampaignList,
 } from "@/src/types/campaign.type";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
@@ -12,7 +14,7 @@ import {
 } from "../thunks/campaignThunk";
 
 interface CampaignState {
-  campaignList: Campaign[] | null;
+  campaignList: CampaignList[];
   selectedCampaign: Campaign;
   campaignFormData: CampaignFormData;
   loading: boolean;
@@ -22,7 +24,7 @@ interface CampaignState {
 }
 
 const initialState: CampaignState = {
-  campaignList: null,
+  campaignList: mockCampaignList,
   selectedCampaign: mockCampaignDetail,
   campaignFormData: initialCampaignFormData,
   loading: false,
@@ -65,11 +67,6 @@ const campaignSlice = createSlice({
       .addCase(createCampaignThunk.fulfilled, (state, action) => {
         state.createLoading = false;
         state.createError = null;
-        // Add the new campaign to the list if it exists
-        if (state.campaignList) {
-          state.campaignList.push(action.payload);
-        }
-        // Reset form data after successful creation
         state.campaignFormData = initialCampaignFormData;
       })
       .addCase(createCampaignThunk.rejected, (state, action) => {

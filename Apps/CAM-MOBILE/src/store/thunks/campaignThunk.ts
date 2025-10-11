@@ -1,6 +1,10 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import { CampaignFormData, Campaign } from "@/src/types/campaign.type";
+import {
+  CampaignFormData,
+  Campaign,
+  CampaignList,
+} from "@/src/types/campaign.type";
 import API from "@/src/api/API";
 
 /**
@@ -15,15 +19,11 @@ export const createCampaignThunk = createAsyncThunk<
   try {
     console.log("Creating campaign with data:", campaignData);
 
-    const response = await axios.post(
-      `${API.CAMPAIGN.CREATE_CAMPAIGN}`,
-      campaignData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await axios.post(`${API.CAMPAIGN}`, campaignData, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
     console.log("Campaign created successfully:", response.data.data);
     return response.data.data;
@@ -52,18 +52,13 @@ export const createCampaignThunk = createAsyncThunk<
  * Fetch all campaigns
  */
 export const fetchCampaignsThunk = createAsyncThunk<
-  Campaign[],
-  { token: string },
+  CampaignList[],
+  void,
   { rejectValue: string }
->("campaign/fetchCampaigns", async ({ token }, { rejectWithValue }) => {
+>("campaign/fetchCampaigns", async (_, { rejectWithValue }) => {
   try {
-    const response = await axios.get(`${API.CAMPAIGN}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    return response.data;
+    const response = await axios.get(`${API.CAMPAIGN}`);
+    return response.data.data;
   } catch (error: any) {
     console.error("Error fetching campaigns:", error);
 
@@ -86,33 +81,27 @@ export const fetchCampaignsThunk = createAsyncThunk<
  */
 export const fetchCampaignByIdThunk = createAsyncThunk<
   Campaign,
-  { campaignId: string; token: string },
+  { campaignId: string },
   { rejectValue: string }
->(
-  "campaign/fetchCampaignById",
-  async ({ campaignId, token }, { rejectWithValue }) => {
-    try {
-      const response = await axios.get(`${API.CAMPAIGN}/${campaignId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+>("campaign/fetchCampaignById", async ({ campaignId }, { rejectWithValue }) => {
+  try {
+    console.log("Fetching campaign with ID:", campaignId);
+    const response = await axios.get(`${API.CAMPAIGN}${campaignId}`);
 
-      return response.data;
-    } catch (error: any) {
-      console.error("Error fetching campaign by ID:", error);
+    return response.data.data;
+  } catch (error: any) {
+    console.error("Error fetching campaign by ID:", error);
 
-      if (error.response) {
-        const errorMessage =
-          error.response.data?.message ||
-          error.response.data?.error ||
-          `Server error: ${error.response.status}`;
-        return rejectWithValue(errorMessage);
-      } else if (error.request) {
-        return rejectWithValue("Network error: Unable to connect to server");
-      } else {
-        return rejectWithValue(error.message || "An unexpected error occurred");
-      }
+    if (error.response) {
+      const errorMessage =
+        error.response.data?.message ||
+        error.response.data?.error ||
+        `Server error: ${error.response.status}`;
+      return rejectWithValue(errorMessage);
+    } else if (error.request) {
+      return rejectWithValue("Network error: Unable to connect to server");
+    } else {
+      return rejectWithValue(error.message || "An unexpected error occurred");
     }
   }
-);
+});

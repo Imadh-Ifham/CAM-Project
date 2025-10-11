@@ -8,8 +8,6 @@ interface ICampaignResource {
   category: string;
   quantity: number;
   unit: string;
-  estimatedCost: number;
-  description?: string;
 }
 
 // Interface for Campaign Document
@@ -107,16 +105,6 @@ const CampaignResourceSchema = new Schema<ICampaignResource>({
     required: [true, "Resource unit is required"],
     trim: true,
     maxlength: [20, "Unit cannot exceed 20 characters"],
-  },
-  estimatedCost: {
-    type: Number,
-    required: [true, "Estimated cost is required"],
-    min: [0, "Cost cannot be negative"],
-  },
-  description: {
-    type: String,
-    trim: true,
-    maxlength: [500, "Description cannot exceed 500 characters"],
   },
 });
 

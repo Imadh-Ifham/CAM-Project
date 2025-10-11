@@ -78,6 +78,7 @@ class CampaignController {
     try {
       const { campaignId } = req.params;
 
+      console.log("Fetching campaign with ID:", campaignId);
       if (!campaignId) {
         res.status(400).json({
           success: false,

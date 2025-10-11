@@ -112,3 +112,56 @@ export const initialCampaignFormData: CampaignFormData = {
   requiredVolunteers: 10,
   skillsRequired: [],
 };
+
+export type CampaignList = {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  priority: string;
+  location: string;
+  startDate: string;
+  volunteers: number;
+  progress: number;
+  budget: number;
+};
+
+// Mock campaign data
+export const mockCampaignList: CampaignList[] = [
+  {
+    id: "1",
+    name: "Flood Relief - Colombo",
+    type: "disaster-relief",
+    status: "active",
+    priority: "critical",
+    location: "Colombo, Western Province",
+    startDate: "2024-01-15",
+    volunteers: 25,
+    progress: 75,
+    budget: 150000,
+  },
+  {
+    id: "2",
+    name: "Medical Aid - Kandy",
+    type: "medical-aid",
+    status: "planning",
+    priority: "high",
+    location: "Kandy, Central Province",
+    startDate: "2024-01-20",
+    volunteers: 12,
+    progress: 30,
+    budget: 80000,
+  },
+  {
+    id: "3",
+    name: "Education Support - Jaffna",
+    type: "education",
+    status: "completed",
+    priority: "medium",
+    location: "Jaffna, Northern Province",
+    startDate: "2024-01-10",
+    volunteers: 8,
+    progress: 100,
+    budget: 45000,
+  },
+];

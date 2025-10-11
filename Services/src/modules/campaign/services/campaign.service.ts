@@ -1,4 +1,8 @@
-import { CampaignFormData } from "../../../types/campaign.type";
+import {
+  CampaignFormData,
+  CampaignListResponseType,
+  Campaign as CampaignType,
+} from "../../../types/campaign.type";
 import Campaign, { ICampaign } from "../models/Campaign.model";
 import mongoose from "mongoose";
 
@@ -53,7 +57,73 @@ interface PaginatedResponse<T> {
   };
 }
 
+// Interface for campaign list response
+interface CampaignListPaginatedResponse {
+  data: CampaignListResponseType;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
 class CampaignService {
+  /**
+   * Transform campaign document to list format
+   */
+  private static transformCampaignToListFormat(campaign: ICampaign) {
+    return {
+      id: campaign.campaignID,
+      name: campaign.name,
+      type: campaign.type,
+      status: campaign.status,
+      priority: campaign.priority,
+      location: campaign.location || `${campaign.city}, ${campaign.district}`,
+      startDate: campaign.startDate.toISOString(),
+      volunteers: campaign.volunteers || 0,
+      progress: campaign.progress || 0,
+      budget: campaign.estimatedBudget || 0,
+    };
+  }
+
+  /**
+   * Transform campaign document to full Campaign type format
+   */
+  private static transformCampaignToFullFormat(
+    campaign: ICampaign
+  ): CampaignType {
+    return {
+      campaignID: campaign.campaignID,
+      name: campaign.name,
+      description: campaign.description,
+      type: campaign.type,
+      status: campaign.status,
+      priority: campaign.priority,
+      location: campaign.location || `${campaign.city}, ${campaign.district}`,
+      startDate: campaign.startDate.toISOString(),
+      endDate: campaign.endDate.toISOString(),
+      volunteers: campaign.volunteers || 0,
+      targetVolunteers: campaign.requiredVolunteers,
+      progress: campaign.progress || 0,
+      budget: campaign.estimatedBudget || 0,
+      spent: campaign.spent || 0,
+      coordinator: {
+        name: campaign.coordinator?.name || "Not Assigned",
+        phone: campaign.coordinator?.phone || "",
+        email: campaign.coordinator?.email || "",
+      },
+      resources: campaign.resources.map((resource) => ({
+        name: resource.name,
+        required: resource.quantity,
+        available: resource.quantity, // For now, assuming required = available
+        unit: resource.unit,
+      })),
+    };
+  }
+
   /**
    * Create a new campaign
    */
@@ -138,7 +208,7 @@ class CampaignService {
    */
   async getCampaignById(
     campaignId: string
-  ): Promise<ServiceResponse<ICampaign>> {
+  ): Promise<ServiceResponse<CampaignType>> {
     try {
       const campaign = await Campaign.findOne({
         campaignID: campaignId,
@@ -151,9 +221,13 @@ class CampaignService {
         };
       }
 
+      // Transform to Campaign type format
+      const transformedCampaign =
+        CampaignService.transformCampaignToFullFormat(campaign);
+
       return {
         success: true,
-        data: campaign,
+        data: transformedCampaign,
         message: "Campaign retrieved successfully",
       };
     } catch (error: any) {
@@ -171,7 +245,7 @@ class CampaignService {
   async getCampaigns(
     filters: CampaignFilters = {},
     pagination: PaginationOptions = {}
-  ): Promise<ServiceResponse<PaginatedResponse<ICampaign>>> {
+  ): Promise<ServiceResponse<CampaignListPaginatedResponse>> {
     try {
       const {
         page = 1,
@@ -218,8 +292,13 @@ class CampaignService {
 
       const totalPages = Math.ceil(totalCount / limit);
 
-      const paginatedResponse: PaginatedResponse<ICampaign> = {
-        data: campaigns,
+      // Transform campaigns to list format
+      const transformedCampaigns: CampaignListResponseType = campaigns.map(
+        (campaign) => CampaignService.transformCampaignToListFormat(campaign)
+      );
+
+      const paginatedResponse: CampaignListPaginatedResponse = {
+        data: transformedCampaigns,
         pagination: {
           currentPage: page,
           totalPages,
