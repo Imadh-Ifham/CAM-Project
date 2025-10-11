@@ -3,6 +3,7 @@ import { View, Text, ActivityIndicator, Pressable } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { auth } from "../src/services/firebase";
 import { getCurrentUser } from "../src/api/auth";
+import { colors } from "../src/styles/colors";
 
 export default function TempHome() {
   const router = useRouter();
@@ -67,6 +68,24 @@ export default function TempHome() {
       return () => {};
     }
   }, [router, params]);
+
+  const checkUserAndRedirect = async () => {
+    try {
+      const userData = await getCurrentUser();
+      const role = userData?.role || userData?.user?.role;
+
+      if (role === "volunteer") {
+        router.replace("/(volunteer)/home" as any);
+      } else if (role === "agent") {
+        router.replace("/(agent)/dashboard" as any);
+      } else {
+        router.replace("/splash" as any);
+      }
+    } catch (error) {
+      console.error("Error checking user:", error);
+      router.replace("/splash" as any);
+    }
+  };
 
   if (loading) {
     return (

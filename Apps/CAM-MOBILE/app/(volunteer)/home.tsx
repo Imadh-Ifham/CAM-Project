@@ -8,12 +8,13 @@ import { Button } from "../../src/components/ui/Button";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { getVolunteerProfile } from "../../src/api/volunteer";
+import { getVolunteerProfile, getAssignedCampaigns } from "../../src/api/volunteer";
 
 export default function VolunteerHome() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [assignedCampaigns, setAssignedCampaigns] = useState<any[]>([]);
 
   useEffect(() => {
     loadProfile();
@@ -21,8 +22,12 @@ export default function VolunteerHome() {
 
   const loadProfile = async () => {
     try {
-      const data = await getVolunteerProfile();
-      setProfile(data.volunteer || data);
+      const [profileData, campaignsData] = await Promise.all([
+        getVolunteerProfile(),
+        getAssignedCampaigns(),
+      ]);
+      setProfile(profileData.volunteer || profileData);
+      setAssignedCampaigns(campaignsData.campaigns || []);
     } catch (e: any) {
       Alert.alert("Error", e?.message || "Failed to load profile");
     } finally {
@@ -227,7 +232,7 @@ export default function VolunteerHome() {
         </View>
 
         {/* Current Campaign - show first assigned campaign */}
-        {profile?.assignedCampaigns && profile.assignedCampaigns.length > 0 ? (
+        {assignedCampaigns && assignedCampaigns.length > 0 ? (
           <Card style={{ borderRadius: 20, marginTop: spacing.xl }}>
             <CardHeader>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -246,7 +251,7 @@ export default function VolunteerHome() {
                 style={{ flexDirection: "row", justifyContent: "space-between" }}
               >
                 <Text style={{ color: colors.cardForeground }}>
-                  {profile.assignedCampaigns[0].name || "Active Campaign"}
+                  {assignedCampaigns[0].name || "Active Campaign"}
                 </Text>
                 <Text
                   style={{
@@ -259,7 +264,7 @@ export default function VolunteerHome() {
                     overflow: "hidden",
                   }}
                 >
-                  Active
+                  {assignedCampaigns[0].status || "Active"}
                 </Text>
               </View>
               <Text
@@ -269,8 +274,19 @@ export default function VolunteerHome() {
                   fontSize: 12,
                 }}
               >
-                Working with Agent: John Doe
+                Working with Agent: {assignedCampaigns[0].assignedAgents?.[0]?.fullName || "Agent"}
               </Text>
+              {assignedCampaigns[0].description && (
+                <Text
+                  style={{
+                    color: colors.cardForeground,
+                    marginTop: 8,
+                    fontSize: 13,
+                  }}
+                >
+                  {assignedCampaigns[0].description}
+                </Text>
+              )}
               <View
                 style={{
                   height: 8,

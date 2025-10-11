@@ -19,7 +19,7 @@ import { Button } from "../../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getCampaigns, joinCampaign } from "../../../src/api/campaign";
-import { getVolunteerProfile } from "../../../src/api/volunteer";
+import { getVolunteerProfile, getAssignedCampaigns } from "../../../src/api/volunteer";
 
 type CampaignStatus = "Active" | "Available" | "Completed";
 
@@ -45,6 +45,9 @@ export default function VolunteerCampaignsIndex() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [volunteerId, setVolunteerId] = useState<string>("");
+  const [assignedCampaignIds, setAssignedCampaignIds] = useState<string[]>(
+    []
+  );
 
   type FilterKey = "all" | "available" | "active" | "completed";
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -75,32 +78,42 @@ export default function VolunteerCampaignsIndex() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [campaignsData, profileData] = await Promise.all([
+      const [campaignsData, profileData, assignedData] = await Promise.all([
         getCampaigns(),
         getVolunteerProfile(),
+        getAssignedCampaigns(),
       ]);
 
+      // Track assigned campaign IDs
+      const assignedIds = (assignedData.campaigns || []).map(
+        (c: any) => c._id || c.id
+      );
+      setAssignedCampaignIds(assignedIds);
+
       // ✅ Map backend campaign data to frontend format
-      const mappedCampaigns = ((campaignsData.data?.data || campaignsData.campaigns || []) as any[]).map((c: any) => ({
-        id: c._id || c.id,
-        name: c.name || "Unnamed Campaign",
-        description: c.description || "",
-        location: c.location || `${c.city || ""}, ${c.district || ""}`.trim() || "Location TBD",
-        startDate: c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : "",
-        endDate: c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "",
-        agent: c.assignedAgents?.[0]?.name || "Agent TBD",
-        agentPhone: c.assignedAgents?.[0]?.phone || "",
-        volunteers: c.assignedVolunteers?.length || 0,
-        volunteersNeeded: c.requiredVolunteers || 10,
-        status: (c.status === "active" ? "Active" : c.status === "completed" ? "Completed" : "Available") as CampaignStatus,
-        locations: 1,
-        taskTypes: c.type || "General tasks",
-        resourceNeeds: { 
-          food: c.resources?.filter((r: any) => r.category === "food").length || 0,
-          clothes: c.resources?.filter((r: any) => r.category === "clothing").length || 0,
-          funds: c.estimatedBudget || 0,
-        },
-      }));
+      const mappedCampaigns = ((campaignsData.data?.data || campaignsData.campaigns || []) as any[]).map((c: any) => {
+        const isAssigned = assignedIds.includes(c._id || c.id);
+        return {
+          id: c._id || c.id,
+          name: c.name || "Unnamed Campaign",
+          description: c.description || "",
+          location: c.location || `${c.city || ""}, ${c.district || ""}`.trim() || "Location TBD",
+          startDate: c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : "",
+          endDate: c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "",
+          agent: c.assignedAgents?.[0]?.name || "Agent TBD",
+          agentPhone: c.assignedAgents?.[0]?.phone || "",
+          volunteers: c.assignedVolunteers?.length || 0,
+          volunteersNeeded: c.requiredVolunteers || 10,
+          status: (isAssigned ? "Active" : c.status === "completed" ? "Completed" : "Available") as CampaignStatus,
+          locations: 1,
+          taskTypes: c.type || "General tasks",
+          resourceNeeds: { 
+            food: c.resources?.filter((r: any) => r.category === "food").length || 0,
+            clothes: c.resources?.filter((r: any) => r.category === "clothing").length || 0,
+            funds: c.estimatedBudget || 0,
+          },
+        };
+      });
 
       setCampaigns(mappedCampaigns);
       setVolunteerId(profileData.volunteer?._id || profileData._id || "");
