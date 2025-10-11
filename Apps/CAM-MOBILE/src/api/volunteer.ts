@@ -46,7 +46,7 @@ async function withAuthHeaders(init?: RequestInit): Promise<RequestInit> {
  */
 export async function getVolunteerProfile() {
   const res = await fetch(
-    `${BASE_URL}/api/volunteer/auth/me`,
+    `${BASE_URL}/api/volunteer/me`,
     await withAuthHeaders()
   );
   await throwIfNotOk(res);
@@ -64,11 +64,23 @@ export async function updateVolunteerProfile(data: {
   availability?: string;
 }) {
   const res = await fetch(
-    `${BASE_URL}/api/volunteer/auth/me`,
+    `${BASE_URL}/api/volunteer/me`,
     await withAuthHeaders({
       method: "PUT",
       body: JSON.stringify(data),
     })
+  );
+  await throwIfNotOk(res);
+  return res.json();
+}
+
+/**
+ * Get campaigns assigned to the authenticated volunteer
+ */
+export async function getAssignedCampaigns() {
+  const res = await fetch(
+    `${BASE_URL}/api/volunteer/assigned-campaigns`,
+    await withAuthHeaders()
   );
   await throwIfNotOk(res);
   return res.json();

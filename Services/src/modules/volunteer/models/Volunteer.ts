@@ -7,6 +7,7 @@ export interface IVolunteer extends Document {
   age?: number;
   email: string;
   passwordHash: string;
+  firebaseUid?: string;
   phoneNumber?: string;
   preferredType?: PreferredType;
   skillsAndInterest?: string;
@@ -20,6 +21,7 @@ const VolunteerSchema = new Schema<IVolunteer>({
   age: { type: Number },
   email: { type: String, required: true, unique: true, index: true },
   passwordHash: { type: String, required: true },
+  firebaseUid: { type: String, unique: true, sparse: true },
   phoneNumber: { type: String },
   preferredType: { type: String, enum: ["collecting", "distributing"] },
   skillsAndInterest: { type: String },
