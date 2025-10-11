@@ -103,6 +103,10 @@ export default function CampaignCollect() {
     open: boolean;
     job?: any;
   }>({ open: false });
+  // Track if we already alerted for a completed resource to avoid repeat alerts
+  const [lastAlertedResourceId, setLastAlertedResourceId] = useState<
+    string | null
+  >(null);
 
   // Details modal data fetch (must be at top level to respect Rules of Hooks)
   const detailsJob: any | undefined = detailsModal.job;
@@ -176,6 +180,29 @@ export default function CampaignCollect() {
       }
     }
   }, [remainingNeeded]);
+
+  // Alert once when selecting a resource that is fully collected
+  useEffect(() => {
+    const name = resourceId
+      ? (resourceOptions.find((r) => r.key === resourceId)?.label || "").split(
+          " ("
+        )[0]
+      : "";
+    if (
+      resourceId &&
+      effectiveTargetForSelected > 0 &&
+      remainingNeeded === 0 &&
+      lastAlertedResourceId !== resourceId
+    ) {
+      Alert.alert(
+        "Collection Complete",
+        `Collections for ${
+          name || "this resource"
+        } are complete. Arrange distributions to locations.`
+      );
+      setLastAlertedResourceId(resourceId);
+    }
+  }, [resourceId, effectiveTargetForSelected, remainingNeeded]);
 
   // Refresh snapshots when collections list changes
   useEffect(() => {
@@ -376,6 +403,41 @@ export default function CampaignCollect() {
                 />
               </Pressable>
             </View>
+
+            {/* Completed banner when fully collected */}
+            {resourceId &&
+              effectiveTargetForSelected > 0 &&
+              remainingNeeded === 0 && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginTop: spacing.sm,
+                    padding: spacing.sm,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: "#86efac",
+                    backgroundColor: "#dcfce7",
+                  }}
+                >
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={16}
+                    color="#166534"
+                  />
+                  <Text style={{ color: "#166534", flex: 1 }}>
+                    Collection complete for{" "}
+                    {
+                      (
+                        resourceOptions.find((r) => r.key === resourceId)
+                          ?.label || "this resource"
+                      ).split(" (")[0]
+                    }
+                    . Arrange distributions to locations.
+                  </Text>
+                </View>
+              )}
 
             {/* Target Quantity */}
             <View>

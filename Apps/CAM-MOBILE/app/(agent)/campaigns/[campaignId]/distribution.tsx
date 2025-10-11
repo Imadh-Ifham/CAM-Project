@@ -109,6 +109,10 @@ export default function CampaignDistribution() {
     open: boolean;
     job?: any;
   }>({ open: false });
+  // Track last alerted resource to avoid repeated alerts when distribution completed per campaign target
+  const [lastAlertedDistResourceId, setLastAlertedDistResourceId] = useState<
+    string | null
+  >(null);
 
   // Options
   const resourceOptions = useMemo(
@@ -150,6 +154,43 @@ export default function CampaignDistribution() {
     !!resourceId && !!targetQty && Number(targetQty) > availableForSelected;
   const maxDistributable = availableForSelected;
   const inputDisabled = !!resourceId && Number(maxDistributable) <= 0;
+
+  // Determine if campaign requirement is fully distributed for selected resource
+  const distributedForSelected = resourceId
+    ? typeof (selectedResSnapshot as any)?.distributedQty === "number"
+      ? Number((selectedResSnapshot as any)?.distributedQty)
+      : 0
+    : 0;
+  const remainingToDistribute = resourceId
+    ? Math.max(
+        (Number((selectedResSnapshot as any)?.targetQty) || 0) -
+          distributedForSelected,
+        0
+      )
+    : undefined;
+
+  useEffect(() => {
+    const name = resourceId
+      ? (resourceOptions.find((r) => r.key === resourceId)?.label || "").split(
+          " ("
+        )[0]
+      : "";
+    const targetQtySel = Number((selectedResSnapshot as any)?.targetQty) || 0;
+    if (
+      resourceId &&
+      targetQtySel > 0 &&
+      remainingToDistribute === 0 &&
+      lastAlertedDistResourceId !== resourceId
+    ) {
+      Alert.alert(
+        "Distribution Complete",
+        `Distributions for ${
+          name || "this resource"
+        } have fulfilled the campaign requirement.`
+      );
+      setLastAlertedDistResourceId(resourceId);
+    }
+  }, [resourceId, remainingToDistribute, selectedResSnapshot]);
 
   // Details records hook at top-level
   const detailsJob: any | undefined = detailsModal.job;
@@ -381,6 +422,41 @@ export default function CampaignDistribution() {
                 />
               </Pressable>
             </View>
+
+            {/* Completed banner when fully distributed against campaign target */}
+            {resourceId &&
+              (Number((selectedResSnapshot as any)?.targetQty) || 0) > 0 &&
+              remainingToDistribute === 0 && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginTop: spacing.sm,
+                    padding: spacing.sm,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: "#86efac",
+                    backgroundColor: "#dcfce7",
+                  }}
+                >
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={16}
+                    color="#166534"
+                  />
+                  <Text style={{ color: "#166534", flex: 1 }}>
+                    Distribution complete for{" "}
+                    {
+                      (
+                        resourceOptions.find((r) => r.key === resourceId)
+                          ?.label || "this resource"
+                      ).split(" (")[0]
+                    }
+                    . Campaign requirement fulfilled.
+                  </Text>
+                </View>
+              )}
 
             {/* Quantity & Date */}
             <View style={{ flexDirection: "row", gap: spacing.md }}>
