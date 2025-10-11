@@ -1,6 +1,7 @@
 import {
   CampaignFormData,
   CampaignListResponseType,
+  Campaign as CampaignType,
 } from "../../../types/campaign.type";
 import Campaign, { ICampaign } from "../models/Campaign.model";
 import mongoose from "mongoose";
@@ -89,6 +90,41 @@ class CampaignService {
   }
 
   /**
+   * Transform campaign document to full Campaign type format
+   */
+  private static transformCampaignToFullFormat(
+    campaign: ICampaign
+  ): CampaignType {
+    return {
+      campaignID: campaign.campaignID,
+      name: campaign.name,
+      description: campaign.description,
+      type: campaign.type,
+      status: campaign.status,
+      priority: campaign.priority,
+      location: campaign.location || `${campaign.city}, ${campaign.district}`,
+      startDate: campaign.startDate.toISOString(),
+      endDate: campaign.endDate.toISOString(),
+      volunteers: campaign.volunteers || 0,
+      targetVolunteers: campaign.requiredVolunteers,
+      progress: campaign.progress || 0,
+      budget: campaign.estimatedBudget || 0,
+      spent: campaign.spent || 0,
+      coordinator: {
+        name: campaign.coordinator?.name || "Not Assigned",
+        phone: campaign.coordinator?.phone || "",
+        email: campaign.coordinator?.email || "",
+      },
+      resources: campaign.resources.map((resource) => ({
+        name: resource.name,
+        required: resource.quantity,
+        available: resource.quantity, // For now, assuming required = available
+        unit: resource.unit,
+      })),
+    };
+  }
+
+  /**
    * Create a new campaign
    */
   async createCampaign(
@@ -172,7 +208,7 @@ class CampaignService {
    */
   async getCampaignById(
     campaignId: string
-  ): Promise<ServiceResponse<ICampaign>> {
+  ): Promise<ServiceResponse<CampaignType>> {
     try {
       const campaign = await Campaign.findOne({
         campaignID: campaignId,
@@ -185,9 +221,13 @@ class CampaignService {
         };
       }
 
+      // Transform to Campaign type format
+      const transformedCampaign =
+        CampaignService.transformCampaignToFullFormat(campaign);
+
       return {
         success: true,
-        data: campaign,
+        data: transformedCampaign,
         message: "Campaign retrieved successfully",
       };
     } catch (error: any) {

@@ -15,7 +15,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { selectCampaignList } from "@/src/store/selectors";
-import { fetchCampaignsThunk } from "@/src/store/thunks/campaignThunk";
+import {
+  fetchCampaignsThunk,
+  fetchCampaignByIdThunk,
+} from "@/src/store/thunks/campaignThunk";
+import { CampaignList } from "@/src/types/campaign.type";
 
 const campaignTypes = [
   { key: "all", label: "All Campaigns", icon: "grid" },
@@ -81,12 +85,20 @@ export default function CampaignsIndex() {
     router.push("/adminDashboard/components/campaigns/createCampaign" as any);
   };
 
-  const handleCampaignPress = (campaignId: string) => {
-    router.push(
-      `/adminDashboard/components/campaigns/campaignDetail/CampaignDetailView` as any
-    );
-  };
+  const handleCampaignPress = async (campaignId: string) => {
+    try {
+      // Fetch the campaign details before navigating
+      await dispatch(fetchCampaignByIdThunk({ campaignId }));
 
+      // Navigate to campaign detail view with the campaign ID
+      router.push(
+        `/adminDashboard/components/campaigns/campaignDetail/CampaignDetailView?campaignId=${campaignId}` as any
+      );
+    } catch (error) {
+      console.error("Failed to fetch campaign details:", error);
+      // You might want to show an error message to the user here
+    }
+  };
   const getCampaignIcon = (type: string) => {
     switch (type) {
       case "disaster-relief":
@@ -293,13 +305,11 @@ export default function CampaignsIndex() {
             )}
           </View>
         ) : (
-          filteredCampaigns?.map((campaign: any) => (
+          filteredCampaigns?.map((campaign: CampaignList) => (
             <TouchableOpacity
-              key={campaign.campaignID || campaign.id}
+              key={campaign.id}
               style={styles.campaignCard}
-              onPress={() =>
-                handleCampaignPress(campaign.campaignID || campaign.id)
-              }
+              onPress={() => handleCampaignPress(campaign.id)}
             >
               {/* Campaign Header */}
               <View style={styles.campaignHeader}>

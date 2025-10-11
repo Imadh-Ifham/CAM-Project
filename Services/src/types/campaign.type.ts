@@ -49,3 +49,32 @@ export type CampaignListResponseType = Array<{
   progress: number;
   budget: number;
 }>;
+
+// Full Campaign type for detailed responses (matches frontend Campaign type)
+export type Campaign = {
+  campaignID: string;
+  name: string;
+  description: string;
+  type: string;
+  status: string;
+  priority: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  volunteers: number;
+  targetVolunteers: number;
+  progress: number;
+  budget: number;
+  spent: number;
+  coordinator: {
+    name: string;
+    phone: string;
+    email: string;
+  };
+  resources: Array<{
+    name: string;
+    required: number;
+    available: number;
+    unit: string;
+  }>;
+};

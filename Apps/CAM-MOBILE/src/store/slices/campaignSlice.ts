@@ -14,7 +14,7 @@ import {
 } from "../thunks/campaignThunk";
 
 interface CampaignState {
-  campaignList: CampaignList;
+  campaignList: CampaignList[];
   selectedCampaign: Campaign;
   campaignFormData: CampaignFormData;
   loading: boolean;

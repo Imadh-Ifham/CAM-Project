@@ -113,7 +113,7 @@ export const initialCampaignFormData: CampaignFormData = {
   skillsRequired: [],
 };
 
-export type CampaignList = Array<{
+export type CampaignList = {
   id: string;
   name: string;
   type: string;
@@ -124,10 +124,10 @@ export type CampaignList = Array<{
   volunteers: number;
   progress: number;
   budget: number;
-}>;
+};
 
 // Mock campaign data
-export const mockCampaignList: CampaignList = [
+export const mockCampaignList: CampaignList[] = [
   {
     id: "1",
     name: "Flood Relief - Colombo",

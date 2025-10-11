@@ -52,7 +52,7 @@ export const createCampaignThunk = createAsyncThunk<
  * Fetch all campaigns
  */
 export const fetchCampaignsThunk = createAsyncThunk<
-  CampaignList,
+  CampaignList[],
   void,
   { rejectValue: string }
 >("campaign/fetchCampaigns", async (_, { rejectWithValue }) => {
@@ -85,9 +85,10 @@ export const fetchCampaignByIdThunk = createAsyncThunk<
   { rejectValue: string }
 >("campaign/fetchCampaignById", async ({ campaignId }, { rejectWithValue }) => {
   try {
-    const response = await axios.get(`${API.CAMPAIGN}/${campaignId}`);
+    console.log("Fetching campaign with ID:", campaignId);
+    const response = await axios.get(`${API.CAMPAIGN}${campaignId}`);
 
-    return response.data;
+    return response.data.data;
   } catch (error: any) {
     console.error("Error fetching campaign by ID:", error);
 
