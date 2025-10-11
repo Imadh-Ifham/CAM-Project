@@ -45,6 +45,8 @@ export interface ICampaign extends Document {
 
   // Team
   requestedAgent: string[]; // Agent ID
+  assignedAgents: mongoose.Types.ObjectId[]; // ✅ Added - actual assigned agents
+  assignedVolunteers: mongoose.Types.ObjectId[]; // ✅ Added - actual assigned volunteers
   requiredVolunteers: number;
   volunteers: number; // Current volunteer count
   skillsRequired: string[];
@@ -249,6 +251,18 @@ const CampaignSchema = new Schema<ICampaign>(
       {
         type: String,
         ref: "Agent", // Reference to Agent model
+      },
+    ],
+    assignedAgents: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Agent", // Reference to Agent model
+      },
+    ],
+    assignedVolunteers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Volunteer", // Reference to Volunteer model
       },
     ],
     requiredVolunteers: {
