@@ -1,11 +1,17 @@
 import { Router } from 'express';
-import { assignVolunteerToCampaign } from '../controllers/volunteerController';
+import { 
+  listVolunteers, 
+  getProfile, 
+  updateProfile,
+  getAssignedCampaigns 
+} from '../controllers/volunteerController';
 import authMiddleware from '../middleware/auth';
 
 const router = Router();
 
-// POST /api/volunteer/assign - Assign volunteer to campaign
-router.post('/assign', authMiddleware, assignVolunteerToCampaign);
-
+router.get('/list', listVolunteers);
+router.get('/profile', authMiddleware, getProfile);
+router.put('/profile', authMiddleware, updateProfile);
+router.get('/assigned-campaigns', authMiddleware, getAssignedCampaigns);
 
 export default router;
