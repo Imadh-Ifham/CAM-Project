@@ -36,3 +36,16 @@ export interface CampaignFormData {
   requiredVolunteers: number;
   skillsRequired: string[];
 }
+
+export type CampaignListResponseType = Array<{
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  priority: string;
+  location: string;
+  startDate: string;
+  volunteers: number;
+  progress: number;
+  budget: number;
+}>;

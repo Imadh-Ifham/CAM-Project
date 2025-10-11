@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,50 +7,15 @@ import {
   ScrollView,
   StatusBar,
   TextInput,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-
-// Mock campaign data
-const mockCampaigns = [
-  {
-    id: "1",
-    name: "Flood Relief - Colombo",
-    type: "disaster-relief",
-    status: "active",
-    priority: "critical",
-    location: "Colombo, Western Province",
-    startDate: "2024-01-15",
-    volunteers: 25,
-    progress: 75,
-    budget: 150000,
-  },
-  {
-    id: "2",
-    name: "Medical Aid - Kandy",
-    type: "medical-aid",
-    status: "planning",
-    priority: "high",
-    location: "Kandy, Central Province",
-    startDate: "2024-01-20",
-    volunteers: 12,
-    progress: 30,
-    budget: 80000,
-  },
-  {
-    id: "3",
-    name: "Education Support - Jaffna",
-    type: "education",
-    status: "completed",
-    priority: "medium",
-    location: "Jaffna, Northern Province",
-    startDate: "2024-01-10",
-    volunteers: 8,
-    progress: 100,
-    budget: 45000,
-  },
-];
+import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
+import { selectCampaignList } from "@/src/store/selectors";
+import { fetchCampaignsThunk } from "@/src/store/thunks/campaignThunk";
 
 const campaignTypes = [
   { key: "all", label: "All Campaigns", icon: "grid" },
@@ -76,10 +41,34 @@ const priorityColors = {
 
 export default function CampaignsIndex() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [selectedType, setSelectedType] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filteredCampaigns = mockCampaigns.filter((campaign) => {
+  const campaignList = useAppSelector(selectCampaignList);
+  const { loading, error } = useAppSelector((state) => state.campaign);
+
+  // Fetch campaigns on component mount
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  const fetchCampaigns = async () => {
+    try {
+      await dispatch(fetchCampaignsThunk());
+    } catch (error) {
+      console.error("Failed to fetch campaigns:", error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchCampaigns();
+    setRefreshing(false);
+  };
+
+  const filteredCampaigns = campaignList?.filter((campaign) => {
     const matchesType =
       selectedType === "all" || campaign.type === selectedType;
     const matchesSearch =
@@ -115,6 +104,35 @@ export default function CampaignsIndex() {
 
   const formatCurrency = (amount: number) => {
     return `LKR ${amount.toLocaleString()}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch (error) {
+      return dateString; // Fallback to original string if parsing fails
+    }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true, // This enables AM/PM format
+      });
+    } catch (error) {
+      return dateString; // Fallback to original string if parsing fails
+    }
   };
 
   return (
@@ -193,25 +211,32 @@ export default function CampaignsIndex() {
       {/* Campaign Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{mockCampaigns.length}</Text>
+          <Text style={styles.statNumber}>{campaignList?.length || 0}</Text>
           <Text style={styles.statLabel}>Total Campaigns</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>
-            {mockCampaigns.filter((c) => c.status === "active").length}
+            {campaignList?.filter((c: any) => c.status === "active").length ||
+              0}
           </Text>
           <Text style={styles.statLabel}>Active</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>
-            {mockCampaigns.reduce((sum, c) => sum + c.volunteers, 0)}
+            {campaignList?.reduce(
+              (sum: number, c: any) => sum + c.volunteers,
+              0
+            ) || 0}
           </Text>
           <Text style={styles.statLabel}>Volunteers</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>
             {formatCurrency(
-              mockCampaigns.reduce((sum, c) => sum + c.budget, 0)
+              campaignList?.reduce(
+                (sum: number, c: any) => sum + c.budget,
+                0
+              ) || 0
             )}
           </Text>
           <Text style={styles.statLabel}>Total Budget</Text>
@@ -222,8 +247,33 @@ export default function CampaignsIndex() {
       <ScrollView
         style={styles.campaignsList}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#00ff94"
+            colors={["#00ff94"]}
+          />
+        }
       >
-        {filteredCampaigns.length === 0 ? (
+        {loading && !refreshing ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#00ff94" />
+            <Text style={styles.loadingText}>Loading campaigns...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={48} color="#ff4444" />
+            <Text style={styles.errorTitle}>Failed to load campaigns</Text>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={fetchCampaigns}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredCampaigns?.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="megaphone-outline" size={64} color="#666" />
             <Text style={styles.emptyStateTitle}>No campaigns found</Text>
@@ -243,11 +293,13 @@ export default function CampaignsIndex() {
             )}
           </View>
         ) : (
-          filteredCampaigns.map((campaign) => (
+          filteredCampaigns?.map((campaign: any) => (
             <TouchableOpacity
-              key={campaign.id}
+              key={campaign.campaignID || campaign.id}
               style={styles.campaignCard}
-              onPress={() => handleCampaignPress(campaign.id)}
+              onPress={() =>
+                handleCampaignPress(campaign.campaignID || campaign.id)
+              }
             >
               {/* Campaign Header */}
               <View style={styles.campaignHeader}>
@@ -324,7 +376,7 @@ export default function CampaignsIndex() {
                   <View style={styles.detailItem}>
                     <Ionicons name="calendar" size={14} color="#888" />
                     <Text style={styles.detailText}>
-                      Start: {campaign.startDate}
+                      Start: {formatDate(campaign.startDate)}
                     </Text>
                   </View>
                   <View style={styles.detailItem}>
@@ -362,22 +414,6 @@ export default function CampaignsIndex() {
                   />
                 </View>
               </View>
-
-              {/* Campaign Actions */}
-              {/* <View style={styles.campaignActions}>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="eye" size={16} color="#00ff94" />
-                  <Text style={styles.actionButtonText}>View</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="create" size={16} color="#fbbf24" />
-                  <Text style={styles.actionButtonText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="share" size={16} color="#60a5fa" />
-                  <Text style={styles.actionButtonText}>Share</Text>
-                </TouchableOpacity>
-              </View> */}
             </TouchableOpacity>
           ))
         )}
@@ -656,5 +692,47 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  loadingText: {
+    color: "#888",
+    fontSize: 16,
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  errorTitle: {
+    color: "#ff4444",
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    color: "#888",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: "#00ff94",
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  retryButtonText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

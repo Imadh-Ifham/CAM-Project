@@ -1,4 +1,7 @@
-import { CampaignFormData } from "../../../types/campaign.type";
+import {
+  CampaignFormData,
+  CampaignListResponseType,
+} from "../../../types/campaign.type";
 import Campaign, { ICampaign } from "../models/Campaign.model";
 import mongoose from "mongoose";
 
@@ -53,7 +56,38 @@ interface PaginatedResponse<T> {
   };
 }
 
+// Interface for campaign list response
+interface CampaignListPaginatedResponse {
+  data: CampaignListResponseType;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
 class CampaignService {
+  /**
+   * Transform campaign document to list format
+   */
+  private static transformCampaignToListFormat(campaign: ICampaign) {
+    return {
+      id: campaign.campaignID,
+      name: campaign.name,
+      type: campaign.type,
+      status: campaign.status,
+      priority: campaign.priority,
+      location: campaign.location || `${campaign.city}, ${campaign.district}`,
+      startDate: campaign.startDate.toISOString(),
+      volunteers: campaign.volunteers || 0,
+      progress: campaign.progress || 0,
+      budget: campaign.estimatedBudget || 0,
+    };
+  }
+
   /**
    * Create a new campaign
    */
@@ -171,7 +205,7 @@ class CampaignService {
   async getCampaigns(
     filters: CampaignFilters = {},
     pagination: PaginationOptions = {}
-  ): Promise<ServiceResponse<PaginatedResponse<ICampaign>>> {
+  ): Promise<ServiceResponse<CampaignListPaginatedResponse>> {
     try {
       const {
         page = 1,
@@ -218,8 +252,13 @@ class CampaignService {
 
       const totalPages = Math.ceil(totalCount / limit);
 
-      const paginatedResponse: PaginatedResponse<ICampaign> = {
-        data: campaigns,
+      // Transform campaigns to list format
+      const transformedCampaigns: CampaignListResponseType = campaigns.map(
+        (campaign) => CampaignService.transformCampaignToListFormat(campaign)
+      );
+
+      const paginatedResponse: CampaignListPaginatedResponse = {
+        data: transformedCampaigns,
         pagination: {
           currentPage: page,
           totalPages,
