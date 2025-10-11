@@ -230,8 +230,12 @@ export default function Campaigns() {
           ...mapServer(pausedData),
           ...mapServer(completedData),
         ];
-        return all.filter((c) =>
-          identityCandidates.includes(c.coordinatorAgentId || "")
+        // Approved: Active campaigns you can manage (you're the coordinator)
+        return all.filter(
+          (c) =>
+            c.status === "active" &&
+            (assignedCampaignIds.has(c.id) ||
+              identityCandidates.includes(c.coordinatorAgentId || ""))
         );
       }
       default:
@@ -248,6 +252,7 @@ export default function Campaigns() {
     completedData,
     identityCandidates,
     pendingCampaignIds,
+    assignedCampaignIds,
   ]);
 
   // Assignment preflight for visible subset
@@ -357,6 +362,8 @@ export default function Campaigns() {
     motivation: "",
     availability: "",
   });
+  // Optimistic local pending: mark immediately after successful join
+  const [localPending, setLocalPending] = useState<Record<string, true>>({});
 
   const list = listFromServer;
 
@@ -381,6 +388,10 @@ export default function Campaigns() {
       pendingCampaignIds.forEach((id) => {
         if (allIds.has(id)) n += 1;
       });
+      // Include local pending as well (if present in lists)
+      Object.keys(localPending).forEach((id) => {
+        if (allIds.has(id)) n += 1;
+      });
       return n;
     }
     // Fallback legacy logic
@@ -391,15 +402,20 @@ export default function Campaigns() {
         const coord: string | undefined = c?.coordinatorAgentId;
         const requested = identityCandidates.some((id) => req.includes(id));
         const approved = identityCandidates.includes(coord || "");
-        return requested && !approved;
+        const locally =
+          !!localPending[String(c?.campaignID || c?._id || c?.id || "")];
+        return (requested && !approved) || locally;
       }).length;
   })();
-  const approvedCount = (activeData || [])
-    .concat(pausedData || [], completedData || [])
-    .filter((c: any) => {
-      const coord: string | undefined = c?.coordinatorAgentId;
-      return identityCandidates.includes(coord || "");
-    }).length;
+  const approvedCount = useMemo(() => {
+    const allActive = mapServer(activeData);
+    return allActive.filter(
+      (c) =>
+        c.status === "active" &&
+        (assignedCampaignIds.has(c.id) ||
+          identityCandidates.includes(c.coordinatorAgentId || ""))
+    ).length;
+  }, [activeData, assignedCampaignIds, identityCandidates]);
 
   const statusPill = (label: string) => {
     const tone =
@@ -457,6 +473,7 @@ export default function Campaigns() {
     }
   };
   const isRequestedByMe = (c: UiCampaign) => {
+    if (localPending[c.id]) return true;
     if (pendingCampaignIds.has(c.id)) return true;
     const arr = c.requestedAgent || [];
     return identityCandidates.some((id) => arr.includes(id));
@@ -1164,6 +1181,13 @@ export default function Campaigns() {
                             .slice(0, 100),
                         };
                         await joinCampaign(payload).unwrap();
+                        // Optimistically mark as pending for instant UI feedback
+                        setLocalPending((m) => ({
+                          ...m,
+                          [selectedCampaign.id]: true,
+                        }));
+                        // Optionally refetch visible lists to pick up requestedAgent array changes server-side
+                        // No-op here since RTK Query invalidation is set up; we rely on that to refresh
                         Alert.alert(
                           "Request sent",
                           "Your join request was submitted successfully."
