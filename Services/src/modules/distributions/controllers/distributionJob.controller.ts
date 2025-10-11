@@ -84,10 +84,12 @@ export class DistributionJobController {
 
   async schedule(req: Request, res: Response) {
     try {
+      const userDoc: any = (req as any).userDoc;
+      const actorUid = userDoc?.uid || (req as any).user?.uid || "system";
       const doc = await distributionJobService.schedule(
         req.params.id,
         req.body,
-        req.body.updatedByUid
+        actorUid
       );
       res.json(doc);
     } catch (err) {
@@ -98,10 +100,12 @@ export class DistributionJobController {
 
   async reserve(req: Request, res: Response) {
     try {
+      const userDoc: any = (req as any).userDoc;
+      const actorUid = userDoc?.uid || (req as any).user?.uid || "system";
       const doc = await distributionJobService.reserveStock(
         req.params.id,
         req.body.qty,
-        req.body.updatedByUid
+        actorUid
       );
       res.json(doc);
     } catch (err) {
@@ -112,10 +116,9 @@ export class DistributionJobController {
 
   async start(req: Request, res: Response) {
     try {
-      const doc = await distributionJobService.start(
-        req.params.id,
-        req.body.updatedByUid
-      );
+      const userDoc: any = (req as any).userDoc;
+      const actorUid = userDoc?.uid || (req as any).user?.uid || "system";
+      const doc = await distributionJobService.start(req.params.id, actorUid);
       res.json(doc);
     } catch (err) {
       const { code, message } = mapError(err);
@@ -125,10 +128,12 @@ export class DistributionJobController {
 
   async updateProgress(req: Request, res: Response) {
     try {
+      const userDoc: any = (req as any).userDoc;
+      const actorUid = userDoc?.uid || (req as any).user?.uid || "system";
       const doc = await distributionJobService.updateProgress(
         req.params.id,
         req.body.deliveredQty,
-        req.body.updatedByUid
+        actorUid
       );
       res.json(doc);
     } catch (err) {
@@ -139,9 +144,11 @@ export class DistributionJobController {
 
   async complete(req: Request, res: Response) {
     try {
+      const userDoc: any = (req as any).userDoc;
+      const actorUid = userDoc?.uid || (req as any).user?.uid || "system";
       const doc = await distributionJobService.complete(
         req.params.id,
-        req.body.updatedByUid
+        actorUid
       );
       res.json(doc);
     } catch (err) {
@@ -152,10 +159,9 @@ export class DistributionJobController {
 
   async cancel(req: Request, res: Response) {
     try {
-      const doc = await distributionJobService.cancel(
-        req.params.id,
-        req.body.updatedByUid
-      );
+      const userDoc: any = (req as any).userDoc;
+      const actorUid = userDoc?.uid || (req as any).user?.uid || "system";
+      const doc = await distributionJobService.cancel(req.params.id, actorUid);
       res.json(doc);
     } catch (err) {
       const { code, message } = mapError(err);
@@ -165,13 +171,15 @@ export class DistributionJobController {
 
   async createRecord(req: Request, res: Response) {
     try {
+      const userDoc: any = (req as any).userDoc;
+      const actorUid = userDoc?.uid || (req as any).user?.uid || "system";
       const doc = await distributionJobService.addRecord({
         id: req.params.id,
         volunteerId: req.body.volunteerId,
         volunteerName: req.body.volunteerName,
         amountSubmitted: Number(req.body.amountSubmitted || 0),
         note: req.body.note,
-        updatedByUid: req.body.updatedByUid,
+        updatedByUid: actorUid,
       });
       res.status(201).json(doc);
     } catch (err) {

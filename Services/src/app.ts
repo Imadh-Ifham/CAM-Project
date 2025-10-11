@@ -2,11 +2,9 @@ import express, { Application } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db";
-import inventoryRoutes from "./modules/Inventory/routes/inventoryRoutes";
 import agentAuthRoutes from "./modules/auth/agent/routes";
 import volunteerAuthRoutes from "./modules/auth/volunteer/routes";
 import meRoute from "./modules/auth/routes/me";
-import { InventoryService } from "./modules/Inventory/services/inventoryService";
 import volunteerCampaignRoutes from "./modules/volunteer/routes/campaigns";
 import { campaignRoutes } from "./modules/campaign";
 import userRoutes from "./modules/userManagement/routes/userRoutes";
@@ -23,9 +21,7 @@ dotenv.config();
 // Connect to MongoDB
 connectDB();
 
-// Initialize dummy data (only runs once if database is empty)
-const inventoryService = new InventoryService();
-// inventoryService.initializeDummyData().catch(console.error);
+// Initialize dummy data (legacy Inventory removed)
 
 // Middleware
 app.use(cors());
@@ -42,7 +38,6 @@ app.get("/", (req, res) => {
 });
 
 // Routes
-app.use("/api/inventory", inventoryRoutes);
 app.use("/api/volunteer/campaigns", volunteerCampaignRoutes);
 
 // NOTE: After finishing all campaign-header related routes, we can consolidate these into a single campaignsRouter and mount once at /api/campaigns

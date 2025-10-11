@@ -1,9 +1,8 @@
-import { FilterQuery, isValidObjectId } from "mongoose";
+import { FilterQuery } from "mongoose";
 import DistributionJobModel, {
   IDistributionJob,
   DistributionStatus,
 } from "../models/DistributionJob.model";
-import { InventoryModel } from "../../Inventory/models/inventoryModel";
 import progressService from "../../progress/services/progress.service";
 import stockService from "../../stock/services/stock.service";
 
@@ -29,48 +28,29 @@ export class DistributionJobService {
     audit: IDistributionJob["audit"];
     resourceSnapshot?: IDistributionJob["resourceSnapshot"]; // optional when resource is not in Inventory
   }): Promise<IDistributionJob> {
-    const { resourceId, targetQty } = payload;
+    const { resourceId } = payload;
 
-    let snapshot: IDistributionJob["resourceSnapshot"] | undefined;
-
-    // Try to resolve from Inventory when resourceId looks like an ObjectId
-    if (isValidObjectId(resourceId)) {
-      const inv = await InventoryModel.findById(resourceId);
-      if (inv) {
-        snapshot = {
-          id: resourceId,
-          name: inv.name,
-          category: inv.category,
-          unit: inv.unit,
-          availableQty: inv.quantity,
-          description: inv.description,
+    // Accept snapshot only from payload (campaign resource snapshot)
+    const snapFromPayload = payload.resourceSnapshot
+      ? {
+          id: payload.resourceSnapshot.id || resourceId,
+          name: payload.resourceSnapshot.name,
+          category: payload.resourceSnapshot.category,
+          unit: payload.resourceSnapshot.unit,
+          availableQty: payload.resourceSnapshot.availableQty,
+          description: payload.resourceSnapshot.description,
           targetQty: payload.targetQty,
-        };
-      }
-    }
+        }
+      : undefined;
 
-    // Fallback: accept snapshot from payload (e.g., campaign resource)
-    if (!snapshot && payload.resourceSnapshot) {
-      snapshot = {
-        id: payload.resourceSnapshot.id || resourceId,
-        name: payload.resourceSnapshot.name,
-        category: payload.resourceSnapshot.category,
-        unit: payload.resourceSnapshot.unit,
-        availableQty: payload.resourceSnapshot.availableQty,
-        description: payload.resourceSnapshot.description,
-        targetQty: payload.targetQty,
-      };
-    }
-
-    if (!snapshot) {
-      // Neither inventory item nor snapshot provided
+    if (!snapFromPayload) {
       throw new Error("RESOURCE_NOT_FOUND");
     }
 
     const doc = await DistributionJobModel.create({
       ...payload,
       distributionId: genDistributionId(),
-      resourceSnapshot: snapshot,
+      resourceSnapshot: snapFromPayload,
       status: "draft" as DistributionStatus,
     });
     return doc;
@@ -112,25 +92,19 @@ export class DistributionJobService {
     if (!job) throw new Error("JOB_NOT_FOUND");
     if (job.status === "cancelled" || job.status === "completed")
       throw new Error("JOB_FINALIZED");
-
-    // Check inventory availability
-    const inv = await InventoryModel.findById(job.resourceId);
-    if (!inv) throw new Error("RESOURCE_NOT_FOUND");
-    if (inv.quantity < qty) {
+    // Check availability using Stock totals only; do not mutate stock here
+    const totals = await stockService.getTotals(job.campaignId);
+    const t = totals.find((r) => r.resourceId === job.resourceId);
+    const available = t?.totalAvailable || 0;
+    if (available < qty) {
       job.status = "blocked_insufficient_stock";
       job.audit.updatedByUid = updatedByUid;
       await job.save();
       throw new Error("INSUFFICIENT_STOCK");
     }
 
-    // Reserve by decreasing available quantity and marking reservedQty on the job
-    inv.quantity -= qty;
-    // Optionally reflect reservation in status
-    if (inv.quantity === 0 && inv.status !== "distributed")
-      inv.status = "reserved";
-    await inv.save();
-
-    job.reservedQty += qty;
+    // Logical reservation on the job only
+    job.reservedQty = (job.reservedQty || 0) + Math.max(0, qty);
     job.status =
       job.status === "blocked_insufficient_stock" ? "scheduled" : job.status;
     job.audit.updatedByUid = updatedByUid;
@@ -165,19 +139,6 @@ export class DistributionJobService {
     if (job.status === "cancelled" || job.status === "completed")
       throw new Error("JOB_FINALIZED");
 
-    // Ensure reserved is at least progress; if not reserved yet, deduct now atomically
-    const needToDeduct = Math.max(0, job.progressQty - job.reservedQty);
-    if (needToDeduct > 0 && isValidObjectId(job.resourceId)) {
-      const inv = await InventoryModel.findById(job.resourceId);
-      if (!inv) throw new Error("RESOURCE_NOT_FOUND");
-      if (inv.quantity < needToDeduct)
-        throw new Error("INSUFFICIENT_STOCK_AT_COMPLETE");
-      inv.quantity -= needToDeduct;
-      if (inv.quantity === 0) inv.status = "distributed";
-      await inv.save();
-      job.reservedQty += needToDeduct;
-    }
-
     job.status = "completed";
     job.schedule = { ...(job.schedule || {}), completedAt: new Date() };
     job.audit.updatedByUid = updatedByUid;
@@ -208,18 +169,8 @@ export class DistributionJobService {
     const job = await DistributionJobModel.findById(id);
     if (!job) throw new Error("JOB_NOT_FOUND");
     if (job.status === "completed") throw new Error("CANNOT_CANCEL_COMPLETED");
-
-    // If stock was reserved, return it
-    if (job.reservedQty > 0) {
-      const inv = await InventoryModel.findById(job.resourceId);
-      if (inv) {
-        inv.quantity += job.reservedQty;
-        if (inv.status === "distributed" && inv.quantity > 0)
-          inv.status = "available";
-        await inv.save();
-      }
-      job.reservedQty = 0;
-    }
+    // If reservedQty tracked, clear it (we don't mutate stock for reservations)
+    if (job.reservedQty > 0) job.reservedQty = 0;
 
     job.status = "cancelled";
     job.audit.updatedByUid = updatedByUid;
