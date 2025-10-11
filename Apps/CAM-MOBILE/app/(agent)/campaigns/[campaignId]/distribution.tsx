@@ -28,6 +28,7 @@ import {
   useCompleteDistributionJobMutation,
   useCancelDistributionJobMutation,
   useGetDistributionJobRecordsQuery,
+  useCreateDistributionJobRecordMutation,
 } from "@/src/store/services/distributionsApi";
 import {
   useGetCampaignSnapshotsQuery,
@@ -59,10 +60,11 @@ export default function CampaignDistribution() {
       pollingInterval: 15000,
       refetchOnFocus: true,
     } as any);
-  const { data: resSnapshot } = useGetResourceSnapshotQuery(
-    resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
-    { skip: !campaignId || !resourceId } as any
-  );
+  const { data: resSnapshot, refetch: refetchResourceSnapshot } =
+    useGetResourceSnapshotQuery(
+      resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
+      { skip: !campaignId || !resourceId } as any
+    );
   const selectedResSnapshot: any | undefined =
     resourceId && Array.isArray(snapshots)
       ? (resSnapshot as any) ||
@@ -83,6 +85,8 @@ export default function CampaignDistribution() {
   const [startJob] = useStartDistributionJobMutation();
   const [completeJob] = useCompleteDistributionJobMutation();
   const [cancelJob] = useCancelDistributionJobMutation();
+  const [createRecord, { isLoading: recording }] =
+    useCreateDistributionJobRecordMutation();
 
   // Form state
   const [targetQty, setTargetQty] = useState("");
@@ -120,11 +124,12 @@ export default function CampaignDistribution() {
   const volunteerOptions: Array<{ key: string; label: string }> = [];
 
   // Stock totals for insufficient banner and header extras
-  const { data: stockTotals = [] } = useGetStockTotalsQuery(campaignId!, {
-    skip: !campaignId,
-    pollingInterval: 15000,
-    refetchOnFocus: true,
-  } as any);
+  const { data: stockTotals = [], refetch: refetchStockTotals } =
+    useGetStockTotalsQuery(campaignId!, {
+      skip: !campaignId,
+      pollingInterval: 15000,
+      refetchOnFocus: true,
+    } as any);
   const selectedStockTotals: any | undefined = React.useMemo(
     () =>
       (stockTotals as any[])?.find?.((r: any) => r.resourceId === resourceId),
@@ -143,14 +148,29 @@ export default function CampaignDistribution() {
     : "";
   const insufficient =
     !!resourceId && !!targetQty && Number(targetQty) > availableForSelected;
+  const maxDistributable = availableForSelected;
+  const inputDisabled = !!resourceId && Number(maxDistributable) <= 0;
 
   // Details records hook at top-level
   const detailsJob: any | undefined = detailsModal.job;
   const detailsId: string | undefined = detailsJob?._id;
-  const { data: detailsRecords = [] } = useGetDistributionJobRecordsQuery(
-    detailsId ? { campaignId, id: detailsId } : ({} as any),
-    { skip: !detailsModal.open || !detailsId }
-  );
+  const { data: detailsRecords = [], refetch: refetchDetailsRecords } =
+    useGetDistributionJobRecordsQuery(
+      detailsId ? { campaignId, id: detailsId } : ({} as any),
+      { skip: !detailsModal.open || !detailsId }
+    );
+
+  // Local state for adding delivery records
+  const [recordQty, setRecordQty] = useState("");
+  const [recordNote, setRecordNote] = useState("");
+  const [recordError, setRecordError] = useState<string | null>(null);
+  useEffect(() => {
+    if (detailsModal.open) {
+      setRecordQty("");
+      setRecordNote("");
+      setRecordError(null);
+    }
+  }, [detailsModal.open, detailsId]);
 
   const OutlineBadge = ({
     children,
@@ -208,67 +228,100 @@ export default function CampaignDistribution() {
         }}
       >
         {/* Progress summary header */}
-        <ProgressHeader
-          title={
-            resourceId
-              ? `Progress · ${
-                  resourceOptions.find((r) => r.key === resourceId)?.label ||
-                  "Selected"
-                }`
-              : "Campaign Progress"
-          }
-          target={
-            resourceId
-              ? selectedResSnapshot?.targetQty ?? 0
-              : snapshots.reduce(
-                  (acc: number, s: any) => acc + (s.targetQty || 0),
-                  0
-                )
-          }
-          collected={
-            resourceId
-              ? selectedResSnapshot?.collectedQty ?? 0
-              : snapshots.reduce(
-                  (acc: number, s: any) => acc + (s.collectedQty || 0),
-                  0
-                )
-          }
-          distributed={
-            resourceId
-              ? selectedResSnapshot?.distributedQty ?? 0
-              : snapshots.reduce(
-                  (acc: number, s: any) => acc + (s.distributedQty || 0),
-                  0
-                )
-          }
-          available={
-            resourceId
-              ? typeof selectedStockTotals?.totalAvailable === "number"
-                ? selectedStockTotals.totalAvailable
-                : selectedResSnapshot?.availableQty ?? 0
-              : (stockTotals as any[])?.length
-              ? (stockTotals as any[]).reduce(
-                  (acc: number, r: any) => acc + (r.totalAvailable || 0),
-                  0
-                )
-              : snapshots.reduce(
-                  (acc: number, s: any) => acc + (s.availableQty || 0),
-                  0
-                )
-          }
-          unitLabel={unitLabel}
-          stockTotals={
-            resourceId && selectedStockTotals
-              ? {
-                  totalQuantity: selectedStockTotals.totalQuantity || 0,
-                  totalConsumed: selectedStockTotals.totalConsumed || 0,
-                  totalAvailable: selectedStockTotals.totalAvailable || 0,
-                }
-              : undefined
-          }
-          campaignId={campaignId}
-          requiredResources={campaign?.resources as any}
-        />
+        {(() => {
+          // Aggregate campaign snapshot sums
+          const toNum = (n: any) => (typeof n === "number" ? n : 0);
+          const sum = (key: string) =>
+            (Array.isArray(snapshots) ? snapshots : []).reduce(
+              (acc: number, s: any) => acc + toNum((s as any)?.[key]),
+              0
+            );
+          const campaignSum = {
+            target: sum("targetQty"),
+            collected: sum("collectedQty"),
+            distributed: sum("distributedQty"),
+            available: sum("availableQty"),
+          };
+          const isSingleResourceCampaign =
+            (campaign?.resources || []).length === 1;
+          const configTargetForSelected = resourceId
+            ? Number(
+                resourceOptions.find((r) => r.key === resourceId)?.target || 0
+              )
+            : 0;
+          const snapshotTargetForSelected = Number(
+            (selectedResSnapshot as any)?.targetQty || 0
+          );
+          const effectiveTargetForSelected = resourceId
+            ? snapshotTargetForSelected > 0
+              ? snapshotTargetForSelected
+              : configTargetForSelected
+            : 0;
+          const headerTarget = resourceId
+            ? effectiveTargetForSelected
+            : campaignSum.target > 0
+            ? campaignSum.target
+            : (campaign?.resources || []).reduce(
+                (acc: number, r: any) => acc + (Number(r.quantity || 0) || 0),
+                0
+              );
+          const headerCollected = resourceId
+            ? typeof (selectedResSnapshot as any)?.collectedQty === "number"
+              ? Number((selectedResSnapshot as any)?.collectedQty)
+              : isSingleResourceCampaign
+              ? campaignSum.collected
+              : 0
+            : campaignSum.collected;
+          const headerDistributed = resourceId
+            ? typeof (selectedResSnapshot as any)?.distributedQty === "number"
+              ? Number((selectedResSnapshot as any)?.distributedQty)
+              : isSingleResourceCampaign
+              ? campaignSum.distributed
+              : 0
+            : campaignSum.distributed;
+          const headerAvailable = resourceId
+            ? typeof selectedStockTotals?.totalAvailable === "number"
+              ? Number(selectedStockTotals.totalAvailable)
+              : typeof (selectedResSnapshot as any)?.availableQty === "number"
+              ? Number((selectedResSnapshot as any)?.availableQty)
+              : isSingleResourceCampaign
+              ? campaignSum.available
+              : 0
+            : (Array.isArray(stockTotals) ? (stockTotals as any[]) : []).length
+            ? (stockTotals as any[]).reduce(
+                (acc: number, r: any) => acc + (r.totalAvailable || 0),
+                0
+              )
+            : campaignSum.available;
+          return (
+            <ProgressHeader
+              title={
+                resourceId
+                  ? `Progress · ${
+                      resourceOptions.find((r) => r.key === resourceId)
+                        ?.label || "Selected"
+                    }`
+                  : "Campaign Progress"
+              }
+              target={headerTarget}
+              collected={headerCollected}
+              distributed={headerDistributed}
+              available={headerAvailable}
+              unitLabel={unitLabel}
+              stockTotals={
+                resourceId && selectedStockTotals
+                  ? {
+                      totalQuantity: selectedStockTotals.totalQuantity || 0,
+                      totalConsumed: selectedStockTotals.totalConsumed || 0,
+                      totalAvailable: selectedStockTotals.totalAvailable || 0,
+                    }
+                  : undefined
+              }
+              campaignId={campaignId}
+              requiredResources={campaign?.resources as any}
+            />
+          );
+        })()}
         {/* Title row */}
         <View
           style={{
@@ -335,12 +388,53 @@ export default function CampaignDistribution() {
                 <Text style={{ fontWeight: "600", marginBottom: 6 }}>
                   Target Quantity
                 </Text>
+                {resourceId && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 6,
+                      padding: spacing.sm,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor: colors.mutedBackground,
+                    }}
+                  >
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={16}
+                      color={colors.muted}
+                    />
+                    <Text style={{ color: colors.muted, flex: 1 }}>
+                      Available to distribute: {maxDistributable}
+                      {unitLabel ? ` ${unitLabel}` : ""}
+                    </Text>
+                  </View>
+                )}
                 <TextInput
                   value={targetQty}
-                  onChangeText={setTargetQty}
+                  onChangeText={(val) => {
+                    if (val === "") {
+                      setTargetQty("");
+                      return;
+                    }
+                    const cleaned = val.replace(/[^0-9.]/g, "");
+                    let num = Number(cleaned);
+                    if (isNaN(num)) {
+                      setTargetQty("");
+                      return;
+                    }
+                    if (typeof maxDistributable === "number") {
+                      num = Math.min(num, maxDistributable);
+                    }
+                    setTargetQty(String(num));
+                  }}
                   keyboardType="numeric"
                   placeholder="Amount"
                   placeholderTextColor={colors.muted}
+                  editable={!(!!resourceId && Number(maxDistributable) <= 0)}
                   style={{
                     height: 44,
                     borderRadius: 12,
@@ -349,8 +443,19 @@ export default function CampaignDistribution() {
                     backgroundColor: colors.mutedBackground,
                     paddingHorizontal: spacing.md,
                     color: colors.cardForeground,
+                    opacity:
+                      !!resourceId && Number(maxDistributable) <= 0 ? 0.6 : 1,
                   }}
                 />
+                {resourceId && (
+                  <Text
+                    style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}
+                  >
+                    Max {maxDistributable}
+                    {unitLabel ? ` ${unitLabel}` : ""} can be distributed for
+                    this resource.
+                  </Text>
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontWeight: "600", marginBottom: 6 }}>
@@ -769,6 +874,11 @@ export default function CampaignDistribution() {
                       onPress={async () => {
                         try {
                           await startJob({ campaignId, id: d._id }).unwrap();
+                          // Immediate refresh of progress and stock
+                          if (refetchSnapshots) await refetchSnapshots();
+                          if (refetchResourceSnapshot && resourceId)
+                            await refetchResourceSnapshot();
+                          if (refetchStockTotals) await refetchStockTotals();
                         } catch {}
                       }}
                     >
@@ -795,6 +905,11 @@ export default function CampaignDistribution() {
                       onPress={async () => {
                         try {
                           await completeJob({ campaignId, id: d._id }).unwrap();
+                          // After completion, progress snapshots and stock should change -> refetch immediately
+                          if (refetchSnapshots) await refetchSnapshots();
+                          if (refetchResourceSnapshot && resourceId)
+                            await refetchResourceSnapshot();
+                          if (refetchStockTotals) await refetchStockTotals();
                         } catch {}
                       }}
                     >
@@ -822,6 +937,11 @@ export default function CampaignDistribution() {
                       onPress={async () => {
                         try {
                           await cancelJob({ campaignId, id: d._id }).unwrap();
+                          // Cancellation may release reservations; refresh to be safe
+                          if (refetchSnapshots) await refetchSnapshots();
+                          if (refetchResourceSnapshot && resourceId)
+                            await refetchResourceSnapshot();
+                          if (refetchStockTotals) await refetchStockTotals();
                         } catch {}
                       }}
                     >
@@ -1040,6 +1160,188 @@ export default function CampaignDistribution() {
                       </View>
                     ))}
                   </View>
+                  {/* Add delivery record */}
+                  {job.status !== "completed" && job.status !== "cancelled" && (
+                    <View
+                      style={{
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        padding: spacing.md,
+                        gap: spacing.sm,
+                      }}
+                    >
+                      <Text style={{ fontWeight: "700" }}>
+                        Add delivery record
+                      </Text>
+                      {recordError && (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: spacing.sm,
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: "#fecaca",
+                            backgroundColor: "#fee2e2",
+                          }}
+                        >
+                          <Ionicons
+                            name="alert-circle-outline"
+                            size={16}
+                            color="#991b1b"
+                          />
+                          <Text style={{ color: "#991b1b", flex: 1 }}>
+                            {recordError}
+                          </Text>
+                        </View>
+                      )}
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: spacing.sm,
+                          borderRadius: 10,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          backgroundColor: colors.mutedBackground,
+                        }}
+                      >
+                        <Ionicons
+                          name="information-circle-outline"
+                          size={16}
+                          color={colors.muted}
+                        />
+                        <Text style={{ color: colors.muted, flex: 1 }}>
+                          Remaining toward target:{" "}
+                          {Math.max(0, totalTarget - totalDelivered)}
+                          {job.resourceSnapshot?.unit
+                            ? ` ${job.resourceSnapshot?.unit}`
+                            : ""}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                        <TextInput
+                          value={recordQty}
+                          onChangeText={(val) => {
+                            if (val === "") {
+                              setRecordQty("");
+                              return;
+                            }
+                            const cleaned = val.replace(/[^0-9.]/g, "");
+                            let num = Number(cleaned);
+                            if (isNaN(num)) {
+                              setRecordQty("");
+                              return;
+                            }
+                            const remaining = Math.max(
+                              0,
+                              totalTarget - totalDelivered
+                            );
+                            if (remaining > 0) num = Math.min(num, remaining);
+                            setRecordQty(String(num));
+                          }}
+                          keyboardType="numeric"
+                          placeholder="Amount delivered"
+                          placeholderTextColor={colors.muted}
+                          style={{
+                            flex: 1,
+                            height: 44,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            backgroundColor: colors.mutedBackground,
+                            paddingHorizontal: spacing.md,
+                            color: colors.cardForeground,
+                          }}
+                        />
+                        <TextInput
+                          value={recordNote}
+                          onChangeText={setRecordNote}
+                          placeholder="Note (optional)"
+                          placeholderTextColor={colors.muted}
+                          style={{
+                            flex: 1,
+                            height: 44,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            backgroundColor: colors.mutedBackground,
+                            paddingHorizontal: spacing.md,
+                            color: colors.cardForeground,
+                          }}
+                        />
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: spacing.sm,
+                        }}
+                      >
+                        <Text style={{ color: colors.muted, flex: 1 }}>
+                          Delivered {totalDelivered}/{totalTarget} — Remaining{" "}
+                          {Math.max(0, totalTarget - totalDelivered)}
+                          {job.resourceSnapshot?.unit
+                            ? ` ${job.resourceSnapshot?.unit}`
+                            : ""}
+                        </Text>
+                        <Button
+                          disabled={
+                            !recordQty || Number(recordQty) <= 0 || recording
+                          }
+                          onPress={async () => {
+                            const amt = Number(recordQty);
+                            if (!detailsId || !amt || isNaN(amt) || amt <= 0)
+                              return;
+                            try {
+                              await createRecord({
+                                campaignId,
+                                id: detailsId,
+                                amountSubmitted: amt,
+                                note: recordNote || undefined,
+                              }).unwrap();
+                              if (refetchDetailsRecords)
+                                await refetchDetailsRecords();
+                              if (refetchSnapshots) await refetchSnapshots();
+                              if (refetchResourceSnapshot && resourceId)
+                                await refetchResourceSnapshot();
+                              if (refetchStockTotals)
+                                await refetchStockTotals();
+                              setRecordQty("");
+                              setRecordNote("");
+                              setRecordError(null);
+                            } catch (e: any) {
+                              const msg =
+                                e?.data?.error ||
+                                e?.data?.message ||
+                                e?.error ||
+                                "Failed to submit record";
+                              setRecordError(String(msg));
+                              setTimeout(() => setRecordError(null), 3000);
+                            }
+                          }}
+                        >
+                          <Ionicons
+                            name="download-outline"
+                            size={16}
+                            color={colors.primaryForeground}
+                          />
+                          <Text
+                            style={{
+                              color: colors.primaryForeground,
+                              fontWeight: "700",
+                              marginLeft: 6,
+                            }}
+                          >
+                            Mark Delivered
+                          </Text>
+                        </Button>
+                      </View>
+                    </View>
+                  )}
                   <View style={{ flexDirection: "row", gap: spacing.sm }}>
                     <Button
                       variant="outline"

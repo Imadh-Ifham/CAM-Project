@@ -129,6 +129,22 @@ export default function CampaignCollect() {
   const unitLabel = resourceId
     ? resourceOptions.find((r) => r.key === resourceId)?.unit
     : "";
+  // Aggregate campaign snapshot sums
+  const campaignSum = React.useMemo(() => {
+    const toNum = (n: any) => (typeof n === "number" ? n : 0);
+    const sum = (key: string) =>
+      (Array.isArray(snapshots) ? snapshots : []).reduce(
+        (acc: number, s: any) => acc + toNum(s?.[key]),
+        0
+      );
+    return {
+      target: sum("targetQty"),
+      collected: sum("collectedQty"),
+      distributed: sum("distributedQty"),
+      available: sum("availableQty"),
+    };
+  }, [snapshots]);
+  const isSingleResourceCampaign = (campaign?.resources || []).length === 1;
   // Use snapshot target when available; otherwise fall back to campaign-configured quantity
   const configTargetForSelected = resourceId
     ? Number(resourceOptions.find((r) => r.key === resourceId)?.target || 0)
@@ -141,12 +157,15 @@ export default function CampaignCollect() {
       ? snapshotTargetForSelected
       : configTargetForSelected
     : 0;
+  const effectiveCollectedForSelected = resourceId
+    ? typeof (selectedResSnapshot as any)?.collectedQty === "number"
+      ? Number((selectedResSnapshot as any)?.collectedQty)
+      : isSingleResourceCampaign
+      ? campaignSum.collected
+      : 0
+    : 0;
   const remainingNeeded: number | undefined = resourceId
-    ? Math.max(
-        effectiveTargetForSelected -
-          Number((selectedResSnapshot as any)?.collectedQty || 0),
-        0
-      )
+    ? Math.max(effectiveTargetForSelected - effectiveCollectedForSelected, 0)
     : undefined;
   // Clamp targetQty if remaining shrinks due to live updates
   useEffect(() => {
@@ -250,7 +269,9 @@ export default function CampaignCollect() {
             resourceId
               ? effectiveTargetForSelected
               : (() => {
-                  const fromSnapshots = snapshots.reduce(
+                  const fromSnapshots = (
+                    Array.isArray(snapshots) ? snapshots : ([] as any[])
+                  ).reduce(
                     (acc: number, s: any) => acc + (s.targetQty || 0),
                     0
                   );
@@ -265,27 +286,30 @@ export default function CampaignCollect() {
           }
           collected={
             resourceId
-              ? selectedResSnapshot?.collectedQty ?? 0
-              : snapshots.reduce(
-                  (acc: number, s: any) => acc + (s.collectedQty || 0),
-                  0
-                )
+              ? typeof (selectedResSnapshot as any)?.collectedQty === "number"
+                ? Number((selectedResSnapshot as any)?.collectedQty)
+                : isSingleResourceCampaign
+                ? campaignSum.collected
+                : 0
+              : campaignSum.collected
           }
           distributed={
             resourceId
-              ? selectedResSnapshot?.distributedQty ?? 0
-              : snapshots.reduce(
-                  (acc: number, s: any) => acc + (s.distributedQty || 0),
-                  0
-                )
+              ? typeof (selectedResSnapshot as any)?.distributedQty === "number"
+                ? Number((selectedResSnapshot as any)?.distributedQty)
+                : isSingleResourceCampaign
+                ? campaignSum.distributed
+                : 0
+              : campaignSum.distributed
           }
           available={
             resourceId
-              ? selectedResSnapshot?.availableQty ?? 0
-              : snapshots.reduce(
-                  (acc: number, s: any) => acc + (s.availableQty || 0),
-                  0
-                )
+              ? typeof (selectedResSnapshot as any)?.availableQty === "number"
+                ? Number((selectedResSnapshot as any)?.availableQty)
+                : isSingleResourceCampaign
+                ? campaignSum.available
+                : 0
+              : campaignSum.available
           }
           unitLabel={
             resourceId

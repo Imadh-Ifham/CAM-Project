@@ -253,13 +253,18 @@ export default function CampaignOverview() {
                   latest?.resourceSnapshot?.name ||
                   r.resourceId;
                 const lastDate = latest?.createdAt || latest?.updatedAt;
-                const pct =
-                  r.totalQuantity > 0
-                    ? Math.round(
-                        ((r.totalQuantity - r.totalConsumed) /
-                          r.totalQuantity) *
-                          100
-                      )
+                // Show progress as collected vs target (not stock %)
+                const targetSnap =
+                  typeof snap?.targetQty === "number" ? snap.targetQty : 0;
+                const targetCfg = Number(resourceCfg?.quantity || 0);
+                const targetEff = targetSnap > 0 ? targetSnap : targetCfg;
+                const collectedAmt =
+                  typeof snap?.collectedQty === "number"
+                    ? snap.collectedQty
+                    : 0;
+                const pctOfTarget =
+                  targetEff > 0
+                    ? Math.round((collectedAmt / targetEff) * 100)
                     : 0;
                 return (
                   <View key={r.resourceId} style={{ gap: 6 }}>
@@ -270,7 +275,10 @@ export default function CampaignOverview() {
                       }}
                     >
                       <Text style={{ fontWeight: "600" }}>{name}</Text>
-                      <Text style={{ color: colors.muted }}>{pct}%</Text>
+                      <Text style={{ color: colors.muted }}>
+                        {collectedAmt}/{targetEff}
+                        {unit ? ` ${unit}` : ""}
+                      </Text>
                     </View>
                     <View
                       style={{
@@ -282,7 +290,7 @@ export default function CampaignOverview() {
                       <View
                         style={{
                           height: 8,
-                          width: `${pct}%`,
+                          width: `${pctOfTarget}%`,
                           backgroundColor: colors.green,
                           borderRadius: 999,
                         }}
