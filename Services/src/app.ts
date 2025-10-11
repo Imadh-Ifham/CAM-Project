@@ -14,6 +14,7 @@ import agentCampaignRequestRoutes from "./modules/agent/campaign-requests/routes
 import { collectionRoutes } from "./modules/collections";
 import { distributionRoutes } from "./modules/distributions";
 import { progressRoutes } from "./modules/progress";
+import { stockRoutes } from "./modules/stock";
 
 const app: Application = express();
 
@@ -50,6 +51,7 @@ app.use("/api/campaigns", collectionRoutes);
 app.use("/api/campaigns", distributionRoutes);
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/progress", progressRoutes);
+app.use("/api/stock", stockRoutes);
 app.use("/api/agent", agentAuthRoutes);
 app.use("/api/volunteer", volunteerAuthRoutes);
 app.use("/api/auth", meRoute);

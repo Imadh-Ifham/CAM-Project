@@ -63,6 +63,12 @@ export default function CampaignCollect() {
     resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
     { skip: !campaignId || !resourceId } as any
   );
+  // Fallback for selected resource: if single-resource query is null, find it in campaign snapshots
+  const selectedResSnapshot: any | undefined =
+    resourceId && Array.isArray(snapshots)
+      ? (resSnapshot as any) ||
+        (snapshots as any).find((s: any) => s.resourceId === resourceId)
+      : undefined;
   const [createJob, { isLoading: creating }] = useCreateCollectionJobMutation();
   const { data: jobs } = useGetCollectionsByCampaignQuery(
     { campaignId },
@@ -118,6 +124,39 @@ export default function CampaignCollect() {
   );
 
   const collections = jobs || [];
+
+  // Remaining collection needed for selected resource (target - collected)
+  const unitLabel = resourceId
+    ? resourceOptions.find((r) => r.key === resourceId)?.unit
+    : "";
+  // Use snapshot target when available; otherwise fall back to campaign-configured quantity
+  const configTargetForSelected = resourceId
+    ? Number(resourceOptions.find((r) => r.key === resourceId)?.target || 0)
+    : 0;
+  const snapshotTargetForSelected = Number(
+    (selectedResSnapshot as any)?.targetQty || 0
+  );
+  const effectiveTargetForSelected = resourceId
+    ? snapshotTargetForSelected > 0
+      ? snapshotTargetForSelected
+      : configTargetForSelected
+    : 0;
+  const remainingNeeded: number | undefined = resourceId
+    ? Math.max(
+        effectiveTargetForSelected -
+          Number((selectedResSnapshot as any)?.collectedQty || 0),
+        0
+      )
+    : undefined;
+  // Clamp targetQty if remaining shrinks due to live updates
+  useEffect(() => {
+    if (typeof remainingNeeded === "number" && targetQty) {
+      const num = Number(targetQty);
+      if (!isNaN(num) && num > remainingNeeded) {
+        setTargetQty(String(remainingNeeded));
+      }
+    }
+  }, [remainingNeeded]);
 
   // Refresh snapshots when collections list changes
   useEffect(() => {
@@ -208,46 +247,53 @@ export default function CampaignCollect() {
               : "Campaign Progress"
           }
           target={
-            resSnapshot?.targetQty ??
-            (resourceId
-              ? 0
-              : snapshots.reduce(
-                  (acc: number, s: any) => acc + (s.targetQty || 0),
-                  0
-                ))
+            resourceId
+              ? effectiveTargetForSelected
+              : (() => {
+                  const fromSnapshots = snapshots.reduce(
+                    (acc: number, s: any) => acc + (s.targetQty || 0),
+                    0
+                  );
+                  if (fromSnapshots > 0) return fromSnapshots;
+                  const fromConfig = (campaign?.resources || []).reduce(
+                    (acc: number, r: any) =>
+                      acc + (Number(r.quantity || 0) || 0),
+                    0
+                  );
+                  return fromConfig;
+                })()
           }
           collected={
-            resSnapshot?.collectedQty ??
-            (resourceId
-              ? 0
+            resourceId
+              ? selectedResSnapshot?.collectedQty ?? 0
               : snapshots.reduce(
                   (acc: number, s: any) => acc + (s.collectedQty || 0),
                   0
-                ))
+                )
           }
           distributed={
-            resSnapshot?.distributedQty ??
-            (resourceId
-              ? 0
+            resourceId
+              ? selectedResSnapshot?.distributedQty ?? 0
               : snapshots.reduce(
                   (acc: number, s: any) => acc + (s.distributedQty || 0),
                   0
-                ))
+                )
           }
           available={
-            resSnapshot?.availableQty ??
-            (resourceId
-              ? 0
+            resourceId
+              ? selectedResSnapshot?.availableQty ?? 0
               : snapshots.reduce(
                   (acc: number, s: any) => acc + (s.availableQty || 0),
                   0
-                ))
+                )
           }
           unitLabel={
             resourceId
               ? resourceOptions.find((r) => r.key === resourceId)?.unit
               : ""
           }
+          campaignId={campaignId}
+          requiredResources={campaign?.resources as any}
         />
         {/* Title row */}
         <View
@@ -309,15 +355,71 @@ export default function CampaignCollect() {
 
             {/* Target Quantity */}
             <View>
+              {resourceId && (
+                <Text
+                  style={{ color: colors.muted, marginTop: 6, fontSize: 12 }}
+                >
+                  Max {effectiveTargetForSelected} {unitLabel || "units"} can be
+                  collected for this resource.
+                </Text>
+              )}
               <Text style={{ fontWeight: "600", marginBottom: 6 }}>
                 Target Quantity
               </Text>
+              {typeof remainingNeeded === "number" && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 6,
+                    padding: spacing.sm,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.mutedBackground,
+                  }}
+                >
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={16}
+                    color={colors.muted}
+                  />
+                  <Text style={{ color: colors.muted, flex: 1 }}>
+                    Remaining needed: {remainingNeeded}
+                    {unitLabel ? ` ${unitLabel}` : ""}
+                  </Text>
+                </View>
+              )}
               <TextInput
                 value={targetQty}
-                onChangeText={setTargetQty}
+                onChangeText={(val) => {
+                  if (val === "") {
+                    setTargetQty("");
+                    return;
+                  }
+                  // keep numeric only
+                  const cleaned = val.replace(/[^0-9.]/g, "");
+                  let num = Number(cleaned);
+                  if (isNaN(num)) {
+                    setTargetQty("");
+                    return;
+                  }
+                  if (typeof remainingNeeded === "number") {
+                    num = Math.min(num, remainingNeeded);
+                  }
+                  setTargetQty(String(num));
+                }}
                 keyboardType="numeric"
                 placeholder="Enter quantity"
                 placeholderTextColor={colors.muted}
+                editable={
+                  !(
+                    typeof remainingNeeded === "number" &&
+                    remainingNeeded <= 0 &&
+                    !!resourceId
+                  )
+                }
                 style={{
                   height: 44,
                   borderRadius: 12,
@@ -326,8 +428,23 @@ export default function CampaignCollect() {
                   backgroundColor: colors.mutedBackground,
                   paddingHorizontal: spacing.md,
                   color: colors.cardForeground,
+                  opacity:
+                    typeof remainingNeeded === "number" &&
+                    remainingNeeded <= 0 &&
+                    !!resourceId
+                      ? 0.6
+                      : 1,
                 }}
               />
+              {typeof remainingNeeded === "number" && (
+                <Text
+                  style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}
+                >
+                  Max {remainingNeeded}
+                  {unitLabel ? ` ${unitLabel}` : ""} can be collected for this
+                  resource.
+                </Text>
+              )}
             </View>
 
             {/* Volunteer assignment */}
@@ -550,7 +667,12 @@ export default function CampaignCollect() {
 
             {/* Submit */}
             <Button
-              disabled={!resourceId || !targetQty || creating}
+              disabled={
+                !resourceId ||
+                !targetQty ||
+                creating ||
+                (typeof remainingNeeded === "number" && remainingNeeded <= 0)
+              }
               onPress={async () => {
                 if (!resourceId || !targetQty) return;
                 try {

@@ -13,6 +13,10 @@ import { useLocalSearchParams } from "expo-router";
 import { useGetCoordinatorAssignmentQuery } from "../../../../src/store/services/campaignsApi";
 import { useGetCampaignSnapshotsQuery } from "../../../../src/store/services/progressApi";
 import ProgressHeader from "../../../../src/components/ui/ProgressHeader";
+import {
+  useGetTotalsQuery,
+  useGetLotsQuery,
+} from "../../../../src/store/services/stockApi";
 
 export default function CampaignOverview() {
   const { campaignId } = useLocalSearchParams<{ campaignId: string }>();
@@ -22,6 +26,18 @@ export default function CampaignOverview() {
   );
   const { data: snapshots = [] } = useGetCampaignSnapshotsQuery(
     (campaignId as string)!,
+    { skip: !campaignId, pollingInterval: 15000, refetchOnFocus: true } as any
+  );
+  const { data: stockTotals = [] } = useGetTotalsQuery(
+    (campaignId as string)!,
+    {
+      skip: !campaignId,
+      pollingInterval: 15000,
+      refetchOnFocus: true,
+    } as any
+  );
+  const { data: lots = [] } = useGetLotsQuery(
+    { campaignId: campaignId as string },
     { skip: !campaignId, pollingInterval: 15000, refetchOnFocus: true } as any
   );
 
@@ -113,6 +129,22 @@ export default function CampaignOverview() {
     </View>
   );
 
+  // Build a quick index of latest lot per resource to show readable info
+  const latestLotByResource: Record<string, any> = React.useMemo(() => {
+    const map: Record<string, any> = {};
+    (lots as any[]).forEach((lot: any) => {
+      const id = lot?.resourceId;
+      if (!id) return;
+      const curr = map[id];
+      const lotTime = new Date(lot?.createdAt || lot?.updatedAt || 0).getTime();
+      const currTime = curr
+        ? new Date(curr?.createdAt || curr?.updatedAt || 0).getTime()
+        : -1;
+      if (!curr || lotTime > currTime) map[id] = lot;
+    });
+    return map;
+  }, [lots]);
+
   if (isFetching) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -159,10 +191,18 @@ export default function CampaignOverview() {
         {/* Live progress summary */}
         <ProgressHeader
           title="Campaign Progress"
-          target={snapshots.reduce(
-            (acc: number, s: any) => acc + (s.targetQty || 0),
-            0
-          )}
+          target={(() => {
+            const snapTotal = snapshots.reduce(
+              (acc: number, s: any) => acc + (s.targetQty || 0),
+              0
+            );
+            if (snapTotal > 0) return snapTotal;
+            const cfgTotal = (assignment?.campaign?.resources || []).reduce(
+              (acc: number, r: any) => acc + (Number(r.quantity) || 0),
+              0
+            );
+            return cfgTotal;
+          })()}
           collected={snapshots.reduce(
             (acc: number, s: any) => acc + (s.collectedQty || 0),
             0
@@ -171,11 +211,107 @@ export default function CampaignOverview() {
             (acc: number, s: any) => acc + (s.distributedQty || 0),
             0
           )}
-          available={snapshots.reduce(
-            (acc: number, s: any) => acc + (s.availableQty || 0),
-            0
+          available={
+            (stockTotals as any[])?.length
+              ? (stockTotals as any[]).reduce(
+                  (acc: number, r: any) => acc + (r.totalAvailable || 0),
+                  0
+                )
+              : snapshots.reduce(
+                  (acc: number, s: any) => acc + (s.availableQty || 0),
+                  0
+                )
+          }
+          campaignId={campaignId as string}
+          requiredResources={(assignment?.campaign?.resources || []).map(
+            (r: any) => ({
+              id: r.id,
+              name: r.name,
+              unit: r.unit,
+              quantity: r.quantity,
+            })
           )}
         />
+        {!!stockTotals?.length && (
+          <Card style={{ borderRadius: 16 }}>
+            <CardHeader>
+              <Text style={[typography.h3]}>Stock by Resource</Text>
+            </CardHeader>
+            <CardContent style={{ gap: spacing.md }}>
+              {stockTotals.map((r: any) => {
+                const snap = (snapshots as any[]).find(
+                  (s) => s.resourceId === r.resourceId
+                );
+                const resourceCfg = assignment?.campaign?.resources?.find?.(
+                  (cr: any) => cr.id === r.resourceId
+                );
+                const latest = latestLotByResource[r.resourceId];
+                const unit =
+                  resourceCfg?.unit || latest?.resourceSnapshot?.unit || "";
+                const name =
+                  resourceCfg?.name ||
+                  latest?.resourceSnapshot?.name ||
+                  r.resourceId;
+                const lastDate = latest?.createdAt || latest?.updatedAt;
+                const pct =
+                  r.totalQuantity > 0
+                    ? Math.round(
+                        ((r.totalQuantity - r.totalConsumed) /
+                          r.totalQuantity) *
+                          100
+                      )
+                    : 0;
+                return (
+                  <View key={r.resourceId} style={{ gap: 6 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Text style={{ fontWeight: "600" }}>{name}</Text>
+                      <Text style={{ color: colors.muted }}>{pct}%</Text>
+                    </View>
+                    <View
+                      style={{
+                        height: 8,
+                        backgroundColor: colors.mutedBackground,
+                        borderRadius: 999,
+                      }}
+                    >
+                      <View
+                        style={{
+                          height: 8,
+                          width: `${pct}%`,
+                          backgroundColor: colors.green,
+                          borderRadius: 999,
+                        }}
+                      />
+                    </View>
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>
+                      Available {r.totalAvailable}
+                      {unit ? ` ${unit}` : ""}
+                      {typeof snap?.targetQty === "number"
+                        ? ` • Target ${snap.targetQty}`
+                        : ""}
+                      {typeof snap?.collectedQty === "number"
+                        ? ` • Collected ${snap.collectedQty}`
+                        : ""}
+                      {typeof snap?.distributedQty === "number"
+                        ? ` • Distributed ${snap.distributedQty}`
+                        : ""}
+                      {lastDate
+                        ? ` • Last collected ${new Date(
+                            lastDate
+                          ).toLocaleString()}`
+                        : ""}
+                    </Text>
+                  </View>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
         {/* Campaign Overview */}
         <Card style={{ borderRadius: 16 }}>
           <CardHeader>
@@ -234,131 +370,42 @@ export default function CampaignOverview() {
           </CardContent>
         </Card>
 
-        {/* Resource Collection Progress */}
+        {/* Collection Logs (mocked for now) */}
         <Card style={{ borderRadius: 16 }}>
           <CardHeader>
-            <Text style={[typography.h3]}>Resource Collection Progress</Text>
+            <Text style={[typography.h3]}>Collection Logs</Text>
           </CardHeader>
           <CardContent style={{ gap: spacing.md }}>
-            <View>
+            {[
+              {
+                time: new Date().toLocaleString(),
+                text: "No recent collections. Start collecting to see logs here.",
+              },
+            ].map((log, i) => (
               <View
+                key={i}
                 style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
+                  gap: 6,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 12,
+                  padding: spacing.md,
                 }}
               >
                 <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                  }}
                 >
-                  <Ionicons
-                    name="restaurant-outline"
-                    size={16}
-                    color={colors.cardForeground}
-                  />
-                  <Text>Food Packages</Text>
+                  <Text style={{ fontWeight: "600" }}>Info</Text>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>
+                    {log.time}
+                  </Text>
                 </View>
-                <Text>
-                  {campaign.resourcesCollected.food}/
-                  {campaign.resourceNeeds.food}
-                </Text>
+                <Text style={{ color: colors.cardForeground }}>{log.text}</Text>
               </View>
-              <View style={{ marginTop: 6 }}>
-                <Progress
-                  color={colors.green}
-                  value={pct(
-                    campaign.resourcesCollected.food,
-                    campaign.resourceNeeds.food
-                  )}
-                />
-              </View>
-              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}>
-                {pct(
-                  campaign.resourcesCollected.food,
-                  campaign.resourceNeeds.food
-                )}
-                % Complete
-              </Text>
-            </View>
-
-            <View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-                >
-                  <Ionicons
-                    name="shirt-outline"
-                    size={16}
-                    color={colors.cardForeground}
-                  />
-                  <Text>Clothing Items</Text>
-                </View>
-                <Text>
-                  {campaign.resourcesCollected.clothes}/
-                  {campaign.resourceNeeds.clothes}
-                </Text>
-              </View>
-              <View style={{ marginTop: 6 }}>
-                <Progress
-                  color={colors.blue}
-                  value={pct(
-                    campaign.resourcesCollected.clothes,
-                    campaign.resourceNeeds.clothes
-                  )}
-                />
-              </View>
-              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}>
-                {pct(
-                  campaign.resourcesCollected.clothes,
-                  campaign.resourceNeeds.clothes
-                )}
-                % Complete
-              </Text>
-            </View>
-
-            <View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-                >
-                  <Ionicons
-                    name="cash-outline"
-                    size={16}
-                    color={colors.cardForeground}
-                  />
-                  <Text>Funds</Text>
-                </View>
-                <Text>
-                  ${campaign.resourcesCollected.funds}/$
-                  {campaign.resourceNeeds.funds}
-                </Text>
-              </View>
-              <View style={{ marginTop: 6 }}>
-                <Progress
-                  color="#a855f7"
-                  value={pct(
-                    campaign.resourcesCollected.funds,
-                    campaign.resourceNeeds.funds
-                  )}
-                />
-              </View>
-              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}>
-                {pct(
-                  campaign.resourcesCollected.funds,
-                  campaign.resourceNeeds.funds
-                )}
-                % Complete
-              </Text>
-            </View>
+            ))}
           </CardContent>
         </Card>
 

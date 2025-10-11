@@ -34,6 +34,7 @@ import {
   useGetResourceSnapshotQuery,
 } from "@/src/store/services/progressApi";
 import ProgressHeader from "@/src/components/ui/ProgressHeader";
+import { useGetTotalsQuery as useGetStockTotalsQuery } from "@/src/store/services/stockApi";
 
 type DistStatus =
   | "draft"
@@ -62,6 +63,11 @@ export default function CampaignDistribution() {
     resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
     { skip: !campaignId || !resourceId } as any
   );
+  const selectedResSnapshot: any | undefined =
+    resourceId && Array.isArray(snapshots)
+      ? (resSnapshot as any) ||
+        (snapshots as any).find((s: any) => s.resourceId === resourceId)
+      : undefined;
 
   // Backend hooks
   const { data: distributions = [] } = useGetDistributionsByCampaignQuery(
@@ -112,6 +118,31 @@ export default function CampaignDistribution() {
     [campaign]
   );
   const volunteerOptions: Array<{ key: string; label: string }> = [];
+
+  // Stock totals for insufficient banner and header extras
+  const { data: stockTotals = [] } = useGetStockTotalsQuery(campaignId!, {
+    skip: !campaignId,
+    pollingInterval: 15000,
+    refetchOnFocus: true,
+  } as any);
+  const selectedStockTotals: any | undefined = React.useMemo(
+    () =>
+      (stockTotals as any[])?.find?.((r: any) => r.resourceId === resourceId),
+    [stockTotals, resourceId]
+  );
+  const availableFromStock = selectedStockTotals?.totalAvailable;
+  const availableFromSnapshot = selectedResSnapshot?.availableQty;
+  const availableForSelected =
+    typeof availableFromStock === "number"
+      ? availableFromStock
+      : typeof availableFromSnapshot === "number"
+      ? availableFromSnapshot
+      : 0;
+  const unitLabel = resourceId
+    ? resourceOptions.find((r) => r.key === resourceId)?.unit
+    : "";
+  const insufficient =
+    !!resourceId && !!targetQty && Number(targetQty) > availableForSelected;
 
   // Details records hook at top-level
   const detailsJob: any | undefined = detailsModal.job;
@@ -187,46 +218,56 @@ export default function CampaignDistribution() {
               : "Campaign Progress"
           }
           target={
-            resSnapshot?.targetQty ??
-            (resourceId
-              ? 0
+            resourceId
+              ? selectedResSnapshot?.targetQty ?? 0
               : snapshots.reduce(
                   (acc: number, s: any) => acc + (s.targetQty || 0),
                   0
-                ))
+                )
           }
           collected={
-            resSnapshot?.collectedQty ??
-            (resourceId
-              ? 0
+            resourceId
+              ? selectedResSnapshot?.collectedQty ?? 0
               : snapshots.reduce(
                   (acc: number, s: any) => acc + (s.collectedQty || 0),
                   0
-                ))
+                )
           }
           distributed={
-            resSnapshot?.distributedQty ??
-            (resourceId
-              ? 0
+            resourceId
+              ? selectedResSnapshot?.distributedQty ?? 0
               : snapshots.reduce(
                   (acc: number, s: any) => acc + (s.distributedQty || 0),
                   0
-                ))
+                )
           }
           available={
-            resSnapshot?.availableQty ??
-            (resourceId
-              ? 0
+            resourceId
+              ? typeof selectedStockTotals?.totalAvailable === "number"
+                ? selectedStockTotals.totalAvailable
+                : selectedResSnapshot?.availableQty ?? 0
+              : (stockTotals as any[])?.length
+              ? (stockTotals as any[]).reduce(
+                  (acc: number, r: any) => acc + (r.totalAvailable || 0),
+                  0
+                )
               : snapshots.reduce(
                   (acc: number, s: any) => acc + (s.availableQty || 0),
                   0
-                ))
+                )
           }
-          unitLabel={
-            resourceId
-              ? resourceOptions.find((r) => r.key === resourceId)?.unit
-              : ""
+          unitLabel={unitLabel}
+          stockTotals={
+            resourceId && selectedStockTotals
+              ? {
+                  totalQuantity: selectedStockTotals.totalQuantity || 0,
+                  totalConsumed: selectedStockTotals.totalConsumed || 0,
+                  totalAvailable: selectedStockTotals.totalAvailable || 0,
+                }
+              : undefined
           }
+          campaignId={campaignId}
+          requiredResources={campaign?.resources as any}
         />
         {/* Title row */}
         <View
@@ -341,6 +382,31 @@ export default function CampaignDistribution() {
                 </Pressable>
               </View>
             </View>
+            {insufficient && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: spacing.sm,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#fecaca",
+                  backgroundColor: "#fee2e2",
+                }}
+              >
+                <Ionicons
+                  name="alert-circle-outline"
+                  size={16}
+                  color="#991b1b"
+                />
+                <Text style={{ color: "#991b1b", flex: 1 }}>
+                  Insufficient stock. Available {availableForSelected}
+                  {unitLabel ? ` ${unitLabel}` : ""}. You can still schedule;
+                  delivery will be blocked until stock is added.
+                </Text>
+              </View>
+            )}
             {/* Planned End */}
             <View style={{ flexDirection: "row", gap: spacing.md }}>
               <View style={{ flex: 1 }}>

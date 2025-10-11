@@ -5,6 +5,7 @@ import DistributionJobModel, {
 } from "../models/DistributionJob.model";
 import { InventoryModel } from "../../Inventory/models/inventoryModel";
 import progressService from "../../progress/services/progress.service";
+import stockService from "../../stock/services/stock.service";
 
 function genDistributionId(prefix = "DIST"): string {
   const ts = new Date().toISOString().replace(/[-:TZ.]/g, "");
@@ -190,6 +191,15 @@ export class DistributionJobService {
       sourceType: "distribution",
       sourceId: job._id.toString(),
       createdByUid: updatedByUid,
+    });
+
+    // Consume from Stock (FIFO) matching the delivered quantity
+    const delivered = Math.max(0, job.progressQty || job.targetQty);
+    await stockService.consumeFIFO({
+      campaignId: job.campaignId,
+      resourceId: job.resourceId,
+      qty: delivered,
+      distributionJobId: job._id.toString(),
     });
     return job;
   }

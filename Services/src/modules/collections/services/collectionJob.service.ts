@@ -2,6 +2,7 @@ import CollectionJob, { ICollectionJob } from "../models/CollectionJob.model";
 import progressService from "../../progress/services/progress.service";
 import CoordinatorAssignment from "../../agent/coordinator-assignments/models/CoordinatorAssignment.model";
 import Campaign from "../../campaign/models/Campaign.model";
+import stockService from "../../stock/services/stock.service";
 
 export class CollectionJobService {
   static async create(params: {
@@ -146,6 +147,19 @@ export class CollectionJobService {
       sourceType: "collection",
       sourceId: job._id.toString(),
       createdByUid: actorUid,
+    });
+
+    // Add to Stock as a new lot (available for distributions)
+    await stockService.addLot({
+      campaignId: job.campaignId,
+      resourceId: job.resourceId,
+      quantity: job.progressQty,
+      collectionJobId: job._id.toString(),
+      resourceSnapshot: {
+        name: (job as any).resourceSnapshot?.name,
+        unit: (job as any).resourceSnapshot?.unit,
+        category: (job as any).resourceSnapshot?.category,
+      },
     });
     return job.toObject();
   }
