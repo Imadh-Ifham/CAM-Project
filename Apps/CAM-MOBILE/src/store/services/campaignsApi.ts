@@ -283,6 +283,7 @@ export const campaignsApi = createApi({
 export const {
   useGetCampaignsQuery,
   useGetCampaignByIdQuery,
+  useLazyGetCampaignByIdQuery,
   useJoinCampaignMutation,
   useGetMeQuery,
   useGetPendingAgentRequestsQuery,
