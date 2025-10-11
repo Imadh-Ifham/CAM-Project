@@ -1,36 +1,51 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import admin from "../../../config/firebaseAdmin";
 import Volunteer from "../models/Volunteer";
-import dotenv from "dotenv";
 
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET || "changeme";
-
-export interface AuthRequest extends Request {
+interface AuthRequest extends Request {
   volunteer?: any;
+  firebaseUser?: admin.auth.DecodedIdToken;
 }
 
-export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
+const authMiddleware = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const auth = req.headers.authorization;
-    if (!auth || typeof auth !== "string") return res.status(401).json({ message: "No Authorization header" });
-    const token = auth.startsWith("Bearer ") ? auth.slice(7) : auth;
-    let payload: any;
-    try {
-      payload = jwt.verify(token, JWT_SECRET);
-    } catch {
-      return res.status(401).json({ message: "Invalid or expired token" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "No token provided" });
     }
-    if (!payload?.id) return res.status(401).json({ message: "Invalid token payload" });
 
-    const volunteer = await Volunteer.findById(payload.id).select("-passwordHash").lean();
-    if (!volunteer) return res.status(401).json({ message: "Volunteer not found" });
+    const token = authHeader.split("Bearer ")[1];
+
+    // Verify Firebase token
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.firebaseUser = decodedToken;
+
+    // Find volunteer by Firebase UID or email
+    const volunteer = await Volunteer.findOne({
+      $or: [
+        { firebaseUid: decodedToken.uid },
+        { email: decodedToken.email }
+      ]
+    }).select("-passwordHash");
+
+    if (!volunteer) {
+      return res.status(404).json({ message: "Volunteer profile not found" });
+    }
 
     req.volunteer = volunteer;
     next();
   } catch (err: any) {
-    console.error("Auth error:", err);
+    console.error("Auth middleware error:", err);
+    if (err.code === "auth/id-token-expired") {
+      return res.status(401).json({ message: "Token expired" });
+    }
+    if (err.code === "auth/argument-error") {
+      return res.status(401).json({ message: "Invalid token format" });
+    }
     return res.status(401).json({ message: "Unauthorized" });
   }
 };
