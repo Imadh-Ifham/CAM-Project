@@ -197,7 +197,8 @@ export default function CampaignBasicInfo({
           <Text style={styles.tipTitle}>Tips for Better Campaigns</Text>
         </View>
         <Text style={styles.tipText}>
-          • Use clear, descriptive names that reflect the campaign's purpose
+          • Use clear, descriptive names that reflect the campaign&apos;s
+          purpose
           {"\n"}• Include specific objectives and expected outcomes in the
           description{"\n"}• Choose the appropriate type to ensure proper
           resource allocation{"\n"}• Set priority based on urgency and impact

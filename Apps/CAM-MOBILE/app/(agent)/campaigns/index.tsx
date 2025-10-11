@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -11,78 +11,56 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+
 import { colors } from "../../../src/styles/colors";
 import { spacing } from "../../../src/styles/spacing";
 import { typography } from "../../../src/styles/typography";
 import { Card, CardContent, CardHeader } from "../../../src/components/ui/Card";
 import { Button } from "../../../src/components/ui/Button";
-import { useRouter } from "expo-router";
+
 import {
   useGetCampaignsQuery,
   useJoinCampaignMutation,
   useGetMeQuery,
+  useGetCoordinatorAssignmentsQuery,
   useLazyGetCoordinatorAssignmentQuery,
 } from "../../../src/store/services/campaignsApi";
 import { useAppSelector } from "../../../src/store/hooks";
 import { selectCurrentAgent } from "../../../src/store/selectors/agentSelectors";
 import { auth } from "../../../src/services/firebase";
 
-type UiCampaign = {
-  id: string; // campaignID
+interface UiCampaign {
+  id: string;
   name: string;
-  description: string;
-  location: string;
-  startDate: string;
-  endDate: string;
-  status: "active" | "paused" | "completed" | "draft" | "cancelled";
+  description?: string;
+  location?: string;
+  startDate?: string;
+  endDate?: string;
+  status: "active" | "paused" | "completed" | string;
   volunteersNeeded: number;
   resourceNeeds: { food: number; clothes: number; funds: number };
-  // Optional UI fields (not guaranteed by backend)
-  agentRoleRequired?: "Collector" | "Distributor" | "Both";
-  taskTypes?: string;
-  // Relations
+  resourceChips?: Array<{ label: string; qty: number; unit?: string }>;
   requestedAgent?: string[];
   coordinatorAgentId?: string;
-};
+}
 
-const statusPill = (status: "Active" | "Paused" | "Completed") => {
-  const map: Record<
-    "Active" | "Paused" | "Completed",
-    { bg: string; fg: string; label: string }
-  > = {
-    Active: { bg: "#e6f7ef", fg: "#065f46", label: "Active" },
-    Paused: { bg: "#fff7ed", fg: "#b45309", label: "Paused" },
-    Completed: { bg: "#eef2f4", fg: "#6b7280", label: "Completed" },
-  };
-  const s = map[status];
-  return (
-    <View
-      style={{
-        backgroundColor: s.bg,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 999,
-      }}
-    >
-      <Text style={{ color: s.fg, fontWeight: "700", fontSize: 12 }}>
-        {s.label}
-      </Text>
-    </View>
-  );
-};
+type FilterKey =
+  | "all"
+  | "active"
+  | "paused"
+  | "completed"
+  | "pending"
+  | "approved";
 
-export default function AgentCampaigns() {
+export default function Campaigns() {
   const router = useRouter();
-  const [filter, setFilter] = useState<
-    "all" | "active" | "paused" | "completed" | "pending" | "approved"
-  >("all");
+  const [filter, setFilter] = useState<FilterKey>("all");
 
-  const agentId = useAppSelector(selectCurrentAgent)?.id; // mock agent id in current slice
+  const agentId = useAppSelector(selectCurrentAgent)?.id as string | undefined;
   const currentUid = (auth as any)?.currentUser?.uid as string | undefined;
-  const [joinCampaign, { isLoading: isJoining }] = useJoinCampaignMutation();
   const [triggerGetAssignment, assignmentState] =
     useLazyGetCoordinatorAssignmentQuery();
-  // Resolve authoritative identity from server (contains agentId if mapped)
   const { data: meData } = useGetMeQuery();
   const effectiveAgentId = meData?.user?.agentId || meData?.agentId;
   const effectiveUid = meData?.user?.uid || meData?.uid;
@@ -93,8 +71,14 @@ export default function AgentCampaigns() {
         .map(String),
     [effectiveAgentId, effectiveUid, agentId, currentUid]
   );
+  const [joinCampaign, { isLoading: isJoining }] = useJoinCampaignMutation();
+  const { data: myAssignments } = useGetCoordinatorAssignmentsQuery();
+  const assignedCampaignIds = useMemo(
+    () => new Set((myAssignments || []).map((a: any) => a.campaignId)),
+    [myAssignments]
+  );
 
-  // Query server lists by status; rely on backend to derive from token or accept agentId
+  // Fetch campaigns by status
   const {
     data: activeData,
     isFetching: isFetchingActive,
@@ -111,38 +95,72 @@ export default function AgentCampaigns() {
     error: completedError,
   } = useGetCampaignsQuery({ status: "completed" });
 
-  const listFromServer: UiCampaign[] = useMemo(() => {
-    const mapServer = (arr: any[] | undefined): UiCampaign[] =>
-      (arr || []).map((c) => ({
-        id: c.campaignID,
-        name: c.name,
-        description: c.description,
-        location: c.location ?? `${c.city}, ${c.district}`,
-        startDate:
-          typeof c.startDate === "string"
-            ? c.startDate
-            : new Date(c.startDate).toISOString(),
-        endDate:
-          typeof c.endDate === "string"
-            ? c.endDate
-            : new Date(c.endDate).toISOString(),
-        status: c.status,
-        volunteersNeeded: c.requiredVolunteers,
-        resourceNeeds: {
-          food:
-            c.resources
-              ?.filter?.((r: any) => r.category === "food")
-              .reduce((a: number, r: any) => a + (r.quantity || 0), 0) || 0,
-          clothes:
-            c.resources
-              ?.filter?.((r: any) => r.category === "clothing")
-              .reduce((a: number, r: any) => a + (r.quantity || 0), 0) || 0,
-          funds: c.estimatedBudget || 0,
-        },
-        requestedAgent: c.requestedAgent,
-        coordinatorAgentId: c.coordinatorAgentId,
-      }));
+  // Helper to map server payloads into UI-friendly objects
+  const mapServer = (arr: any[] | undefined): UiCampaign[] => {
+    if (!Array.isArray(arr)) return [];
+    return arr.map((s: any) => {
+      // Build location from city/district when available
+      const city = s?.city || "";
+      const district = s?.district || "";
+      const loc = s?.location || [city, district].filter(Boolean).join(", ");
+      // Derive resource chips (top 3)
+      const chips: UiCampaign["resourceChips"] = Array.isArray(s?.resources)
+        ? s.resources
+            .filter((r: any) => r && (r.name || r.category))
+            .slice(0, 3)
+            .map((r: any) => ({
+              label: String(r.name || r.category || "item"),
+              qty: Number(r.quantity) || 0,
+              unit: r.unit ? String(r.unit) : undefined,
+            }))
+        : [];
+      // Fallback aggregates
+      const foods = Array.isArray(s?.resources)
+        ? s.resources
+            .filter((r: any) =>
+              String(r.category || r.name || "")
+                .toLowerCase()
+                .includes("food")
+            )
+            .reduce((sum: number, r: any) => sum + (Number(r.quantity) || 0), 0)
+        : 0;
+      const clothes = Array.isArray(s?.resources)
+        ? s.resources
+            .filter((r: any) => {
+              const t = String(r.category || r.name || "").toLowerCase();
+              return t.includes("cloth");
+            })
+            .reduce((sum: number, r: any) => sum + (Number(r.quantity) || 0), 0)
+        : 0;
+      const funds = Number(s?.estimatedBudget) || 0;
 
+      // Volunteers remaining (if server provides volunteers count)
+      const needed = Math.max(
+        0,
+        (Number(s?.requiredVolunteers) || 0) - (Number(s?.volunteers) || 0)
+      );
+
+      const out: UiCampaign = {
+        id: String(s?.campaignID || s?._id || s?.id || ""),
+        name: String(s?.name || "Untitled Campaign"),
+        description: s?.description || "",
+        location: loc,
+        startDate: s?.startDate || undefined,
+        endDate: s?.endDate || undefined,
+        status: (s?.status as any) || "active",
+        volunteersNeeded: needed,
+        resourceNeeds: { food: foods, clothes, funds },
+        resourceChips: chips,
+        requestedAgent: Array.isArray(s?.requestedAgent)
+          ? s.requestedAgent
+          : [],
+        coordinatorAgentId: s?.coordinatorAgentId || undefined,
+      };
+      return out;
+    });
+  };
+
+  const listFromServer: UiCampaign[] = useMemo(() => {
     switch (filter) {
       case "active":
         return mapServer(activeData);
@@ -184,16 +202,31 @@ export default function AgentCampaigns() {
           ...mapServer(completedData),
         ];
     }
-  }, [
-    filter,
-    activeData,
-    pausedData,
-    completedData,
-    agentId,
-    currentUid,
-    effectiveAgentId,
-    effectiveUid,
-  ]);
+  }, [filter, activeData, pausedData, completedData, identityCandidates]);
+
+  // Assignment preflight for visible subset
+  const [assignmentMap, setAssignmentMap] = useState<Record<string, boolean>>(
+    {}
+  );
+  useEffect(() => {
+    let cancelled = false;
+    const subset = listFromServer.slice(0, 10);
+    Promise.all(
+      subset.map(async (x) => {
+        try {
+          const resp = await triggerGetAssignment(x.id, true).unwrap();
+          if (!cancelled && resp) {
+            setAssignmentMap((m) => ({ ...m, [x.id]: true }));
+          }
+        } catch {
+          // ignore
+        }
+      })
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [listFromServer, triggerGetAssignment]);
 
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<UiCampaign | null>(
@@ -224,15 +257,42 @@ export default function AgentCampaigns() {
       return identityCandidates.includes(coord || "");
     }).length;
 
-  // Helpers to reconcile server-stored IDs (agentId or Firebase UID)
-  const isCoordinator = (c: UiCampaign) => {
-    const id = c.coordinatorAgentId;
-    if (!id) return false;
-    return identityCandidates.includes(id);
+  const statusPill = (label: string) => {
+    const tone =
+      label === "Active"
+        ? { bg: "#ecfdf5", fg: "#16a34a", br: "#a7f3d0" }
+        : label === "Paused"
+        ? { bg: "#eef2ff", fg: "#2563eb", br: "#bfdbfe" }
+        : { bg: "#f3f4f6", fg: "#6b7280", br: colors.border };
+    return (
+      <View
+        style={{
+          paddingHorizontal: 10,
+          paddingVertical: 4,
+          borderRadius: 999,
+          backgroundColor: tone.bg,
+          borderWidth: 1,
+          borderColor: tone.br,
+        }}
+      >
+        <Text style={{ color: tone.fg, fontWeight: "700", fontSize: 12 }}>
+          {label}
+        </Text>
+      </View>
+    );
   };
 
-  // Consider "joined and accepted" as the coordinator for now (backend assigns coordinatorAgentId)
-  const canManage = (c: UiCampaign) => isCoordinator(c);
+  const isCoordinator = (c: UiCampaign) => {
+    if (assignmentMap[c.id]) return true;
+    // If API reports assignment for this campaign, you're the coordinator
+    if (assignedCampaignIds.has(c.id)) return true;
+    // Otherwise, attempt to match coordinator id to our identities
+    const id = c.coordinatorAgentId;
+    if (id && identityCandidates.includes(id)) return true;
+    return false;
+  };
+
+  // (no separate canManage; use isCoordinator directly)
 
   const handleManagePress = async (c: UiCampaign) => {
     try {
@@ -480,8 +540,11 @@ export default function AgentCampaigns() {
             </Text>
           </View>
         ) : null}
-        {list.map((c) => (
-          <Card key={c.id} style={{ borderRadius: 16 }}>
+        {list.map((c, idx) => (
+          <Card
+            key={`${c.id || "unknown"}-${idx}`}
+            style={{ borderRadius: 16 }}
+          >
             <CardContent>
               {/* Header row */}
               <View
@@ -528,8 +591,19 @@ export default function AgentCampaigns() {
                     color={colors.muted}
                   />
                   <Text>
-                    {new Date(c.startDate).toLocaleDateString()} -{" "}
-                    {new Date(c.endDate).toLocaleDateString()}
+                    {(() => {
+                      const sd = c.startDate ? new Date(c.startDate) : null;
+                      const ed = c.endDate ? new Date(c.endDate) : null;
+                      const s =
+                        sd && !isNaN(sd.getTime())
+                          ? sd.toLocaleDateString()
+                          : "";
+                      const e =
+                        ed && !isNaN(ed.getTime())
+                          ? ed.toLocaleDateString()
+                          : "";
+                      return `${s}${s && e ? " - " : s || e ? "" : ""}${e}`;
+                    })()}
                   </Text>
                 </View>
                 <View
@@ -564,66 +638,107 @@ export default function AgentCampaigns() {
                 >
                   Resources Needed:
                 </Text>
-                <View style={{ flexDirection: "row", gap: spacing.md }}>
-                  {c.resourceNeeds.food > 0 && (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <Ionicons
-                        name="restaurant-outline"
-                        size={14}
-                        color={colors.cardForeground}
-                      />
-                      <Text style={{ fontSize: 12 }}>
-                        {c.resourceNeeds.food} food
-                      </Text>
-                    </View>
-                  )}
-                  {c.resourceNeeds.clothes > 0 && (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <Ionicons
-                        name="shirt-outline"
-                        size={14}
-                        color={colors.cardForeground}
-                      />
-                      <Text style={{ fontSize: 12 }}>
-                        {c.resourceNeeds.clothes} clothes
-                      </Text>
-                    </View>
-                  )}
-                  {c.resourceNeeds.funds > 0 && (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <Ionicons
-                        name="cash-outline"
-                        size={14}
-                        color={colors.cardForeground}
-                      />
-                      <Text style={{ fontSize: 12 }}>
-                        ${c.resourceNeeds.funds}
-                      </Text>
-                    </View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: spacing.md,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  {Array.isArray(c.resourceChips) &&
+                  c.resourceChips.length > 0 ? (
+                    c.resourceChips.slice(0, 3).map((chip, idx2) => (
+                      <View
+                        key={`${c.id}-chip-${idx2}`}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <Ionicons
+                          name="cube-outline"
+                          size={14}
+                          color={colors.cardForeground}
+                        />
+                        <Text style={{ fontSize: 12 }}>
+                          {chip.qty} {chip.label}
+                          {chip.unit ? ` (${chip.unit})` : ""}
+                        </Text>
+                      </View>
+                    ))
+                  ) : (
+                    <>
+                      {c.resourceNeeds.food > 0 && (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <Ionicons
+                            name="restaurant-outline"
+                            size={14}
+                            color={colors.cardForeground}
+                          />
+                          <Text style={{ fontSize: 12 }}>
+                            {c.resourceNeeds.food} food
+                          </Text>
+                        </View>
+                      )}
+                      {c.resourceNeeds.clothes > 0 && (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <Ionicons
+                            name="shirt-outline"
+                            size={14}
+                            color={colors.cardForeground}
+                          />
+                          <Text style={{ fontSize: 12 }}>
+                            {c.resourceNeeds.clothes} clothes
+                          </Text>
+                        </View>
+                      )}
+                      {c.resourceNeeds.funds > 0 && (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <Ionicons
+                            name="cash-outline"
+                            size={14}
+                            color={colors.cardForeground}
+                          />
+                          <Text style={{ fontSize: 12 }}>
+                            LKR {c.resourceNeeds.funds}
+                          </Text>
+                        </View>
+                      )}
+                      {c.resourceNeeds.food <= 0 &&
+                        c.resourceNeeds.clothes <= 0 &&
+                        c.resourceNeeds.funds <= 0 && (
+                          <Text style={{ fontSize: 12, color: colors.muted }}>
+                            Details unavailable in list. Open campaign to view
+                            more.
+                          </Text>
+                        )}
+                    </>
                   )}
                 </View>
               </View>
 
               {/* CTA: Manage if current agent is coordinator */}
-              {c.status === "active" && canManage(c) && (
+              {c.status === "active" && isCoordinator(c) && (
                 <Button
                   style={{ width: "100%", backgroundColor: "#16a34a" }}
                   loading={assignmentState.isFetching}
@@ -634,6 +749,7 @@ export default function AgentCampaigns() {
               )}
               {/* CTA: Request to Join if active, no coordinator and not already requested */}
               {c.status === "active" &&
+                !isCoordinator(c) &&
                 !c.coordinatorAgentId &&
                 (agentId || currentUid) &&
                 !isRequestedByMe(c) && (
@@ -755,96 +871,28 @@ export default function AgentCampaigns() {
                       </Text>
                       <Text style={{ fontSize: 13 }}>
                         <Text style={{ fontWeight: "700" }}>Duration: </Text>
-                        {selectedCampaign
-                          ? `${new Date(
-                              selectedCampaign.startDate
-                            ).toLocaleDateString()} - ${new Date(
-                              selectedCampaign.endDate
-                            ).toLocaleDateString()}`
-                          : ""}
+                        {(() => {
+                          const sd = selectedCampaign?.startDate
+                            ? new Date(selectedCampaign.startDate)
+                            : null;
+                          const ed = selectedCampaign?.endDate
+                            ? new Date(selectedCampaign.endDate)
+                            : null;
+                          const s =
+                            sd && !isNaN(sd.getTime())
+                              ? sd.toLocaleDateString()
+                              : "";
+                          const e =
+                            ed && !isNaN(ed.getTime())
+                              ? ed.toLocaleDateString()
+                              : "";
+                          return `${s}${s && e ? " - " : s || e ? "" : ""}${e}`;
+                        })()}
                       </Text>
-                      {!!selectedCampaign?.agentRoleRequired && (
-                        <Text style={{ fontSize: 13 }}>
-                          <Text style={{ fontWeight: "700" }}>
-                            Required Role:{" "}
-                          </Text>
-                          {selectedCampaign?.agentRoleRequired}
-                        </Text>
-                      )}
-                      {!!selectedCampaign?.taskTypes && (
-                        <Text style={{ fontSize: 13 }}>
-                          <Text style={{ fontWeight: "700" }}>Tasks: </Text>
-                          {selectedCampaign?.taskTypes}
-                        </Text>
-                      )}
                     </View>
                   </View>
 
-                  {/* Required Agent Type */}
-                  {!!selectedCampaign?.agentRoleRequired && (
-                    <View style={{ gap: 6 }}>
-                      <Text style={{ fontWeight: "600" }}>
-                        Required Agent Type
-                      </Text>
-                      <View
-                        style={{
-                          backgroundColor: colors.mutedBackground,
-                          borderRadius: 12,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          padding: spacing.md,
-                        }}
-                      >
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                          }}
-                        >
-                          <Text style={{ fontWeight: "700" }}>
-                            {selectedCampaign?.agentRoleRequired}
-                          </Text>
-                          <View
-                            style={{
-                              paddingHorizontal: 10,
-                              paddingVertical: 4,
-                              borderRadius: 999,
-                              borderWidth: 1,
-                              borderColor: "#2563eb",
-                              backgroundColor: "#eef2ff",
-                            }}
-                          >
-                            <Text
-                              style={{
-                                color: "#2563eb",
-                                fontSize: 12,
-                                fontWeight: "700",
-                              }}
-                            >
-                              Required
-                            </Text>
-                          </View>
-                        </View>
-                        <Text
-                          style={{
-                            color: colors.muted,
-                            marginTop: 6,
-                            fontSize: 13,
-                          }}
-                        >
-                          {selectedCampaign?.agentRoleRequired ===
-                            "Collector" &&
-                            "You will be responsible for collecting donations and resources from the community."}
-                          {selectedCampaign?.agentRoleRequired ===
-                            "Distributor" &&
-                            "You will be responsible for distributing collected resources to target locations."}
-                          {selectedCampaign?.agentRoleRequired === "Both" &&
-                            "You will handle both collection of donations and distribution to target locations."}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
+                  {/* Required Agent Type section omitted: not available in UiCampaign */}
 
                   {/* Experience */}
                   <View style={{ gap: 6 }}>

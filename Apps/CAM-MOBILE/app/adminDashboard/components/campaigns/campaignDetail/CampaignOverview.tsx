@@ -21,8 +21,13 @@ const priorityColors = {
 };
 
 export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
-  const formatCurrency = (amount: number) => {
-    return `LKR ${amount.toLocaleString()}`;
+  const formatCurrency = (amount?: number | null) => {
+    const safe = typeof amount === "number" && isFinite(amount) ? amount : 0;
+    try {
+      return `LKR ${safe.toLocaleString()}`;
+    } catch {
+      return `LKR ${safe}`;
+    }
   };
 
   const getTypeIcon = (type: string) => {
@@ -123,7 +128,10 @@ export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
               <Text style={styles.statLabel}>Volunteers</Text>
             </View>
             <Text style={styles.statValue}>
-              {campaign.volunteers}/{campaign.targetVolunteers}
+              {(campaign as any)?.volunteers ?? 0}/
+              {(campaign as any)?.requiredVolunteers ??
+                (campaign as any)?.targetVolunteers ??
+                0}
             </Text>
           </View>
 
@@ -140,10 +148,12 @@ export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
           <View style={styles.statItem}>
             <View style={styles.statHeader}>
               <Ionicons name="card" size={16} color="#00ff94" />
-              <Text style={styles.statLabel}>Budget</Text>
+              <Text style={styles.statLabel}>Estimated Budget</Text>
             </View>
             <Text style={styles.statValue}>
-              {formatCurrency(campaign.budget)}
+              {formatCurrency(
+                (campaign as any)?.estimatedBudget ?? (campaign as any)?.budget
+              )}
             </Text>
           </View>
 
@@ -153,7 +163,7 @@ export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
               <Text style={styles.statLabel}>Spent</Text>
             </View>
             <Text style={styles.statValue}>
-              {formatCurrency(campaign.spent)}
+              {formatCurrency((campaign as any)?.spent)}
             </Text>
           </View>
         </View>
@@ -169,7 +179,9 @@ export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
               <Ionicons name="play" size={16} color="#00ff94" />
               <Text style={styles.statLabel}>Start Date</Text>
             </View>
-            <Text style={styles.dateValue}>{campaign.startDate}</Text>
+            <Text style={styles.dateValue}>
+              {String((campaign as any)?.startDate ?? "")}
+            </Text>
           </View>
 
           <View style={styles.statItem}>
@@ -177,7 +189,9 @@ export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
               <Ionicons name="stop" size={16} color="#00ff94" />
               <Text style={styles.statLabel}>End Date</Text>
             </View>
-            <Text style={styles.dateValue}>{campaign.endDate}</Text>
+            <Text style={styles.dateValue}>
+              {String((campaign as any)?.endDate ?? "")}
+            </Text>
           </View>
         </View>
       </View>
@@ -192,7 +206,7 @@ export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
           </View>
           <View style={styles.headerInfo}>
             <Text style={styles.coordinatorName}>
-              {campaign.coordinator.name}
+              {(campaign as any)?.coordinator?.name || "Unassigned"}
             </Text>
           </View>
         </View>
@@ -200,11 +214,15 @@ export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
         <View style={styles.contactInfo}>
           <View style={styles.contactItem}>
             <Ionicons name="call" size={16} color="#888" />
-            <Text style={styles.contactText}>{campaign.coordinator.phone}</Text>
+            <Text style={styles.contactText}>
+              {(campaign as any)?.coordinator?.phone || "N/A"}
+            </Text>
           </View>
           <View style={styles.contactItem}>
             <Ionicons name="mail" size={16} color="#888" />
-            <Text style={styles.contactText}>{campaign.coordinator.email}</Text>
+            <Text style={styles.contactText}>
+              {(campaign as any)?.coordinator?.email || "N/A"}
+            </Text>
           </View>
         </View>
       </View>

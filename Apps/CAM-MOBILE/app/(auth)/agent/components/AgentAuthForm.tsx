@@ -178,7 +178,7 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
       {/* Create account */}
       <View style={{ alignItems: "center" }}>
         <Text style={{ color: colors.muted, marginBottom: spacing.sm }}>
-          Don't have an agent account?
+          Don&apos;t have an agent account?
         </Text>
         <Button
           variant="outline"
