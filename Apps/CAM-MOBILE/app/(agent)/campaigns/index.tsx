@@ -25,6 +25,8 @@ import {
   useGetMeQuery,
   useGetCoordinatorAssignmentsQuery,
   useLazyGetCoordinatorAssignmentQuery,
+  useLazyGetCampaignByIdQuery,
+  useGetPendingAgentRequestsQuery,
 } from "../../../src/store/services/campaignsApi";
 import { useAppSelector } from "../../../src/store/hooks";
 import { selectCurrentAgent } from "../../../src/store/selectors/agentSelectors";
@@ -61,6 +63,7 @@ export default function Campaigns() {
   const currentUid = (auth as any)?.currentUser?.uid as string | undefined;
   const [triggerGetAssignment, assignmentState] =
     useLazyGetCoordinatorAssignmentQuery();
+  const [triggerGetCampaignById] = useLazyGetCampaignByIdQuery();
   const { data: meData } = useGetMeQuery();
   const effectiveAgentId = meData?.user?.agentId || meData?.agentId;
   const effectiveUid = meData?.user?.uid || meData?.uid;
@@ -77,6 +80,20 @@ export default function Campaigns() {
     () => new Set((myAssignments || []).map((a: any) => a.campaignId)),
     [myAssignments]
   );
+  // Pending requests list (admin view endpoint reused client-side)
+  const { data: pendingRequests } = useGetPendingAgentRequestsQuery();
+  const pendingCampaignIds = useMemo(() => {
+    const ids = new Set<string>();
+    (pendingRequests || []).forEach((r: any) => {
+      const matchesAgent = identityCandidates.includes(
+        String(r?.agentId || "")
+      );
+      if (matchesAgent && String(r?.status || "").toLowerCase() === "pending") {
+        ids.add(String(r?.campaignId || ""));
+      }
+    });
+    return ids;
+  }, [pendingRequests, identityCandidates]);
 
   // Fetch campaigns by status
   const {
@@ -110,7 +127,10 @@ export default function Campaigns() {
             .slice(0, 3)
             .map((r: any) => ({
               label: String(r.name || r.category || "item"),
-              qty: Number(r.quantity) || 0,
+              qty:
+                Number(
+                  r.quantity ?? r.qty ?? r.required ?? r.target ?? r.amount ?? 0
+                ) || 0,
               unit: r.unit ? String(r.unit) : undefined,
             }))
         : [];
@@ -122,7 +142,14 @@ export default function Campaigns() {
                 .toLowerCase()
                 .includes("food")
             )
-            .reduce((sum: number, r: any) => sum + (Number(r.quantity) || 0), 0)
+            .reduce(
+              (sum: number, r: any) =>
+                sum +
+                (Number(
+                  r.quantity ?? r.qty ?? r.required ?? r.target ?? r.amount ?? 0
+                ) || 0),
+              0
+            )
         : 0;
       const clothes = Array.isArray(s?.resources)
         ? s.resources
@@ -130,7 +157,14 @@ export default function Campaigns() {
               const t = String(r.category || r.name || "").toLowerCase();
               return t.includes("cloth");
             })
-            .reduce((sum: number, r: any) => sum + (Number(r.quantity) || 0), 0)
+            .reduce(
+              (sum: number, r: any) =>
+                sum +
+                (Number(
+                  r.quantity ?? r.qty ?? r.required ?? r.target ?? r.amount ?? 0
+                ) || 0),
+              0
+            )
         : 0;
       const funds = Number(s?.estimatedBudget) || 0;
 
@@ -174,6 +208,11 @@ export default function Campaigns() {
           ...mapServer(pausedData),
           ...mapServer(completedData),
         ];
+        // Prefer explicit pending requests collection
+        if (pendingCampaignIds.size > 0) {
+          return all.filter((c) => pendingCampaignIds.has(c.id));
+        }
+        // Fallback to legacy requestedAgent array
         return all.filter((c) => {
           const reqArr = c.requestedAgent || [];
           const requested = identityCandidates.some((id) =>
@@ -191,8 +230,12 @@ export default function Campaigns() {
           ...mapServer(pausedData),
           ...mapServer(completedData),
         ];
-        return all.filter((c) =>
-          identityCandidates.includes(c.coordinatorAgentId || "")
+        // Approved: Active campaigns you can manage (you're the coordinator)
+        return all.filter(
+          (c) =>
+            c.status === "active" &&
+            (assignedCampaignIds.has(c.id) ||
+              identityCandidates.includes(c.coordinatorAgentId || ""))
         );
       }
       default:
@@ -202,7 +245,15 @@ export default function Campaigns() {
           ...mapServer(completedData),
         ];
     }
-  }, [filter, activeData, pausedData, completedData, identityCandidates]);
+  }, [
+    filter,
+    activeData,
+    pausedData,
+    completedData,
+    identityCandidates,
+    pendingCampaignIds,
+    assignedCampaignIds,
+  ]);
 
   // Assignment preflight for visible subset
   const [assignmentMap, setAssignmentMap] = useState<Record<string, boolean>>(
@@ -228,6 +279,80 @@ export default function Campaigns() {
     };
   }, [listFromServer, triggerGetAssignment]);
 
+  // Enrich resources for visible subset using detailed campaign fetch
+  const [resourcesEnriched, setResourcesEnriched] = useState<
+    Record<
+      string,
+      {
+        chips: Array<{ label: string; qty: number; unit?: string }>;
+        totals: { food: number; clothes: number; funds: number };
+      }
+    >
+  >({});
+  useEffect(() => {
+    let cancelled = false;
+    const subset = listFromServer.slice(0, 10);
+    (async () => {
+      for (const c of subset) {
+        try {
+          const detail = await triggerGetCampaignById(c.id, true).unwrap();
+          const res = Array.isArray(detail?.resources) ? detail.resources : [];
+          const chips = res
+            .filter((r: any) => r && (r.name || r.category))
+            .slice(0, 3)
+            .map((r: any) => ({
+              label: String(r.name || r.category || "item"),
+              qty:
+                Number(
+                  r.quantity ?? r.qty ?? r.required ?? r.target ?? r.amount ?? 0
+                ) || 0,
+              unit: r.unit ? String(r.unit) : undefined,
+            }));
+          const foods = res
+            .filter((r: any) =>
+              String(r.category || r.name || "")
+                .toLowerCase()
+                .includes("food")
+            )
+            .reduce(
+              (sum: number, r: any) =>
+                sum +
+                (Number(
+                  r.quantity ?? r.qty ?? r.required ?? r.target ?? r.amount ?? 0
+                ) || 0),
+              0
+            );
+          const clothes = res
+            .filter((r: any) =>
+              String(r.category || r.name || "")
+                .toLowerCase()
+                .includes("cloth")
+            )
+            .reduce(
+              (sum: number, r: any) =>
+                sum +
+                (Number(
+                  r.quantity ?? r.qty ?? r.required ?? r.target ?? r.amount ?? 0
+                ) || 0),
+              0
+            );
+          const funds = Number(detail?.estimatedBudget) || 0;
+          if (!cancelled) {
+            setResourcesEnriched((m) => ({
+              ...m,
+              [c.id]: { chips, totals: { food: foods, clothes, funds } },
+            }));
+          }
+        } catch {
+          // ignore detail fetch errors
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [listFromServer, triggerGetCampaignById]);
+
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<UiCampaign | null>(
     null
@@ -237,25 +362,60 @@ export default function Campaigns() {
     motivation: "",
     availability: "",
   });
+  // Optimistic local pending: mark immediately after successful join
+  const [localPending, setLocalPending] = useState<Record<string, true>>({});
 
   const list = listFromServer;
 
   // Counts for pending/approved filters (computed from raw server data)
-  const pendingCount = (activeData || [])
-    .concat(pausedData || [], completedData || [])
-    .filter((c: any) => {
-      const req: string[] = c?.requestedAgent || [];
-      const coord: string | undefined = c?.coordinatorAgentId;
-      const requested = identityCandidates.some((id) => req.includes(id));
-      const approved = identityCandidates.includes(coord || "");
-      return requested && !approved;
-    }).length;
-  const approvedCount = (activeData || [])
-    .concat(pausedData || [], completedData || [])
-    .filter((c: any) => {
-      const coord: string | undefined = c?.coordinatorAgentId;
-      return identityCandidates.includes(coord || "");
-    }).length;
+  const pendingCount = (() => {
+    if (pendingCampaignIds.size > 0) {
+      // Count only those present in our fetched lists
+      const allIds = new Set<string>(
+        [
+          ...(activeData || []).map((x: any) =>
+            String(x?.campaignID || x?._id || x?.id || "")
+          ),
+          ...(pausedData || []).map((x: any) =>
+            String(x?.campaignID || x?._id || x?.id || "")
+          ),
+          ...(completedData || []).map((x: any) =>
+            String(x?.campaignID || x?._id || x?.id || "")
+          ),
+        ].filter(Boolean)
+      );
+      let n = 0;
+      pendingCampaignIds.forEach((id) => {
+        if (allIds.has(id)) n += 1;
+      });
+      // Include local pending as well (if present in lists)
+      Object.keys(localPending).forEach((id) => {
+        if (allIds.has(id)) n += 1;
+      });
+      return n;
+    }
+    // Fallback legacy logic
+    return (activeData || [])
+      .concat(pausedData || [], completedData || [])
+      .filter((c: any) => {
+        const req: string[] = c?.requestedAgent || [];
+        const coord: string | undefined = c?.coordinatorAgentId;
+        const requested = identityCandidates.some((id) => req.includes(id));
+        const approved = identityCandidates.includes(coord || "");
+        const locally =
+          !!localPending[String(c?.campaignID || c?._id || c?.id || "")];
+        return (requested && !approved) || locally;
+      }).length;
+  })();
+  const approvedCount = useMemo(() => {
+    const allActive = mapServer(activeData);
+    return allActive.filter(
+      (c) =>
+        c.status === "active" &&
+        (assignedCampaignIds.has(c.id) ||
+          identityCandidates.includes(c.coordinatorAgentId || ""))
+    ).length;
+  }, [activeData, assignedCampaignIds, identityCandidates]);
 
   const statusPill = (label: string) => {
     const tone =
@@ -313,6 +473,8 @@ export default function Campaigns() {
     }
   };
   const isRequestedByMe = (c: UiCampaign) => {
+    if (localPending[c.id]) return true;
+    if (pendingCampaignIds.has(c.id)) return true;
     const arr = c.requestedAgent || [];
     return identityCandidates.some((id) => arr.includes(id));
   };
@@ -646,32 +808,22 @@ export default function Campaigns() {
                     alignItems: "center",
                   }}
                 >
-                  {Array.isArray(c.resourceChips) &&
-                  c.resourceChips.length > 0 ? (
-                    c.resourceChips.slice(0, 3).map((chip, idx2) => (
-                      <View
-                        key={`${c.id}-chip-${idx2}`}
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 6,
-                        }}
-                      >
-                        <Ionicons
-                          name="cube-outline"
-                          size={14}
-                          color={colors.cardForeground}
-                        />
-                        <Text style={{ fontSize: 12 }}>
-                          {chip.qty} {chip.label}
-                          {chip.unit ? ` (${chip.unit})` : ""}
-                        </Text>
-                      </View>
-                    ))
-                  ) : (
-                    <>
-                      {c.resourceNeeds.food > 0 && (
+                  {(() => {
+                    const enriched = resourcesEnriched[c.id];
+                    const baseChips = Array.isArray(c.resourceChips)
+                      ? c.resourceChips
+                      : [];
+                    const chips = enriched?.chips?.length
+                      ? enriched.chips
+                      : baseChips;
+                    const totalQty = chips.reduce(
+                      (s, ch) => s + (Number(ch.qty) || 0),
+                      0
+                    );
+                    if (chips.length > 0 && totalQty > 0) {
+                      return chips.slice(0, 3).map((chip, idx2) => (
                         <View
+                          key={`${c.id}-chip-${idx2}`}
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
@@ -679,61 +831,85 @@ export default function Campaigns() {
                           }}
                         >
                           <Ionicons
-                            name="restaurant-outline"
+                            name="cube-outline"
                             size={14}
                             color={colors.cardForeground}
                           />
                           <Text style={{ fontSize: 12 }}>
-                            {c.resourceNeeds.food} food
+                            {chip.qty} {chip.label}
+                            {chip.unit ? ` (${chip.unit})` : ""}
                           </Text>
                         </View>
-                      )}
-                      {c.resourceNeeds.clothes > 0 && (
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <Ionicons
-                            name="shirt-outline"
-                            size={14}
-                            color={colors.cardForeground}
-                          />
-                          <Text style={{ fontSize: 12 }}>
-                            {c.resourceNeeds.clothes} clothes
-                          </Text>
-                        </View>
-                      )}
-                      {c.resourceNeeds.funds > 0 && (
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <Ionicons
-                            name="cash-outline"
-                            size={14}
-                            color={colors.cardForeground}
-                          />
-                          <Text style={{ fontSize: 12 }}>
-                            LKR {c.resourceNeeds.funds}
-                          </Text>
-                        </View>
-                      )}
-                      {c.resourceNeeds.food <= 0 &&
-                        c.resourceNeeds.clothes <= 0 &&
-                        c.resourceNeeds.funds <= 0 && (
-                          <Text style={{ fontSize: 12, color: colors.muted }}>
-                            Details unavailable in list. Open campaign to view
-                            more.
-                          </Text>
+                      ));
+                    }
+                    const totals = enriched?.totals || c.resourceNeeds;
+                    return (
+                      <>
+                        {totals.food > 0 && (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 6,
+                            }}
+                          >
+                            <Ionicons
+                              name="restaurant-outline"
+                              size={14}
+                              color={colors.cardForeground}
+                            />
+                            <Text style={{ fontSize: 12 }}>
+                              {totals.food} food
+                            </Text>
+                          </View>
                         )}
-                    </>
-                  )}
+                        {totals.clothes > 0 && (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 6,
+                            }}
+                          >
+                            <Ionicons
+                              name="shirt-outline"
+                              size={14}
+                              color={colors.cardForeground}
+                            />
+                            <Text style={{ fontSize: 12 }}>
+                              {totals.clothes} clothes
+                            </Text>
+                          </View>
+                        )}
+                        {totals.funds > 0 && (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 6,
+                            }}
+                          >
+                            <Ionicons
+                              name="cash-outline"
+                              size={14}
+                              color={colors.cardForeground}
+                            />
+                            <Text style={{ fontSize: 12 }}>
+                              LKR {totals.funds}
+                            </Text>
+                          </View>
+                        )}
+                        {totals.food <= 0 &&
+                          totals.clothes <= 0 &&
+                          totals.funds <= 0 && (
+                            <Text style={{ fontSize: 12, color: colors.muted }}>
+                              Details unavailable in list. Open campaign to view
+                              more.
+                            </Text>
+                          )}
+                      </>
+                    );
+                  })()}
                 </View>
               </View>
 
@@ -1005,6 +1181,13 @@ export default function Campaigns() {
                             .slice(0, 100),
                         };
                         await joinCampaign(payload).unwrap();
+                        // Optimistically mark as pending for instant UI feedback
+                        setLocalPending((m) => ({
+                          ...m,
+                          [selectedCampaign.id]: true,
+                        }));
+                        // Optionally refetch visible lists to pick up requestedAgent array changes server-side
+                        // No-op here since RTK Query invalidation is set up; we rely on that to refresh
                         Alert.alert(
                           "Request sent",
                           "Your join request was submitted successfully."
