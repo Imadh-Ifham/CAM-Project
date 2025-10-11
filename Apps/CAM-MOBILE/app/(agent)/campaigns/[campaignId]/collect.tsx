@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TextInput,
   Pressable,
   Modal,
+  Alert,
 } from "react-native";
 import { colors } from "../../../../src/styles/colors";
 import { spacing } from "../../../../src/styles/spacing";
@@ -17,75 +18,196 @@ import {
 } from "../../../../src/components/ui/Card";
 import { Button } from "../../../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
+import { useGetCampaignByIdQuery } from "@/src/store/services/campaignsApi";
+import {
+  useCreateCollectionJobMutation,
+  useGetCollectionsByCampaignQuery,
+  useStartCollectionJobMutation,
+  useCompleteCollectionJobMutation,
+  useUpdateCollectionJobMutation,
+  useCancelCollectionJobMutation,
+} from "@/src/store/services/collectionsApi";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useGetCollectionJobRecordsQuery } from "@/src/store/services/collectionsApi";
+import {
+  useGetCampaignSnapshotsQuery,
+  useGetResourceSnapshotQuery,
+} from "@/src/store/services/progressApi";
+import ProgressHeader from "@/src/components/ui/ProgressHeader";
 
-type CollectionStatus = "Collected" | "Processing" | "Verified" | "Confirmed";
+type CollectionStatus =
+  | "draft"
+  | "scheduled"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
 
 export default function CampaignCollect() {
   // Form state
-  const [resourceType, setResourceType] = useState<string | undefined>();
-  const [quantity, setQuantity] = useState("");
-  const [location, setLocation] = useState("");
-  const [donor, setDonor] = useState("");
-  const [notes, setNotes] = useState("");
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  const resourceOptions = [
-    { key: "food", label: "Food Packages" },
-    { key: "clothes", label: "Clothing Items" },
-    { key: "medical", label: "Medical Supplies" },
-    { key: "funds", label: "Monetary Donations" },
-    { key: "other", label: "Other Essentials" },
-  ];
-
-  const collections = useMemo(
-    () => [
-      {
-        id: 1,
-        resource: "Food Packages",
-        quantity: 75,
-        location: "Local Grocery Store",
-        donor: "Fresh Market Inc.",
-        status: "Collected" as CollectionStatus,
-        collectionDate: "2024-01-18",
-        collectedBy: "Agent John Doe",
-        notes: "Fresh produce and canned goods mix",
-      },
-      {
-        id: 2,
-        resource: "Clothing Items",
-        quantity: 45,
-        location: "Community Center",
-        donor: "Local Families",
-        status: "Processing" as CollectionStatus,
-        collectionDate: "2024-01-19",
-        collectedBy: "Agent John Doe",
-        notes: "Winter coats and warm clothing",
-      },
-      {
-        id: 3,
-        resource: "Medical Supplies",
-        quantity: 30,
-        location: "City Hospital",
-        donor: "Metropolitan Health",
-        status: "Verified" as CollectionStatus,
-        collectionDate: "2024-01-17",
-        collectedBy: "Agent John Doe",
-        notes: "First aid kits and basic medications",
-      },
-      {
-        id: 4,
-        resource: "Monetary Donations",
-        quantity: 2500,
-        location: "Bank Transfer",
-        donor: "Anonymous Donor",
-        status: "Confirmed" as CollectionStatus,
-        collectionDate: "2024-01-16",
-        collectedBy: "Agent John Doe",
-        notes: "Direct bank transfer for emergency funds",
-      },
-    ],
-    []
+  const params = useLocalSearchParams<{ campaignId: string }>();
+  const campaignId = params.campaignId as string;
+  const { data: campaign } = useGetCampaignByIdQuery(campaignId, {
+    skip: !campaignId,
+  });
+  // Resource selection must be declared before hooks that depend on it
+  const [resourceId, setResourceId] = useState<string | undefined>();
+  const { data: snapshots = [], refetch: refetchSnapshots } =
+    useGetCampaignSnapshotsQuery(campaignId!, {
+      skip: !campaignId,
+      // Enable background refresh when screen refocuses
+      pollingInterval: 15000,
+      refetchOnFocus: true,
+    } as any);
+  const { data: resSnapshot } = useGetResourceSnapshotQuery(
+    resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
+    { skip: !campaignId || !resourceId } as any
   );
+  // Fallback for selected resource: if single-resource query is null, find it in campaign snapshots
+  const selectedResSnapshot: any | undefined =
+    resourceId && Array.isArray(snapshots)
+      ? (resSnapshot as any) ||
+        (snapshots as any).find((s: any) => s.resourceId === resourceId)
+      : undefined;
+  const [createJob, { isLoading: creating }] = useCreateCollectionJobMutation();
+  const { data: jobs } = useGetCollectionsByCampaignQuery(
+    { campaignId },
+    { skip: !campaignId }
+  );
+  const [startJob] = useStartCollectionJobMutation();
+  const [completeJob] = useCompleteCollectionJobMutation();
+  const [updateJob] = useUpdateCollectionJobMutation();
+  const [cancelJob] = useCancelCollectionJobMutation();
+
+  const [targetQty, setTargetQty] = useState("");
+  const [notes, setNotes] = useState("");
+  const [plannedStartAt, setPlannedStartAt] = useState<string | undefined>();
+  const [plannedEndAt, setPlannedEndAt] = useState<string | undefined>();
+  const [pickupLocationName, setPickupLocationName] = useState<string>("");
+  const [pickupAddress, setPickupAddress] = useState<string>("");
+  const [pickupContactName, setPickupContactName] = useState<string>("");
+  const [pickupContactPhone, setPickupContactPhone] = useState<string>("");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [noVolunteer, setNoVolunteer] = useState<boolean>(true);
+  const [volunteerPickerOpen, setVolunteerPickerOpen] = useState(false);
+  const [volunteerId, setVolunteerId] = useState<string | undefined>(undefined);
+  const volunteerOptions: Array<{ key: string; label: string }> = [];
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [editModal, setEditModal] = useState<{ open: boolean; job?: any }>({
+    open: false,
+  });
+  const [editTargetQty, setEditTargetQty] = useState<string>("");
+  const [editNotes, setEditNotes] = useState<string>("");
+  const [detailsModal, setDetailsModal] = useState<{
+    open: boolean;
+    job?: any;
+  }>({ open: false });
+  // Track if we already alerted for a completed resource to avoid repeat alerts
+  const [lastAlertedResourceId, setLastAlertedResourceId] = useState<
+    string | null
+  >(null);
+
+  // Details modal data fetch (must be at top level to respect Rules of Hooks)
+  const detailsJob: any | undefined = detailsModal.job;
+  const detailsJobId: string | undefined = detailsJob?._id;
+  const { data: detailsRecords = [] } = useGetCollectionJobRecordsQuery(
+    detailsJobId ? { campaignId, jobId: detailsJobId } : ({} as any),
+    { skip: !detailsModal.open || !detailsJobId }
+  );
+
+  const resourceOptions = useMemo(
+    () =>
+      (campaign?.resources || []).map((r) => ({
+        key: r.id,
+        label: `${r.name} (${r.unit})`,
+        unit: r.unit,
+        target: r.quantity,
+      })),
+    [campaign]
+  );
+
+  const collections = jobs || [];
+
+  // Remaining collection needed for selected resource (target - collected)
+  const unitLabel = resourceId
+    ? resourceOptions.find((r) => r.key === resourceId)?.unit
+    : "";
+  // Aggregate campaign snapshot sums
+  const campaignSum = React.useMemo(() => {
+    const toNum = (n: any) => (typeof n === "number" ? n : 0);
+    const sum = (key: string) =>
+      (Array.isArray(snapshots) ? snapshots : []).reduce(
+        (acc: number, s: any) => acc + toNum(s?.[key]),
+        0
+      );
+    return {
+      target: sum("targetQty"),
+      collected: sum("collectedQty"),
+      distributed: sum("distributedQty"),
+      available: sum("availableQty"),
+    };
+  }, [snapshots]);
+  const isSingleResourceCampaign = (campaign?.resources || []).length === 1;
+  // Use snapshot target when available; otherwise fall back to campaign-configured quantity
+  const configTargetForSelected = resourceId
+    ? Number(resourceOptions.find((r) => r.key === resourceId)?.target || 0)
+    : 0;
+  const snapshotTargetForSelected = Number(
+    (selectedResSnapshot as any)?.targetQty || 0
+  );
+  const effectiveTargetForSelected = resourceId
+    ? snapshotTargetForSelected > 0
+      ? snapshotTargetForSelected
+      : configTargetForSelected
+    : 0;
+  const effectiveCollectedForSelected = resourceId
+    ? typeof (selectedResSnapshot as any)?.collectedQty === "number"
+      ? Number((selectedResSnapshot as any)?.collectedQty)
+      : isSingleResourceCampaign
+      ? campaignSum.collected
+      : 0
+    : 0;
+  const remainingNeeded: number | undefined = resourceId
+    ? Math.max(effectiveTargetForSelected - effectiveCollectedForSelected, 0)
+    : undefined;
+  // Clamp targetQty if remaining shrinks due to live updates
+  useEffect(() => {
+    if (typeof remainingNeeded === "number" && targetQty) {
+      const num = Number(targetQty);
+      if (!isNaN(num) && num > remainingNeeded) {
+        setTargetQty(String(remainingNeeded));
+      }
+    }
+  }, [remainingNeeded]);
+
+  // Alert once when selecting a resource that is fully collected
+  useEffect(() => {
+    const name = resourceId
+      ? (resourceOptions.find((r) => r.key === resourceId)?.label || "").split(
+          " ("
+        )[0]
+      : "";
+    if (
+      resourceId &&
+      effectiveTargetForSelected > 0 &&
+      remainingNeeded === 0 &&
+      lastAlertedResourceId !== resourceId
+    ) {
+      Alert.alert(
+        "Collection Complete",
+        `Collections for ${
+          name || "this resource"
+        } are complete. Arrange distributions to locations.`
+      );
+      setLastAlertedResourceId(resourceId);
+    }
+  }, [resourceId, effectiveTargetForSelected, remainingNeeded]);
+
+  // Refresh snapshots when collections list changes
+  useEffect(() => {
+    if (refetchSnapshots) refetchSnapshots();
+  }, [collections]);
 
   const Badge = ({
     children,
@@ -128,11 +250,12 @@ export default function CampaignCollect() {
 
   const StatusBadge = ({ status }: { status: CollectionStatus }) => {
     const map: Record<CollectionStatus, { bg: string; fg: string }> = {
-      Collected: { bg: colors.mutedBackground, fg: colors.muted },
-      Processing: { bg: "#e0e7ff", fg: "#4338ca" },
-      Verified: { bg: "#e9d5ff", fg: "#6b21a8" },
-      Confirmed: { bg: "#e2e8f0", fg: "#0f172a" },
-    };
+      draft: { bg: colors.mutedBackground, fg: colors.muted },
+      scheduled: { bg: "#e0e7ff", fg: "#4338ca" },
+      in_progress: { bg: "#e9d5ff", fg: "#6b21a8" },
+      completed: { bg: "#dcfce7", fg: "#166534" },
+      cancelled: { bg: "#fee2e2", fg: "#991b1b" },
+    } as any;
     const s = map[status];
     return (
       <View
@@ -159,6 +282,70 @@ export default function CampaignCollect() {
           gap: spacing.lg,
         }}
       >
+        {/* Progress summary header */}
+        <ProgressHeader
+          title={
+            resourceId
+              ? `Progress · ${
+                  resourceOptions.find((r) => r.key === resourceId)?.label ||
+                  "Selected"
+                }`
+              : "Campaign Progress"
+          }
+          target={
+            resourceId
+              ? effectiveTargetForSelected
+              : (() => {
+                  const fromSnapshots = (
+                    Array.isArray(snapshots) ? snapshots : ([] as any[])
+                  ).reduce(
+                    (acc: number, s: any) => acc + (s.targetQty || 0),
+                    0
+                  );
+                  if (fromSnapshots > 0) return fromSnapshots;
+                  const fromConfig = (campaign?.resources || []).reduce(
+                    (acc: number, r: any) =>
+                      acc + (Number(r.quantity || 0) || 0),
+                    0
+                  );
+                  return fromConfig;
+                })()
+          }
+          collected={
+            resourceId
+              ? typeof (selectedResSnapshot as any)?.collectedQty === "number"
+                ? Number((selectedResSnapshot as any)?.collectedQty)
+                : isSingleResourceCampaign
+                ? campaignSum.collected
+                : 0
+              : campaignSum.collected
+          }
+          distributed={
+            resourceId
+              ? typeof (selectedResSnapshot as any)?.distributedQty === "number"
+                ? Number((selectedResSnapshot as any)?.distributedQty)
+                : isSingleResourceCampaign
+                ? campaignSum.distributed
+                : 0
+              : campaignSum.distributed
+          }
+          available={
+            resourceId
+              ? typeof (selectedResSnapshot as any)?.availableQty === "number"
+                ? Number((selectedResSnapshot as any)?.availableQty)
+                : isSingleResourceCampaign
+                ? campaignSum.available
+                : 0
+              : campaignSum.available
+          }
+          unitLabel={
+            resourceId
+              ? resourceOptions.find((r) => r.key === resourceId)?.unit
+              : ""
+          }
+          campaignId={campaignId}
+          requiredResources={campaign?.resources as any}
+        />
         {/* Title row */}
         <View
           style={{
@@ -168,7 +355,7 @@ export default function CampaignCollect() {
           }}
         >
           <Text style={[typography.h3]}>Collect Resources</Text>
-          <Badge variant="outline">4 Collected</Badge>
+          <Badge variant="outline">{collections.length} Jobs</Badge>
         </View>
 
         {/* Add New Collection */}
@@ -182,10 +369,10 @@ export default function CampaignCollect() {
             </Text>
           </CardHeader>
           <CardContent style={{ gap: spacing.md }}>
-            {/* Resource Type (select) */}
+            {/* Resource (campaign resource) */}
             <View>
               <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-                Resource Type
+                Resource
               </Text>
               <Pressable
                 onPress={() => setPickerOpen(true)}
@@ -203,10 +390,11 @@ export default function CampaignCollect() {
               >
                 <Text
                   style={{
-                    color: resourceType ? colors.cardForeground : colors.muted,
+                    color: resourceId ? colors.cardForeground : colors.muted,
                   }}
                 >
-                  {resourceType || "Select resource type"}
+                  {resourceOptions.find((r) => r.key === resourceId)?.label ||
+                    "Select resource"}
                 </Text>
                 <Ionicons
                   name="chevron-down-outline"
@@ -216,17 +404,108 @@ export default function CampaignCollect() {
               </Pressable>
             </View>
 
-            {/* Quantity */}
+            {/* Completed banner when fully collected */}
+            {resourceId &&
+              effectiveTargetForSelected > 0 &&
+              remainingNeeded === 0 && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginTop: spacing.sm,
+                    padding: spacing.sm,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: "#86efac",
+                    backgroundColor: "#dcfce7",
+                  }}
+                >
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={16}
+                    color="#166534"
+                  />
+                  <Text style={{ color: "#166534", flex: 1 }}>
+                    Collection complete for{" "}
+                    {
+                      (
+                        resourceOptions.find((r) => r.key === resourceId)
+                          ?.label || "this resource"
+                      ).split(" (")[0]
+                    }
+                    . Arrange distributions to locations.
+                  </Text>
+                </View>
+              )}
+
+            {/* Target Quantity */}
             <View>
+              {resourceId && (
+                <Text
+                  style={{ color: colors.muted, marginTop: 6, fontSize: 12 }}
+                >
+                  Max {effectiveTargetForSelected} {unitLabel || "units"} can be
+                  collected for this resource.
+                </Text>
+              )}
               <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-                Quantity/Amount
+                Target Quantity
               </Text>
+              {typeof remainingNeeded === "number" && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 6,
+                    padding: spacing.sm,
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.mutedBackground,
+                  }}
+                >
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={16}
+                    color={colors.muted}
+                  />
+                  <Text style={{ color: colors.muted, flex: 1 }}>
+                    Remaining needed: {remainingNeeded}
+                    {unitLabel ? ` ${unitLabel}` : ""}
+                  </Text>
+                </View>
+              )}
               <TextInput
-                value={quantity}
-                onChangeText={setQuantity}
+                value={targetQty}
+                onChangeText={(val) => {
+                  if (val === "") {
+                    setTargetQty("");
+                    return;
+                  }
+                  // keep numeric only
+                  const cleaned = val.replace(/[^0-9.]/g, "");
+                  let num = Number(cleaned);
+                  if (isNaN(num)) {
+                    setTargetQty("");
+                    return;
+                  }
+                  if (typeof remainingNeeded === "number") {
+                    num = Math.min(num, remainingNeeded);
+                  }
+                  setTargetQty(String(num));
+                }}
                 keyboardType="numeric"
                 placeholder="Enter quantity"
                 placeholderTextColor={colors.muted}
+                editable={
+                  !(
+                    typeof remainingNeeded === "number" &&
+                    remainingNeeded <= 0 &&
+                    !!resourceId
+                  )
+                }
                 style={{
                   height: 44,
                   borderRadius: 12,
@@ -235,52 +514,80 @@ export default function CampaignCollect() {
                   backgroundColor: colors.mutedBackground,
                   paddingHorizontal: spacing.md,
                   color: colors.cardForeground,
+                  opacity:
+                    typeof remainingNeeded === "number" &&
+                    remainingNeeded <= 0 &&
+                    !!resourceId
+                      ? 0.6
+                      : 1,
                 }}
               />
+              {typeof remainingNeeded === "number" && (
+                <Text
+                  style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}
+                >
+                  Max {remainingNeeded}
+                  {unitLabel ? ` ${unitLabel}` : ""} can be collected for this
+                  resource.
+                </Text>
+              )}
             </View>
 
-            {/* Location */}
+            {/* Volunteer assignment */}
             <View>
               <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-                Collection Location
+                Assigned Volunteer (optional)
               </Text>
-              <TextInput
-                value={location}
-                onChangeText={setLocation}
-                placeholder="Where was this collected?"
-                placeholderTextColor={colors.muted}
+              <Pressable
+                onPress={() => setNoVolunteer(!noVolunteer)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <Ionicons
+                  name={noVolunteer ? "checkbox-outline" : "square-outline"}
+                  size={18}
+                  color={noVolunteer ? colors.primary : colors.muted}
+                />
+                <Text style={{ color: colors.cardForeground }}>
+                  No volunteer (agent will collect)
+                </Text>
+              </Pressable>
+              <Pressable
+                disabled={noVolunteer}
+                onPress={() => setVolunteerPickerOpen(true)}
                 style={{
                   height: 44,
                   borderRadius: 12,
                   borderWidth: 1,
                   borderColor: colors.border,
-                  backgroundColor: colors.mutedBackground,
+                  backgroundColor: noVolunteer
+                    ? colors.background
+                    : colors.mutedBackground,
                   paddingHorizontal: spacing.md,
-                  color: colors.cardForeground,
+                  opacity: noVolunteer ? 0.6 : 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
                 }}
-              />
-            </View>
-
-            {/* Donor */}
-            <View>
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-                Donor Information (Optional)
-              </Text>
-              <TextInput
-                value={donor}
-                onChangeText={setDonor}
-                placeholder="Name or organization"
-                placeholderTextColor={colors.muted}
-                style={{
-                  height: 44,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  backgroundColor: colors.mutedBackground,
-                  paddingHorizontal: spacing.md,
-                  color: colors.cardForeground,
-                }}
-              />
+              >
+                <Text
+                  style={{
+                    color: volunteerId ? colors.cardForeground : colors.muted,
+                  }}
+                >
+                  {volunteerOptions.find((v) => v.key === volunteerId)?.label ||
+                    "Select volunteer"}
+                </Text>
+                <Ionicons
+                  name="chevron-down-outline"
+                  size={16}
+                  color={colors.muted}
+                />
+              </Pressable>
             </View>
 
             {/* Notes */}
@@ -309,29 +616,200 @@ export default function CampaignCollect() {
               />
             </View>
 
-            {/* Photo evidence */}
+            {/* Optional: Schedule */}
+            <View style={{ flexDirection: "row", gap: spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                  Planned Start
+                </Text>
+                <Pressable
+                  onPress={() => setShowStartPicker(true)}
+                  style={{
+                    height: 44,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.mutedBackground,
+                    paddingHorizontal: spacing.md,
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: plannedStartAt
+                        ? colors.cardForeground
+                        : colors.muted,
+                    }}
+                  >
+                    {plannedStartAt
+                      ? new Date(plannedStartAt).toLocaleDateString()
+                      : "YYYY-MM-DD"}
+                  </Text>
+                </Pressable>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                  Planned End
+                </Text>
+                <Pressable
+                  onPress={() => setShowEndPicker(true)}
+                  style={{
+                    height: 44,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.mutedBackground,
+                    paddingHorizontal: spacing.md,
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: plannedEndAt
+                        ? colors.cardForeground
+                        : colors.muted,
+                    }}
+                  >
+                    {plannedEndAt
+                      ? new Date(plannedEndAt).toLocaleDateString()
+                      : "YYYY-MM-DD"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Optional: Pickup details */}
             <View>
               <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-                Photo Evidence (Optional)
+                Pickup Details (Optional)
               </Text>
-              <Button
-                variant="outline"
-                style={{ width: "100%" }}
-                onPress={() => {}}
-              >
-                <Ionicons
-                  name="camera-outline"
-                  size={16}
-                  color={colors.muted}
+              <TextInput
+                value={pickupLocationName}
+                onChangeText={setPickupLocationName}
+                placeholder="Location name"
+                placeholderTextColor={colors.muted}
+                style={{
+                  height: 44,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.mutedBackground,
+                  paddingHorizontal: spacing.md,
+                  color: colors.cardForeground,
+                }}
+              />
+              <View style={{ height: spacing.sm }} />
+              <TextInput
+                value={pickupAddress}
+                onChangeText={setPickupAddress}
+                placeholder="Address"
+                placeholderTextColor={colors.muted}
+                style={{
+                  height: 44,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.mutedBackground,
+                  paddingHorizontal: spacing.md,
+                  color: colors.cardForeground,
+                }}
+              />
+              <View style={{ height: spacing.sm }} />
+              <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                <TextInput
+                  value={pickupContactName}
+                  onChangeText={setPickupContactName}
+                  placeholder="Contact name"
+                  placeholderTextColor={colors.muted}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.mutedBackground,
+                    paddingHorizontal: spacing.md,
+                    color: colors.cardForeground,
+                  }}
                 />
-                <Text style={{ color: colors.muted, marginLeft: 6 }}>
-                  Take Photo
-                </Text>
-              </Button>
+                <TextInput
+                  value={pickupContactPhone}
+                  onChangeText={setPickupContactPhone}
+                  placeholder="Contact phone"
+                  placeholderTextColor={colors.muted}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.mutedBackground,
+                    paddingHorizontal: spacing.md,
+                    color: colors.cardForeground,
+                  }}
+                />
+              </View>
             </View>
 
             {/* Submit */}
-            <Button onPress={() => {}} style={{ width: "100%" }}>
+            <Button
+              disabled={
+                !resourceId ||
+                !targetQty ||
+                creating ||
+                (typeof remainingNeeded === "number" && remainingNeeded <= 0)
+              }
+              onPress={async () => {
+                if (!resourceId || !targetQty) return;
+                try {
+                  await createJob({
+                    campaignId,
+                    resourceId,
+                    targetQty: Number(targetQty),
+                    assignedVolunteerId: noVolunteer
+                      ? undefined
+                      : volunteerId || undefined,
+                    notes: notes || undefined,
+                    schedule:
+                      plannedStartAt || plannedEndAt
+                        ? { plannedStartAt, plannedEndAt }
+                        : undefined,
+                    pickup:
+                      pickupLocationName ||
+                      pickupAddress ||
+                      pickupContactName ||
+                      pickupContactPhone
+                        ? {
+                            locationName: pickupLocationName || undefined,
+                            address: pickupAddress || undefined,
+                            contactName: pickupContactName || undefined,
+                            contactPhone: pickupContactPhone || undefined,
+                          }
+                        : undefined,
+                  }).unwrap();
+                  Alert.alert("Success", "Collection job created.");
+                  // Reset fields on success
+                  setResourceId(undefined);
+                  setTargetQty("");
+                  setNotes("");
+                  setNoVolunteer(true);
+                  setVolunteerId(undefined);
+                  setPlannedStartAt(undefined);
+                  setPlannedEndAt(undefined);
+                  setPickupLocationName("");
+                  setPickupAddress("");
+                  setPickupContactName("");
+                  setPickupContactPhone("");
+                } catch (e: any) {
+                  console.error("create collection error", e);
+                  Alert.alert(
+                    "Error",
+                    e?.data?.message || "Failed to create job"
+                  );
+                }
+              }}
+              style={{ width: "100%" }}
+            >
               <Ionicons name="add" size={16} color={colors.primaryForeground} />
               <Text
                 style={{
@@ -340,7 +818,7 @@ export default function CampaignCollect() {
                   marginLeft: 6,
                 }}
               >
-                Submit Collection
+                Create Collection Job
               </Text>
             </Button>
           </CardContent>
@@ -357,9 +835,9 @@ export default function CampaignCollect() {
             </Text>
           </CardHeader>
           <CardContent style={{ gap: spacing.md }}>
-            {collections.map((c) => (
+            {collections.map((c: any) => (
               <View
-                key={c.id}
+                key={c._id}
                 style={{
                   borderWidth: 1,
                   borderColor: colors.border,
@@ -377,9 +855,11 @@ export default function CampaignCollect() {
                   }}
                 >
                   <View>
-                    <Text style={{ fontWeight: "700" }}>{c.resource}</Text>
+                    <Text style={{ fontWeight: "700" }}>
+                      {c.resourceSnapshot?.name || c.resourceId}
+                    </Text>
                     <Text style={{ color: colors.muted, fontSize: 12 }}>
-                      Qty: {c.quantity}
+                      Target: {c.targetQty} {c.resourceSnapshot?.unit || ""}
                     </Text>
                   </View>
                   <StatusBadge status={c.status} />
@@ -387,13 +867,39 @@ export default function CampaignCollect() {
 
                 {/* Details */}
                 <View style={{ gap: 6 }}>
-                  <Row icon="location-outline" text={c.location} />
-                  <Row icon="person-outline" text={`Donor: ${c.donor}`} />
+                  {!!c.pickup?.locationName && (
+                    <Row icon="location-outline" text={c.pickup.locationName} />
+                  )}
                   <Row
-                    icon="calendar-outline"
-                    text={`Collected: ${c.collectionDate}`}
+                    icon="person-outline"
+                    text={`Volunteer: ${
+                      c.assignedVolunteerId ? c.assignedVolunteerId : "Agent"
+                    }`}
                   />
-                  <Row icon="people-outline" text={`By: ${c.collectedBy}`} />
+                  {!!c.schedule?.plannedStartAt && (
+                    <Row
+                      icon="calendar-outline"
+                      text={`Planned: ${new Date(
+                        c.schedule.plannedStartAt
+                      ).toLocaleDateString()}`}
+                    />
+                  )}
+                  {!!c.schedule?.startedAt && (
+                    <Row
+                      icon="time-outline"
+                      text={`Started: ${new Date(
+                        c.schedule.startedAt
+                      ).toLocaleString()}`}
+                    />
+                  )}
+                  {!!c.schedule?.completedAt && (
+                    <Row
+                      icon="checkmark-circle-outline"
+                      text={`Completed: ${new Date(
+                        c.schedule.completedAt
+                      ).toLocaleString()}`}
+                    />
+                  )}
                   {!!c.notes && (
                     <Row icon="clipboard-outline" text={c.notes} multiline />
                   )}
@@ -403,12 +909,90 @@ export default function CampaignCollect() {
                 <View
                   style={{
                     flexDirection: "row",
+                    flexWrap: "wrap",
                     gap: spacing.sm,
                     marginTop: spacing.xs,
                   }}
                 >
-                  {c.status === "Processing" && (
-                    <Button size="sm" style={{ flex: 1 }}>
+                  {(c.status === "scheduled" || c.status === "draft") && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      style={{ width: "48%" }}
+                      onPress={async () => {
+                        try {
+                          await startJob({ campaignId, jobId: c._id }).unwrap();
+                          Alert.alert("Started", "Collection started");
+                        } catch (e: any) {
+                          Alert.alert(
+                            "Error",
+                            e?.data?.message || "Failed to start job"
+                          );
+                        }
+                      }}
+                    >
+                      <Ionicons
+                        name="play-circle-outline"
+                        size={14}
+                        color={colors.cardForeground}
+                      />
+                      <Text
+                        style={{
+                          color: colors.cardForeground,
+                          fontWeight: "600",
+                          marginLeft: 6,
+                        }}
+                      >
+                        Start
+                      </Text>
+                    </Button>
+                  )}
+                  {c.status === "draft" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      style={{ width: "48%" }}
+                      onPress={() => {
+                        setEditTargetQty(String(c.targetQty || ""));
+                        setEditNotes(c.notes || "");
+                        setEditModal({ open: true, job: c });
+                      }}
+                    >
+                      <Ionicons
+                        name="create-outline"
+                        size={14}
+                        color={colors.cardForeground}
+                      />
+                      <Text
+                        style={{
+                          color: colors.cardForeground,
+                          fontWeight: "600",
+                          marginLeft: 6,
+                        }}
+                      >
+                        Edit
+                      </Text>
+                    </Button>
+                  )}
+                  {c.status === "in_progress" && (
+                    <Button
+                      size="sm"
+                      style={{ width: "48%" }}
+                      onPress={async () => {
+                        try {
+                          await completeJob({
+                            campaignId,
+                            jobId: c._id,
+                          }).unwrap();
+                          Alert.alert("Completed", "Collection completed");
+                        } catch (e: any) {
+                          Alert.alert(
+                            "Error",
+                            e?.data?.message || "Failed to complete job"
+                          );
+                        }
+                      }}
+                    >
                       <Ionicons
                         name="checkmark-circle-outline"
                         size={14}
@@ -421,14 +1005,32 @@ export default function CampaignCollect() {
                           marginLeft: 6,
                         }}
                       >
-                        Verify
+                        Complete
                       </Text>
                     </Button>
                   )}
-                  {c.status === "Collected" && (
-                    <Button size="sm" variant="outline" style={{ flex: 1 }}>
+                  {(c.status === "draft" || c.status === "scheduled") && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      style={{ width: "48%" }}
+                      onPress={async () => {
+                        try {
+                          await cancelJob({
+                            campaignId,
+                            jobId: c._id,
+                          }).unwrap();
+                          Alert.alert("Cancelled", "Collection cancelled");
+                        } catch (e: any) {
+                          Alert.alert(
+                            "Error",
+                            e?.data?.message || "Failed to cancel job"
+                          );
+                        }
+                      }}
+                    >
                       <Ionicons
-                        name="cube-outline"
+                        name="close-circle-outline"
                         size={14}
                         color={colors.cardForeground}
                       />
@@ -439,13 +1041,18 @@ export default function CampaignCollect() {
                           marginLeft: 6,
                         }}
                       >
-                        Process
+                        Cancel
                       </Text>
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" style={{ flex: 1 }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    style={{ width: "48%" }}
+                    onPress={() => setDetailsModal({ open: true, job: c })}
+                  >
                     <Ionicons
-                      name="camera-outline"
+                      name="information-circle-outline"
                       size={14}
                       color={colors.cardForeground}
                     />
@@ -465,6 +1072,204 @@ export default function CampaignCollect() {
           </CardContent>
         </Card>
       </ScrollView>
+
+      {/* View Details modal (mocked volunteer progress) */}
+      <Modal
+        visible={detailsModal.open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDetailsModal({ open: false })}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(15,23,42,0.15)",
+            padding: spacing.lg,
+            justifyContent: "center",
+          }}
+          onPress={() => setDetailsModal({ open: false })}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing.lg,
+              gap: spacing.md,
+            }}
+          >
+            {(() => {
+              const job = detailsModal.job;
+              if (!job)
+                return <Text style={{ color: colors.muted }}>No details</Text>;
+              // Use records fetched via top-level hook
+              type R = {
+                volunteerId?: string;
+                volunteerName?: string;
+                amountSubmitted: number;
+                completedQtyAfter: number;
+                targetQtySnapshot: number;
+                recordedAt: string;
+                note?: string;
+              };
+              // Group by volunteer for display (simple group)
+              const byVolunteer: Record<
+                string,
+                { name: string; entries: { time: string; qty: number }[] }
+              > = {};
+              (detailsRecords as R[]).forEach((r) => {
+                const id = r.volunteerId || "unknown";
+                const name = r.volunteerName || r.volunteerId || "Unknown";
+                if (!byVolunteer[id]) byVolunteer[id] = { name, entries: [] };
+                byVolunteer[id].entries.push({
+                  time: new Date(r.recordedAt).toLocaleString(),
+                  qty: r.amountSubmitted,
+                });
+              });
+              const groups = Object.entries(byVolunteer);
+              const totalTarget = job.targetQty || 0;
+              const totalCollected = (detailsRecords as R[]).reduce(
+                (sum, r) => sum + (r.amountSubmitted || 0),
+                0
+              );
+              const percent =
+                totalTarget > 0
+                  ? Math.min(
+                      100,
+                      Math.round((totalCollected / totalTarget) * 100)
+                    )
+                  : 0;
+              return (
+                <View style={{ gap: spacing.md }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <View>
+                      <Text style={[typography.h3, { fontSize: 18 }]}>
+                        {job.resourceSnapshot?.name || job.resourceId}
+                      </Text>
+                      <Text style={{ color: colors.muted, marginTop: 2 }}>
+                        Target: {totalTarget} {job.resourceSnapshot?.unit || ""}
+                      </Text>
+                    </View>
+                    <StatusBadge status={job.status} />
+                  </View>
+                  {/* Progress bar */}
+                  <View style={{ gap: 6 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Text style={{ color: colors.muted, fontSize: 12 }}>
+                        Progress
+                      </Text>
+                      <Text style={{ color: colors.muted, fontSize: 12 }}>
+                        {totalCollected}/{totalTarget}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        height: 10,
+                        backgroundColor: colors.mutedBackground,
+                        borderRadius: 999,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <View
+                        style={{
+                          height: 10,
+                          width: `${percent}%`,
+                          backgroundColor: colors.primary,
+                        }}
+                      />
+                    </View>
+                  </View>
+                  {/* Volunteers list */}
+                  <View style={{ gap: spacing.sm }}>
+                    {groups.length === 0 && (
+                      <Text style={{ color: colors.muted }}>
+                        No volunteer made any collections yet.
+                      </Text>
+                    )}
+                    {groups.map(([id, v]) => (
+                      <View
+                        key={id}
+                        style={{
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          borderRadius: 12,
+                          padding: spacing.md,
+                          gap: 6,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Ionicons
+                            name="person-circle-outline"
+                            size={16}
+                            color={colors.muted}
+                          />
+                          <Text style={{ fontWeight: "700" }}>{v.name}</Text>
+                        </View>
+                        {v.entries.map((e, idx) => (
+                          <View
+                            key={idx}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <Ionicons
+                              name="time-outline"
+                              size={14}
+                              color={colors.muted}
+                            />
+                            <Text
+                              style={{ color: colors.cardForeground, flex: 1 }}
+                            >
+                              {e.time} — {e.qty}{" "}
+                              {job.resourceSnapshot?.unit || ""}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+                  <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                    <Button
+                      variant="outline"
+                      style={{ flex: 1 }}
+                      onPress={() => setDetailsModal({ open: false })}
+                    >
+                      <Text
+                        style={{
+                          color: colors.cardForeground,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Close
+                      </Text>
+                    </Button>
+                  </View>
+                </View>
+              );
+            })()}
+          </View>
+        </Pressable>
+      </Modal>
 
       {/* Resource type picker */}
       <Modal
@@ -495,7 +1300,7 @@ export default function CampaignCollect() {
               <Pressable
                 key={opt.key}
                 onPress={() => {
-                  setResourceType(opt.label);
+                  setResourceId(opt.key);
                   setPickerOpen(false);
                 }}
                 style={{
@@ -506,7 +1311,7 @@ export default function CampaignCollect() {
                 }}
               >
                 <Text style={{ flex: 1 }}>{opt.label}</Text>
-                {resourceType === opt.label && (
+                {resourceId === opt.key && (
                   <Ionicons name="checkmark" size={18} color={colors.primary} />
                 )}
               </Pressable>
@@ -514,6 +1319,217 @@ export default function CampaignCollect() {
           </View>
         </Pressable>
       </Modal>
+
+      {/* Volunteer picker */}
+      <Modal
+        visible={volunteerPickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setVolunteerPickerOpen(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(15,23,42,0.15)",
+            padding: spacing.lg,
+            justifyContent: "center",
+          }}
+          onPress={() => setVolunteerPickerOpen(false)}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing.md,
+            }}
+          >
+            {volunteerOptions.length === 0 ? (
+              <Text style={{ color: colors.muted }}>
+                No volunteers available
+              </Text>
+            ) : (
+              volunteerOptions.map((opt) => (
+                <Pressable
+                  key={opt.key}
+                  onPress={() => {
+                    setVolunteerId(opt.key);
+                    setVolunteerPickerOpen(false);
+                  }}
+                  style={{
+                    paddingVertical: spacing.md,
+                    paddingHorizontal: spacing.sm,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ flex: 1 }}>{opt.label}</Text>
+                  {volunteerId === opt.key && (
+                    <Ionicons
+                      name="checkmark"
+                      size={18}
+                      color={colors.primary}
+                    />
+                  )}
+                </Pressable>
+              ))
+            )}
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Date pickers */}
+      {showStartPicker && (
+        <DateTimePicker
+          value={plannedStartAt ? new Date(plannedStartAt) : new Date()}
+          mode="date"
+          display="default"
+          onChange={(_, date) => {
+            setShowStartPicker(false);
+            if (date) setPlannedStartAt(date.toISOString());
+          }}
+        />
+      )}
+      {/* Edit draft modal */}
+      <Modal
+        visible={editModal.open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditModal({ open: false })}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(15,23,42,0.15)",
+            padding: spacing.lg,
+            justifyContent: "center",
+          }}
+          onPress={() => setEditModal({ open: false })}
+        >
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing.md,
+            }}
+          >
+            <Text
+              style={[
+                typography.h3,
+                { fontSize: 18, marginBottom: spacing.sm },
+              ]}
+            >
+              Edit Collection (Draft)
+            </Text>
+            <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              Target Quantity
+            </Text>
+            <TextInput
+              value={editTargetQty}
+              onChangeText={setEditTargetQty}
+              keyboardType="numeric"
+              placeholder="Enter quantity"
+              placeholderTextColor={colors.muted}
+              style={{
+                height: 44,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.mutedBackground,
+                paddingHorizontal: spacing.md,
+                color: colors.cardForeground,
+              }}
+            />
+            <View style={{ height: spacing.sm }} />
+            <Text style={{ fontWeight: "600", marginBottom: 6 }}>Notes</Text>
+            <TextInput
+              value={editNotes}
+              onChangeText={setEditNotes}
+              placeholder="Any additional details..."
+              placeholderTextColor={colors.muted}
+              multiline
+              numberOfLines={3}
+              style={{
+                minHeight: 72,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.mutedBackground,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+                textAlignVertical: "top",
+                color: colors.cardForeground,
+              }}
+            />
+            <View style={{ height: spacing.md }} />
+            <View style={{ flexDirection: "row", gap: spacing.sm }}>
+              <Button
+                variant="outline"
+                style={{ flex: 1 }}
+                onPress={() => setEditModal({ open: false })}
+              >
+                <Text
+                  style={{ color: colors.cardForeground, fontWeight: "600" }}
+                >
+                  Cancel
+                </Text>
+              </Button>
+              <Button
+                style={{ flex: 1 }}
+                onPress={async () => {
+                  if (!editModal.job) return;
+                  try {
+                    const patch: any = {};
+                    if (editTargetQty) patch.targetQty = Number(editTargetQty);
+                    patch.notes = editNotes || undefined;
+                    await updateJob({
+                      campaignId,
+                      jobId: editModal.job._id,
+                      patch,
+                    }).unwrap();
+                    Alert.alert("Updated", "Draft collection updated");
+                    setEditModal({ open: false });
+                  } catch (e: any) {
+                    Alert.alert(
+                      "Error",
+                      e?.data?.message || "Failed to update draft"
+                    );
+                  }
+                }}
+              >
+                <Ionicons
+                  name="save-outline"
+                  size={14}
+                  color={colors.primaryForeground}
+                />
+                <Text
+                  style={{
+                    color: colors.primaryForeground,
+                    fontWeight: "700",
+                    marginLeft: 6,
+                  }}
+                >
+                  Save
+                </Text>
+              </Button>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
+      {showEndPicker && (
+        <DateTimePicker
+          value={plannedEndAt ? new Date(plannedEndAt) : new Date()}
+          mode="date"
+          display="default"
+          onChange={(_, date) => {
+            setShowEndPicker(false);
+            if (date) setPlannedEndAt(date.toISOString());
+          }}
+        />
+      )}
     </View>
   );
 }
