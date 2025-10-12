@@ -8,20 +8,30 @@ import { Button } from "../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { logout } from "../../src/api/auth";
+import {
+  useGetMeQuery,
+  useGetCampaignsQuery,
+} from "@/src/store/services/campaignsApi";
 
 export default function VolunteerProfile() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  // Mock profile data – replace with API values later
-  const volunteerProfile = {
-    name: "Alice Johnson",
-    phone: "+1234567893",
-    campaigns: ["Winter Relief 2024"],
-    agent: "John Doe",
-    tasksCompleted: 8,
-    hoursVolunteered: 24,
-  };
+  // Real user profile from backend
+  const { data: me } = useGetMeQuery();
+  const fullName =
+    (me as any)?.user?.fullName || (me as any)?.fullName || "Volunteer";
+  const email = (me as any)?.user?.email || (me as any)?.email || "";
+  const role = (me as any)?.user?.role || (me as any)?.role || "volunteer";
+  // If backend later supports volunteer assignments, wire here. For now, 0.
+  const { data: assignedCampaigns = [] } = useGetCampaignsQuery({
+    assigned: true,
+  });
+  const activeCampaignsCount = Array.isArray(assignedCampaigns)
+    ? assignedCampaigns.filter(
+        (c: any) => String(c.status).toLowerCase() === "active"
+      ).length
+    : 0;
 
   const handleLogout = async () => {
     try {
@@ -103,10 +113,10 @@ export default function VolunteerProfile() {
                   color: colors.cardForeground,
                 }}
               >
-                {volunteerProfile.name}
+                {fullName}
               </Text>
               <Text style={{ color: colors.muted, marginTop: 2 }}>
-                {volunteerProfile.phone}
+                {email || "—"}
               </Text>
             </View>
           </View>
@@ -128,7 +138,7 @@ export default function VolunteerProfile() {
                 Active Campaigns
               </Text>
               <Text style={{ fontWeight: "700", color: colors.cardForeground }}>
-                {volunteerProfile.campaigns.length}
+                {activeCampaignsCount}
               </Text>
             </View>
 
@@ -147,7 +157,7 @@ export default function VolunteerProfile() {
                 Tasks Completed
               </Text>
               <Text style={{ fontWeight: "700", color: colors.cardForeground }}>
-                {volunteerProfile.tasksCompleted}
+                0
               </Text>
             </View>
 
@@ -166,7 +176,7 @@ export default function VolunteerProfile() {
                 Hours Volunteered
               </Text>
               <Text style={{ fontWeight: "700", color: colors.cardForeground }}>
-                {volunteerProfile.hoursVolunteered}h
+                0h
               </Text>
             </View>
 
@@ -183,7 +193,7 @@ export default function VolunteerProfile() {
                 Current Agent
               </Text>
               <Text style={{ fontWeight: "700", color: colors.cardForeground }}>
-                {volunteerProfile.agent}
+                —
               </Text>
             </View>
           </View>
@@ -226,7 +236,13 @@ export default function VolunteerProfile() {
 
       {/* Buttons */}
       <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
-        <Button variant="outline" style={{ width: "100%" }}>
+        <Button
+          variant="outline"
+          style={{ width: "100%" }}
+          onPress={() =>
+            Alert.alert("Coming soon", "Edit profile is under development.")
+          }
+        >
           Edit Profile
         </Button>
         <Button
