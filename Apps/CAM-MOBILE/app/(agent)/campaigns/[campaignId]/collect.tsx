@@ -152,15 +152,31 @@ export default function CampaignCollect() {
     { skip: !detailsModal.open || !detailsJobId }
   );
 
+  // Helpers to read resource config safely across backend variants
+  const getResourceTarget = React.useCallback((r: any) => {
+    const v =
+      r?.quantity ??
+      r?.targetQty ??
+      r?.targetQuantity ??
+      r?.requiredQty ??
+      r?.requiredQuantity ??
+      0;
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  }, []);
+  const getResourceUnit = React.useCallback((r: any) => {
+    return r?.unit ?? r?.measureUnit ?? r?.units ?? "";
+  }, []);
+
   const resourceOptions = useMemo(
     () =>
       (campaign?.resources || []).map((r) => ({
         key: String(r.id),
         label: `${r.name} (${r.unit})`,
-        unit: r.unit,
-        target: r.quantity,
+        unit: getResourceUnit(r),
+        target: getResourceTarget(r),
       })),
-    [campaign]
+    [campaign, getResourceTarget, getResourceUnit]
   );
 
   const collections = jobs || [];
@@ -186,14 +202,12 @@ export default function CampaignCollect() {
   }, [snapshots]);
 
   // Compute effective campaign target with a reliable fallback to campaign config when snapshots are empty
-  const campaignTargetFromConfig = React.useMemo(
-    () =>
-      (campaign?.resources || []).reduce(
-        (acc: number, r: any) => acc + (Number(r.quantity || 0) || 0),
-        0
-      ),
-    [campaign]
-  );
+  const campaignTargetFromConfig = React.useMemo(() => {
+    return (campaign?.resources || []).reduce(
+      (acc: number, r: any) => acc + getResourceTarget(r),
+      0
+    );
+  }, [campaign, getResourceTarget]);
   const campaignTargetEffective =
     campaignSum.target > 0 ? campaignSum.target : campaignTargetFromConfig;
   const isSingleResourceCampaign = (campaign?.resources || []).length === 1;
