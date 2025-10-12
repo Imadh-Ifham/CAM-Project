@@ -30,6 +30,25 @@ export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
     }
   };
 
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return "Not set";
+
+    try {
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) return "Invalid date";
+
+      // Format as: Jan 15, 2024
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return "Invalid date";
+    }
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "disaster-relief":
@@ -180,7 +199,7 @@ export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
               <Text style={styles.statLabel}>Start Date</Text>
             </View>
             <Text style={styles.dateValue}>
-              {String((campaign as any)?.startDate ?? "")}
+              {formatDate((campaign as any)?.startDate)}
             </Text>
           </View>
 
@@ -190,7 +209,7 @@ export default function CampaignOverview({ campaign }: CampaignOverviewProps) {
               <Text style={styles.statLabel}>End Date</Text>
             </View>
             <Text style={styles.dateValue}>
-              {String((campaign as any)?.endDate ?? "")}
+              {formatDate((campaign as any)?.endDate)}
             </Text>
           </View>
         </View>

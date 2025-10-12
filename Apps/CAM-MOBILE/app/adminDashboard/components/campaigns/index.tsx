@@ -205,36 +205,43 @@ export default function CampaignsIndex() {
 
       {/* Campaign Stats */}
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{campaignList?.length || 0}</Text>
-          <Text style={styles.statLabel}>Total Campaigns</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>
-            {campaignList?.filter((c: any) => c.status === "active").length ||
-              0}
-          </Text>
-          <Text style={styles.statLabel}>Active</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>
-            {campaignList?.reduce(
-              (sum: number, c: any) => sum + c.volunteers,
-              0
-            ) || 0}
-          </Text>
-          <Text style={styles.statLabel}>Volunteers</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>
-            {formatCurrency(
-              campaignList?.reduce(
-                (sum: number, c: any) => sum + c.budget,
+        {/* First row: Total Campaigns, Active, Volunteers */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{campaignList?.length || 0}</Text>
+            <Text style={styles.statLabel}>Total Campaigns</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>
+              {campaignList?.filter((c: any) => c.status === "active").length ||
+                0}
+            </Text>
+            <Text style={styles.statLabel}>Active</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>
+              {campaignList?.reduce(
+                (sum: number, c: any) => sum + c.volunteers,
                 0
-              ) || 0
-            )}
-          </Text>
-          <Text style={styles.statLabel}>Total Budget</Text>
+              ) || 0}
+            </Text>
+            <Text style={styles.statLabel}>Volunteers</Text>
+          </View>
+        </View>
+
+        {/* Second row: Total Budget */}
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, styles.budgetCard]}>
+            <Text style={styles.statNumber}>
+              {formatCurrency(
+                campaignList?.reduce(
+                  (sum: number, c: any) => sum + c.budget,
+                  0
+                ) || 0
+              )}
+            </Text>
+            <Text style={styles.statLabel}>Total Budget</Text>
+          </View>
         </View>
       </View>
 
@@ -501,12 +508,15 @@ const styles = StyleSheet.create({
     color: "#000",
   },
   statsContainer: {
-    flexDirection: "row",
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: "#1a1a1a",
     borderBottomWidth: 1,
     borderBottomColor: "#333",
+    gap: 12,
+  },
+  statsRow: {
+    flexDirection: "row",
     gap: 12,
   },
   statCard: {
@@ -515,6 +525,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     alignItems: "center",
+  },
+  budgetCard: {
+    backgroundColor: "#00ff9420",
+    borderWidth: 1,
+    borderColor: "#00ff94",
   },
   statNumber: {
     color: "#00ff94",

@@ -128,7 +128,7 @@ export default function OnStartScreen() {
                   width: 48,
                   height: 48,
                   borderRadius: 24,
-                  backgroundColor: colors.primary,
+                  backgroundColor: colors.green,
                   marginBottom: spacing.sm,
                   alignItems: "center",
                   justifyContent: "center",
