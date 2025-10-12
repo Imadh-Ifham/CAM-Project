@@ -167,6 +167,7 @@ export const validateCampaignId = (
   next: NextFunction
 ): void => {
   const { campaignId } = req.params;
+  console.log("Validating campaign ID:", campaignId);
 
   if (
     !campaignId ||

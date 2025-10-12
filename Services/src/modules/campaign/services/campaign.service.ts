@@ -252,7 +252,13 @@ class CampaignService {
       // Build query object
       const query: any = {};
 
-      if (filters.status) query.status = filters.status;
+      // By default, exclude cancelled campaigns unless status is explicitly provided
+      if (filters.status) {
+        query.status = filters.status;
+      } else {
+        query.status = { $ne: "cancelled" };
+      }
+
       if (filters.type) query.type = filters.type;
       if (filters.priority) query.priority = filters.priority;
       if (filters.district) query.district = new RegExp(filters.district, "i");
