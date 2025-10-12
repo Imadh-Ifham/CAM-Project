@@ -76,10 +76,24 @@ export default function CampaignDistribution() {
     { campaignId },
     { skip: !campaignId }
   );
+  // Strictly scope distributions to current campaign to avoid bleed across routes
+  const campaignResourceIds = useMemo(() => {
+    const set = new Set<string>();
+    (campaign?.resources || []).forEach((r: any) => r?.id && set.add(r.id));
+    return set;
+  }, [campaign]);
+  const filteredDistributions = useMemo(() => {
+    const cid = String(campaignId || "");
+    return (distributions as any[]).filter(
+      (d: any) =>
+        String(d?.campaignId || "") === cid ||
+        (d?.resourceId && campaignResourceIds.has(String(d.resourceId)))
+    );
+  }, [distributions, campaignId, campaignResourceIds]);
   // Refresh snapshots when distributions list changes
   useEffect(() => {
     if (refetchSnapshots) refetchSnapshots();
-  }, [distributions]);
+  }, [filteredDistributions]);
   const [createJob, { isLoading: creating }] =
     useCreateDistributionJobMutation();
   const [startJob] = useStartDistributionJobMutation();
@@ -113,6 +127,12 @@ export default function CampaignDistribution() {
   const [lastAlertedDistResourceId, setLastAlertedDistResourceId] = useState<
     string | null
   >(null);
+  // Reset UI state on campaign change to prevent carryover
+  useEffect(() => {
+    setDetailsModal({ open: false });
+    setLastAlertedDistResourceId(null);
+    setResourceId(undefined);
+  }, [campaignId]);
 
   // Options
   const resourceOptions = useMemo(
@@ -373,7 +393,7 @@ export default function CampaignDistribution() {
         >
           <Text style={[typography.h3]}>Distribute Resources</Text>
           <OutlineBadge color={colors.blue}>
-            {distributions.length} Jobs
+            {filteredDistributions.length} Jobs
           </OutlineBadge>
         </View>
 
@@ -870,7 +890,7 @@ export default function CampaignDistribution() {
             </Text>
           </CardHeader>
           <CardContent style={{ gap: spacing.md }}>
-            {distributions.map((d: any) => (
+            {filteredDistributions.map((d: any) => (
               <View
                 key={d._id}
                 style={{
