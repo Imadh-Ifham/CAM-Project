@@ -53,7 +53,7 @@ export type Campaign = {
   location: string;
   startDate: string;
   endDate: string;
-  volunteers: number;
+  volunteers: string[];
   targetVolunteers: number;
   progress: number;
   budget: number;

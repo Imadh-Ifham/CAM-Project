@@ -8,7 +8,7 @@ export type Campaign = {
   location: string;
   startDate: string;
   endDate: string;
-  volunteers: number;
+  volunteers: string[];
   targetVolunteers: number;
   progress: number;
   budget: number;
@@ -72,7 +72,7 @@ export const mockCampaignDetail: Campaign = {
   location: "Colombo, Western Province",
   startDate: "2024-01-15",
   endDate: "2024-02-15",
-  volunteers: 25,
+  volunteers: ["volunteer1", "volunteer2", "volunteer3"],
   targetVolunteers: 50,
   progress: 75,
   budget: 150000,

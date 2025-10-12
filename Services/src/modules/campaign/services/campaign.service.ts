@@ -83,7 +83,7 @@ class CampaignService {
       priority: campaign.priority,
       location: campaign.location || `${campaign.city}, ${campaign.district}`,
       startDate: campaign.startDate.toISOString(),
-      volunteers: campaign.volunteers || 0,
+      volunteers: campaign.volunteers.length || 0,
       progress: campaign.progress || 0,
       budget: campaign.estimatedBudget || 0,
     };

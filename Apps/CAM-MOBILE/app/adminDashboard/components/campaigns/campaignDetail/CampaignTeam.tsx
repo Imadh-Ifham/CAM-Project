@@ -87,7 +87,7 @@ export default function CampaignTeam({ campaign }: CampaignTeamProps) {
 
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: "#fbbf24" }]}>
-              {campaign.targetVolunteers - campaign.volunteers}
+              {campaign.targetVolunteers - campaign.volunteers.length}
             </Text>
             <Text style={styles.statLabel}>Needed</Text>
           </View>
