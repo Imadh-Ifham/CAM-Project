@@ -13,10 +13,10 @@ export const Card: React.FC<Props> = ({ children, style }) => {
     <View
       style={[
         {
-          backgroundColor: colors.card,
+          backgroundColor: "#1a1a1a",
           borderRadius: 16,
           borderWidth: 1,
-          borderColor: colors.border,
+          borderColor: "#333",
         },
         style,
       ]}

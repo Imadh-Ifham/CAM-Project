@@ -102,7 +102,7 @@ export function ProgressHeader({
     <View
       style={{
         height: 8,
-        backgroundColor: colors.mutedBackground,
+        backgroundColor: "#2a2a2a",
         borderRadius: 999,
       }}
     >
@@ -130,13 +130,11 @@ export function ProgressHeader({
   }) => (
     <View style={{ gap: 6 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        <Text style={{ fontWeight: "600", color: colors.cardForeground }}>
-          {label}
-        </Text>
-        <Text style={{ color: colors.muted }}>{pct}%</Text>
+        <Text style={{ fontWeight: "600", color: "#fff" }}>{label}</Text>
+        <Text style={{ color: "#888" }}>{pct}%</Text>
       </View>
       <Bar value={pct} color={color} />
-      <Text style={{ color: colors.muted, fontSize: 12 }}>{stat}</Text>
+      <Text style={{ color: "#888", fontSize: 12 }}>{stat}</Text>
     </View>
   );
 
@@ -145,9 +143,9 @@ export function ProgressHeader({
       style={{
         padding: spacing.md,
         borderRadius: 16,
-        backgroundColor: colors.card,
+        backgroundColor: "#1a1a1a",
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: "#333",
         gap: spacing.md,
       }}
     >
@@ -159,9 +157,11 @@ export function ProgressHeader({
           alignItems: "center",
         }}
       >
-        <Text style={[typography.h3, { fontSize: 16 }]}>{title}</Text>
+        <Text style={[typography.h3, { fontSize: 16, color: "#fff" }]}>
+          {title}
+        </Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text style={{ color: colors.muted }}>
+          <Text style={{ color: "#888" }}>
             Target: {Tdisplay}
             {unitLabel ? ` ${unitLabel}` : ""}
           </Text>
@@ -176,7 +176,7 @@ export function ProgressHeader({
           unitLabel ? ` ${unitLabel}` : ""
         } • Remaining to collect ${remainingToCollect}`}
         pct={pctCollected}
-        color={colors.primary}
+        color="#3b82f6"
       />
 
       {/* Distribution progress */}
@@ -204,10 +204,7 @@ export function ProgressHeader({
       {/* Optional lot health */}
       {lotCounts ? (
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-          <Chip
-            label={`Lots available: ${lotCounts.available}`}
-            bg={colors.green}
-          />
+          <Chip label={`Lots available: ${lotCounts.available}`} bg="#10b981" />
           <Chip label={`Lots partial: ${lotCounts.partial}`} bg="#f59e0b" />
           <Chip label={`Lots depleted: ${lotCounts.depleted}`} bg="#ef4444" />
         </View>
@@ -238,13 +235,13 @@ function TargetButton({
           paddingVertical: 6,
           borderRadius: 10,
           borderWidth: 1,
-          borderColor: colors.border,
-          backgroundColor: colors.mutedBackground,
+          borderColor: "#444",
+          backgroundColor: "#2a2a2a",
         }}
       >
         <Text
           style={{
-            color: colors.cardForeground,
+            color: "#fff",
             fontWeight: "600",
             fontSize: 12,
           }}
@@ -261,7 +258,7 @@ function TargetButton({
         <Pressable
           style={{
             flex: 1,
-            backgroundColor: "rgba(15,23,42,0.15)",
+            backgroundColor: "rgba(0,0,0,0.5)",
             padding: spacing.lg,
             justifyContent: "center",
           }}
@@ -269,15 +266,15 @@ function TargetButton({
         >
           <View
             style={{
-              backgroundColor: colors.card,
+              backgroundColor: "#1a1a1a",
               borderRadius: 16,
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: "#333",
               padding: spacing.lg,
               gap: spacing.md,
             }}
           >
-            <Text style={[typography.h3, { fontSize: 16 }]}>
+            <Text style={[typography.h3, { fontSize: 16, color: "#fff" }]}>
               Required Resources
             </Text>
             <View style={{ gap: 8 }}>
@@ -289,17 +286,17 @@ function TargetButton({
                     justifyContent: "space-between",
                   }}
                 >
-                  <Text style={{ fontWeight: "600" }}>{r.name}</Text>
-                  <Text style={{ color: colors.muted }}>
+                  <Text style={{ fontWeight: "600", color: "#fff" }}>
+                    {r.name}
+                  </Text>
+                  <Text style={{ color: "#888" }}>
                     {Number(r.quantity || 0)}
                     {r.unit ? ` ${r.unit}` : ""}
                   </Text>
                 </View>
               ))}
               {resources.length === 0 && (
-                <Text style={{ color: colors.muted }}>
-                  No resources configured.
-                </Text>
+                <Text style={{ color: "#888" }}>No resources configured.</Text>
               )}
             </View>
             <View style={{ flexDirection: "row", gap: spacing.sm }}>
@@ -310,15 +307,11 @@ function TargetButton({
                   paddingVertical: 10,
                   borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: "#444",
                   alignItems: "center",
                 }}
               >
-                <Text
-                  style={{ color: colors.cardForeground, fontWeight: "600" }}
-                >
-                  Close
-                </Text>
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Close</Text>
               </Pressable>
             </View>
           </View>

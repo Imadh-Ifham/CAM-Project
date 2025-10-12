@@ -458,7 +458,9 @@ export default function CampaignDistribution() {
           <CardContent style={{ gap: spacing.md }}>
             {/* Resource to Distribute */}
             <View>
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              <Text
+                style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+              >
                 Resource
               </Text>
               <Pressable
@@ -534,7 +536,9 @@ export default function CampaignDistribution() {
             {/* Quantity & Date */}
             <View style={{ flexDirection: "row", gap: spacing.md }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                <Text
+                  style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+                >
                   Target Quantity
                 </Text>
                 {didManuallySelectResource && resourceId && (
@@ -615,7 +619,9 @@ export default function CampaignDistribution() {
                 )}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                <Text
+                  style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+                >
                   Planned Start
                 </Text>
                 <Pressable
@@ -672,7 +678,9 @@ export default function CampaignDistribution() {
             {/* Planned End */}
             <View style={{ flexDirection: "row", gap: spacing.md }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                <Text
+                  style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+                >
                   Planned End
                 </Text>
                 <Pressable
@@ -704,7 +712,9 @@ export default function CampaignDistribution() {
 
             {/* Destination */}
             <View>
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              <Text
+                style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+              >
                 Destination Details (Optional)
               </Text>
               <TextInput
@@ -742,7 +752,9 @@ export default function CampaignDistribution() {
 
             {/* Recipient */}
             <View>
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              <Text
+                style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+              >
                 Recipient Contact
               </Text>
               <TextInput
@@ -780,7 +792,9 @@ export default function CampaignDistribution() {
 
             {/* Assign Volunteer */}
             <View>
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              <Text
+                style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+              >
                 Assigned Volunteer (optional)
               </Text>
               <Pressable
@@ -837,7 +851,9 @@ export default function CampaignDistribution() {
 
             {/* Instructions */}
             <View>
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              <Text
+                style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+              >
                 Delivery Instructions
               </Text>
               <TextInput
@@ -976,7 +992,7 @@ export default function CampaignDistribution() {
                   }}
                 >
                   <View>
-                    <Text style={{ fontWeight: "700" }}>
+                    <Text style={{ fontWeight: "700", color: "#fff" }}>
                       {d.resourceSnapshot?.name || d.resourceId}
                     </Text>
                     <Text style={{ color: colors.muted, fontSize: 12 }}>

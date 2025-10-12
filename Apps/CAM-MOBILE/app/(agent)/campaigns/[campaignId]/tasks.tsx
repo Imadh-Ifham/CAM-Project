@@ -196,7 +196,14 @@ export default function CampaignTasks() {
                   }}
                 >
                   <View style={{ flex: 1, paddingRight: spacing.md }}>
-                    <Text style={{ fontWeight: "700" }}>{t.title}</Text>
+                    <Text
+                      style={{
+                        fontWeight: "700",
+                        color: colors.cardForeground,
+                      }}
+                    >
+                      {t.title}
+                    </Text>
                     <Text style={{ color: colors.muted, fontSize: 12 }}>
                       {t.description}
                     </Text>
@@ -323,7 +330,13 @@ export default function CampaignTasks() {
 
               {/* Assignee */}
               <View>
-                <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                <Text
+                  style={{
+                    fontWeight: "600",
+                    marginBottom: 6,
+                    color: colors.cardForeground,
+                  }}
+                >
                   Assign to Volunteer
                 </Text>
                 <Pressable
@@ -358,7 +371,13 @@ export default function CampaignTasks() {
               {/* Priority & Type */}
               <View style={{ flexDirection: "row", gap: spacing.md }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                  <Text
+                    style={{
+                      fontWeight: "600",
+                      marginBottom: 6,
+                      color: colors.cardForeground,
+                    }}
+                  >
                     Priority
                   </Text>
                   <Pressable

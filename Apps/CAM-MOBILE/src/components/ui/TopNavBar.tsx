@@ -69,10 +69,10 @@ export const TopNavBar: React.FC<Props> = ({
     width: highlightWidth.value,
     top: 0,
     bottom: 0,
-    backgroundColor: colors.card,
+    backgroundColor: "#1a1a1a",
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#444",
   }));
 
   const onTabLayout = (idx: number, e: LayoutChangeEvent) => {
@@ -91,10 +91,10 @@ export const TopNavBar: React.FC<Props> = ({
     <View style={{ paddingHorizontal: padH, paddingTop: padT }}>
       <View
         style={{
-          backgroundColor: colors.mutedBackground,
+          backgroundColor: "#2a2a2a",
           borderRadius: 999,
           borderWidth: 1,
-          borderColor: colors.border,
+          borderColor: "#444",
           padding: spacing.xs,
           flexDirection: "row",
           justifyContent: "space-between",
@@ -132,7 +132,7 @@ export const TopNavBar: React.FC<Props> = ({
               <Text
                 style={{
                   fontWeight: active ? "700" : "500",
-                  color: active ? colors.cardForeground : colors.muted,
+                  color: active ? "#fff" : "#888",
                 }}
                 numberOfLines={1}
                 ellipsizeMode="tail"

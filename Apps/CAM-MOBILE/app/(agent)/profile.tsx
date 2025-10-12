@@ -41,20 +41,20 @@ export default function AgentProfile() {
         justifyContent: "space-between",
         paddingVertical: spacing.md,
         borderBottomWidth: showBorder ? 1 : 0,
-        borderColor: colors.border,
+        borderColor: "#333",
       }}
     >
       <Text
         style={{
           fontSize: 14,
           fontWeight: "600",
-          color: colors.cardForeground,
+          color: "#fff",
         }}
       >
         {label}
       </Text>
       {typeof value === "string" || typeof value === "number" ? (
-        <Text style={{ fontSize: 14, color: colors.muted }}>{value}</Text>
+        <Text style={{ fontSize: 14, color: "#888" }}>{value}</Text>
       ) : (
         <View>{value}</View>
       )}
@@ -86,7 +86,7 @@ export default function AgentProfile() {
     <View
       style={{
         height: 8,
-        backgroundColor: colors.mutedBackground,
+        backgroundColor: "#333",
         borderRadius: 999,
         overflow: "hidden",
       }}
@@ -112,7 +112,7 @@ export default function AgentProfile() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: "#0f0f0f" }}>
       <ScrollView
         contentContainerStyle={{
           padding: spacing.lg,
@@ -128,12 +128,19 @@ export default function AgentProfile() {
             marginBottom: spacing.md,
           }}
         >
-          <Text style={[typography.h2]}>Agent Profile</Text>
+          <Text style={[typography.h2, { color: "#fff" }]}>Agent Profile</Text>
           <VerifiedBadge />
         </View>
 
         {/* Profile header card */}
-        <Card style={{ borderRadius: 20 }}>
+        <Card
+          style={{
+            borderRadius: 20,
+            backgroundColor: "#1a1a1a",
+            borderWidth: 1,
+            borderColor: "#333",
+          }}
+        >
           <CardContent style={{ padding: spacing.lg }}>
             <View
               style={{
@@ -160,12 +167,12 @@ export default function AgentProfile() {
                   style={{
                     fontSize: 20,
                     fontWeight: "700",
-                    color: colors.cardForeground,
+                    color: "#fff",
                   }}
                 >
                   {agent.name}
                 </Text>
-                <Text style={{ color: colors.muted, marginTop: 2 }}>
+                <Text style={{ color: "#888", marginTop: 2 }}>
                   {agent.phone}
                 </Text>
                 <View
@@ -195,7 +202,7 @@ export default function AgentProfile() {
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: colors.mutedBackground,
+                  backgroundColor: "#2a2a2a",
                   borderRadius: 12,
                   padding: spacing.md,
                   alignItems: "center",
@@ -205,21 +212,19 @@ export default function AgentProfile() {
                   style={{
                     fontSize: 22,
                     fontWeight: "800",
-                    color: colors.green,
+                    color: "#10b981",
                   }}
                 >
                   {agent.totalCollected}
                 </Text>
-                <Text
-                  style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}
-                >
+                <Text style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
                   Resources Collected
                 </Text>
               </View>
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: colors.mutedBackground,
+                  backgroundColor: "#2a2a2a",
                   borderRadius: 12,
                   padding: spacing.md,
                   alignItems: "center",
@@ -229,14 +234,12 @@ export default function AgentProfile() {
                   style={{
                     fontSize: 22,
                     fontWeight: "800",
-                    color: colors.blue,
+                    color: "#3b82f6",
                   }}
                 >
                   {agent.deliveriesMade}
                 </Text>
-                <Text
-                  style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}
-                >
+                <Text style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
                   Deliveries Made
                 </Text>
               </View>
@@ -245,9 +248,19 @@ export default function AgentProfile() {
         </Card>
 
         {/* Agent Information */}
-        <Card style={{ borderRadius: 20, marginTop: spacing.lg }}>
+        <Card
+          style={{
+            borderRadius: 20,
+            marginTop: spacing.lg,
+            backgroundColor: "#1a1a1a",
+            borderWidth: 1,
+            borderColor: "#333",
+          }}
+        >
           <CardHeader>
-            <Text style={[typography.h3]}>Agent Information</Text>
+            <Text style={[typography.h3, { color: "#fff" }]}>
+              Agent Information
+            </Text>
           </CardHeader>
           <CardContent style={{ paddingTop: 0 }}>
             <Row label="Agent ID" value={agent.id} />
@@ -267,9 +280,19 @@ export default function AgentProfile() {
         </Card>
 
         {/* Performance Statistics */}
-        <Card style={{ borderRadius: 20, marginTop: spacing.lg }}>
+        <Card
+          style={{
+            borderRadius: 20,
+            marginTop: spacing.lg,
+            backgroundColor: "#1a1a1a",
+            borderWidth: 1,
+            borderColor: "#333",
+          }}
+        >
           <CardHeader>
-            <Text style={[typography.h3]}>Performance Statistics</Text>
+            <Text style={[typography.h3, { color: "#fff" }]}>
+              Performance Statistics
+            </Text>
           </CardHeader>
           <CardContent>
             <View style={{ marginBottom: spacing.md }}>
@@ -280,16 +303,10 @@ export default function AgentProfile() {
                   marginBottom: spacing.xs,
                 }}
               >
-                <Text style={{ color: colors.cardForeground }}>
-                  Task Completion Rate
-                </Text>
-                <Text
-                  style={{ fontWeight: "700", color: colors.cardForeground }}
-                >
-                  92%
-                </Text>
+                <Text style={{ color: "#fff" }}>Task Completion Rate</Text>
+                <Text style={{ fontWeight: "700", color: "#fff" }}>92%</Text>
               </View>
-              <Progress percent={92} color={colors.green} />
+              <Progress percent={92} color="#10b981" />
             </View>
             <View style={{ marginBottom: spacing.md }}>
               <View
@@ -299,16 +316,10 @@ export default function AgentProfile() {
                   marginBottom: spacing.xs,
                 }}
               >
-                <Text style={{ color: colors.cardForeground }}>
-                  On-Time Delivery Rate
-                </Text>
-                <Text
-                  style={{ fontWeight: "700", color: colors.cardForeground }}
-                >
-                  88%
-                </Text>
+                <Text style={{ color: "#fff" }}>On-Time Delivery Rate</Text>
+                <Text style={{ fontWeight: "700", color: "#fff" }}>88%</Text>
               </View>
-              <Progress percent={88} color={colors.blue} />
+              <Progress percent={88} color="#3b82f6" />
             </View>
             <View>
               <View
@@ -318,14 +329,8 @@ export default function AgentProfile() {
                   marginBottom: spacing.xs,
                 }}
               >
-                <Text style={{ color: colors.cardForeground }}>
-                  Community Impact Score
-                </Text>
-                <Text
-                  style={{ fontWeight: "700", color: colors.cardForeground }}
-                >
-                  95%
-                </Text>
+                <Text style={{ color: "#fff" }}>Community Impact Score</Text>
+                <Text style={{ fontWeight: "700", color: "#fff" }}>95%</Text>
               </View>
               <Progress percent={95} color="#a855f7" />
             </View>
@@ -333,7 +338,7 @@ export default function AgentProfile() {
             {/* Recent Achievements */}
             <View
               style={{
-                backgroundColor: colors.mutedBackground,
+                backgroundColor: "#2a2a2a",
                 borderRadius: 12,
                 padding: spacing.md,
                 marginTop: spacing.lg,
@@ -344,6 +349,7 @@ export default function AgentProfile() {
                   fontWeight: "700",
                   marginBottom: spacing.sm,
                   fontSize: 14,
+                  color: "#fff",
                 }}
               >
                 Recent Achievements
@@ -352,24 +358,16 @@ export default function AgentProfile() {
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
                 >
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={16}
-                    color={colors.green}
-                  />
-                  <Text style={{ color: colors.cardForeground, fontSize: 12 }}>
+                  <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+                  <Text style={{ color: "#fff", fontSize: 12 }}>
                     Collected 500+ resources this month
                   </Text>
                 </View>
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
                 >
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={16}
-                    color={colors.blue}
-                  />
-                  <Text style={{ color: colors.cardForeground, fontSize: 12 }}>
+                  <Ionicons name="checkmark-circle" size={16} color="#3b82f6" />
+                  <Text style={{ color: "#fff", fontSize: 12 }}>
                     100% on-time deliveries this week
                   </Text>
                 </View>
@@ -377,7 +375,7 @@ export default function AgentProfile() {
                   style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
                 >
                   <Ionicons name="checkmark-circle" size={16} color="#a855f7" />
-                  <Text style={{ color: colors.cardForeground, fontSize: 12 }}>
+                  <Text style={{ color: "#fff", fontSize: 12 }}>
                     Top performing agent in Winter Relief
                   </Text>
                 </View>
@@ -387,77 +385,87 @@ export default function AgentProfile() {
         </Card>
 
         {/* Campaign History */}
-        <Card style={{ borderRadius: 20, marginTop: spacing.lg }}>
+        <Card
+          style={{
+            borderRadius: 20,
+            marginTop: spacing.lg,
+            backgroundColor: "#1a1a1a",
+            borderWidth: 1,
+            borderColor: "#333",
+          }}
+        >
           <CardHeader>
-            <Text style={[typography.h3]}>Campaign History</Text>
+            <Text style={[typography.h3, { color: "#fff" }]}>
+              Campaign History
+            </Text>
           </CardHeader>
           <CardContent style={{ gap: spacing.md }}>
             <View
               style={{
                 borderLeftWidth: 3,
-                borderLeftColor: colors.green,
+                borderLeftColor: "#10b981",
                 paddingLeft: spacing.md,
               }}
             >
               <Text
                 style={{
                   fontWeight: "700",
-                  color: colors.cardForeground,
+                  color: "#fff",
                   fontSize: 14,
                 }}
               >
                 Winter Relief 2024
               </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>
+              <Text style={{ color: "#888", fontSize: 12 }}>
                 Active Campaign
               </Text>
-              <Text style={{ color: colors.green, fontSize: 12 }}>
+              <Text style={{ color: "#10b981", fontSize: 12 }}>
                 450 resources collected
               </Text>
             </View>
             <View
               style={{
                 borderLeftWidth: 3,
-                borderLeftColor: colors.border,
+                borderLeftColor: "#555",
                 paddingLeft: spacing.md,
               }}
             >
               <Text
                 style={{
                   fontWeight: "700",
-                  color: colors.cardForeground,
+                  color: "#fff",
                   fontSize: 14,
                 }}
               >
                 Emergency Food Drive
               </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>
+              <Text style={{ color: "#888", fontSize: 12 }}>
                 Completed Dec 2023
               </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>
+              <Text style={{ color: "#888", fontSize: 12 }}>
                 320 resources distributed
               </Text>
             </View>
             <View
               style={{
                 borderLeftWidth: 3,
-                borderLeftColor: colors.border,
+                borderLeftColor: "#555",
                 paddingLeft: spacing.md,
               }}
             >
               <Text
                 style={{
                   fontWeight: "700",
-                  color: colors.cardForeground,
+                  color: "#fff",
                   fontSize: 14,
                 }}
               >
                 Back to School Support
               </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>
+              <Text style={{ color: "#888", fontSize: 12 }}>
                 Completed Aug 2023
               </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>
+              <Text style={{ color: "#888", fontSize: 12 }}>
                 280 items delivered
               </Text>
             </View>
@@ -465,47 +473,60 @@ export default function AgentProfile() {
         </Card>
 
         {/* Account Settings */}
-        <Card style={{ borderRadius: 20, marginTop: spacing.lg }}>
+        <Card
+          style={{
+            borderRadius: 20,
+            marginTop: spacing.lg,
+            backgroundColor: "#1a1a1a",
+            borderWidth: 1,
+            borderColor: "#333",
+          }}
+        >
           <CardHeader>
-            <Text style={[typography.h3]}>Account Settings</Text>
+            <Text style={[typography.h3, { color: "#fff" }]}>
+              Account Settings
+            </Text>
           </CardHeader>
           <CardContent style={{ gap: spacing.md }}>
             <Button
               variant="outline"
-              style={{ justifyContent: "flex-start", height: 50 }}
+              style={{
+                justifyContent: "flex-start",
+                height: 50,
+                borderColor: "#444",
+                backgroundColor: "#2a2a2a",
+              }}
             >
-              <Ionicons
-                name="person-outline"
-                size={18}
-                color={colors.cardForeground}
-              />
-              <Text style={{ color: colors.cardForeground, fontWeight: "600" }}>
+              <Ionicons name="person-outline" size={18} color="#fff" />
+              <Text style={{ color: "#fff", fontWeight: "600" }}>
                 Edit Profile Information
               </Text>
             </Button>
             <Button
               variant="outline"
-              style={{ justifyContent: "flex-start", height: 50 }}
+              style={{
+                justifyContent: "flex-start",
+                height: 50,
+                borderColor: "#444",
+                backgroundColor: "#2a2a2a",
+              }}
             >
-              <Ionicons
-                name="notifications-outline"
-                size={18}
-                color={colors.cardForeground}
-              />
-              <Text style={{ color: colors.cardForeground, fontWeight: "600" }}>
+              <Ionicons name="notifications-outline" size={18} color="#fff" />
+              <Text style={{ color: "#fff", fontWeight: "600" }}>
                 Notification Preferences
               </Text>
             </Button>
             <Button
               variant="outline"
-              style={{ justifyContent: "flex-start", height: 50 }}
+              style={{
+                justifyContent: "flex-start",
+                height: 50,
+                borderColor: "#444",
+                backgroundColor: "#2a2a2a",
+              }}
             >
-              <Ionicons
-                name="call-outline"
-                size={18}
-                color={colors.cardForeground}
-              />
-              <Text style={{ color: colors.cardForeground, fontWeight: "600" }}>
+              <Ionicons name="call-outline" size={18} color="#fff" />
+              <Text style={{ color: "#fff", fontWeight: "600" }}>
                 Contact Support
               </Text>
             </Button>
@@ -516,16 +537,12 @@ export default function AgentProfile() {
               style={{
                 justifyContent: "flex-start",
                 height: 50,
-                borderColor: "#fecaca",
-                backgroundColor: "#fff1f2",
+                borderColor: "#dc2626",
+                backgroundColor: "#2a1a1a",
               }}
             >
-              <Ionicons
-                name="log-out-outline"
-                size={18}
-                color={colors.destructive}
-              />
-              <Text style={{ color: colors.destructive, fontWeight: "700" }}>
+              <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+              <Text style={{ color: "#ef4444", fontWeight: "700" }}>
                 LOGOUT
               </Text>
             </Button>
@@ -534,10 +551,10 @@ export default function AgentProfile() {
 
         {/* App Version */}
         <View style={{ alignItems: "center", paddingVertical: spacing.lg }}>
-          <Text style={{ fontSize: 12, color: colors.muted }}>
+          <Text style={{ fontSize: 12, color: "#666" }}>
             CAM Agent App v1.0.0
           </Text>
-          <Text style={{ fontSize: 12, color: colors.muted }}>
+          <Text style={{ fontSize: 12, color: "#666" }}>
             © 2024 Community Aid Map
           </Text>
         </View>

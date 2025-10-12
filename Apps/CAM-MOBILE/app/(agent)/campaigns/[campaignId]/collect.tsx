@@ -290,15 +290,15 @@ export default function CampaignCollect() {
     variant?: "green" | "blue" | "yellow" | "purple" | "gray" | "outline";
   }) => {
     const styleMap = {
-      green: { backgroundColor: colors.green, color: "#fff" },
+      green: { backgroundColor: "#10b981", color: "#fff" },
       blue: { backgroundColor: "#3b82f6", color: "#fff" },
       yellow: { backgroundColor: "#f59e0b", color: "#fff" },
       purple: { backgroundColor: "#a855f7", color: "#fff" },
-      gray: { backgroundColor: colors.mutedBackground, color: colors.muted },
+      gray: { backgroundColor: "#2a2a2a", color: "#888" },
       outline: {
         backgroundColor: "transparent",
-        color: "#16a34a",
-        borderColor: "#16a34a",
+        color: "#10b981",
+        borderColor: "#10b981",
         borderWidth: 1,
       },
     } as const;
@@ -347,7 +347,7 @@ export default function CampaignCollect() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: "#0f0f0f" }}>
       <ScrollView
         contentContainerStyle={{
           padding: spacing.lg,
@@ -430,7 +430,13 @@ export default function CampaignCollect() {
           <CardContent style={{ gap: spacing.md }}>
             {/* Resource (campaign resource) */}
             <View>
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              <Text
+                style={{
+                  fontWeight: "600",
+                  marginBottom: 6,
+                  color: "#fff",
+                }}
+              >
                 Resource
               </Text>
               <Pressable
@@ -515,7 +521,9 @@ export default function CampaignCollect() {
                   {unitLabel ? ` ${unitLabel}` : ""}
                 </Text>
               )}
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              <Text
+                style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+              >
                 Target Quantity
               </Text>
               {didManuallySelectResource &&
@@ -603,7 +611,9 @@ export default function CampaignCollect() {
 
             {/* Volunteer assignment */}
             <View>
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              <Text
+                style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+              >
                 Assigned Volunteer (optional)
               </Text>
               <Pressable
@@ -660,7 +670,9 @@ export default function CampaignCollect() {
 
             {/* Notes */}
             <View>
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              <Text
+                style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+              >
                 Additional Notes (Optional)
               </Text>
               <TextInput
@@ -687,7 +699,9 @@ export default function CampaignCollect() {
             {/* Optional: Schedule */}
             <View style={{ flexDirection: "row", gap: spacing.sm }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                <Text
+                  style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+                >
                   Planned Start
                 </Text>
                 <Pressable
@@ -716,7 +730,9 @@ export default function CampaignCollect() {
                 </Pressable>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+                <Text
+                  style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+                >
                   Planned End
                 </Text>
                 <Pressable
@@ -748,7 +764,9 @@ export default function CampaignCollect() {
 
             {/* Optional: Pickup details */}
             <View>
-              <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+              <Text
+                style={{ fontWeight: "600", marginBottom: 6, color: "#fff" }}
+              >
                 Pickup Details (Optional)
               </Text>
               <TextInput
@@ -928,7 +946,7 @@ export default function CampaignCollect() {
                   }}
                 >
                   <View>
-                    <Text style={{ fontWeight: "700" }}>
+                    <Text style={{ fontWeight: "700", color: "#fff" }}>
                       {c.resourceSnapshot?.name || c.resourceId}
                     </Text>
                     <Text style={{ color: colors.muted, fontSize: 12 }}>

@@ -423,7 +423,7 @@ export default function Campaigns() {
         ? { bg: "#ecfdf5", fg: "#16a34a", br: "#a7f3d0" }
         : label === "Paused"
         ? { bg: "#eef2ff", fg: "#2563eb", br: "#bfdbfe" }
-        : { bg: "#f3f4f6", fg: "#6b7280", br: colors.border };
+        : { bg: "#2a2a2a", fg: "#888", br: "#444" };
     return (
       <View
         style={{
@@ -488,24 +488,24 @@ export default function Campaigns() {
   }> = ({ label, count, active, tone = "slate", onPress }) => {
     const tones = {
       slate: {
-        bg: active ? "#1f2937" : "#f8fafc",
-        fg: active ? "#ffffff" : "#1f2937",
-        br: active ? "#1f2937" : colors.border,
+        bg: active ? "#1f2937" : "#2a2a2a",
+        fg: active ? "#ffffff" : "#fff",
+        br: active ? "#1f2937" : "#444",
       },
       blue: {
-        bg: active ? "#2563eb" : "#eef2ff",
-        fg: active ? "#ffffff" : "#2563eb",
-        br: active ? "#2563eb" : "#bfdbfe",
+        bg: active ? "#2563eb" : "#1a2332",
+        fg: active ? "#ffffff" : "#3b82f6",
+        br: active ? "#2563eb" : "#3b82f6",
       },
       green: {
-        bg: active ? "#16a34a" : "#ecfdf5",
-        fg: active ? "#ffffff" : "#16a34a",
-        br: active ? "#16a34a" : "#a7f3d0",
+        bg: active ? "#16a34a" : "#1a2b1f",
+        fg: active ? "#ffffff" : "#10b981",
+        br: active ? "#16a34a" : "#10b981",
       },
       gray: {
-        bg: active ? "#6b7280" : "#f3f4f6",
-        fg: active ? "#ffffff" : "#6b7280",
-        br: active ? "#6b7280" : colors.border,
+        bg: active ? "#6b7280" : "#2a2a2a",
+        fg: active ? "#ffffff" : "#888",
+        br: active ? "#6b7280" : "#444",
       },
     } as const;
     const t = tones[tone];
@@ -530,7 +530,7 @@ export default function Campaigns() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: "#0f0f0f" }}>
       <ScrollView
         contentContainerStyle={{
           padding: spacing.lg,
@@ -544,12 +544,12 @@ export default function Campaigns() {
             style={{
               padding: spacing.md,
               borderRadius: 12,
-              backgroundColor: colors.mutedBackground,
+              backgroundColor: "#2a2a2a",
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: "#333",
             }}
           >
-            <Text style={{ color: colors.muted }}>Loading campaigns…</Text>
+            <Text style={{ color: "#888" }}>Loading campaigns…</Text>
           </View>
         )}
         {(activeError || pausedError || completedError) && (
@@ -557,12 +557,12 @@ export default function Campaigns() {
             style={{
               padding: spacing.md,
               borderRadius: 12,
-              backgroundColor: "#fee2e2",
+              backgroundColor: "#2a1a1a",
               borderWidth: 1,
-              borderColor: "#ef4444",
+              borderColor: "#dc2626",
             }}
           >
-            <Text style={{ color: "#991b1b", fontWeight: "700" }}>
+            <Text style={{ color: "#ef4444", fontWeight: "700" }}>
               Failed to load campaigns
             </Text>
             {(() => {
@@ -573,13 +573,13 @@ export default function Campaigns() {
                     ? err.data
                     : JSON.stringify(err?.data);
                 return (
-                  <Text style={{ color: "#991b1b" }}>
+                  <Text style={{ color: "#ef4444" }}>
                     {`Status ${err.status}${detail ? `: ${detail}` : ""}`}
                   </Text>
                 );
               }
               return (
-                <Text style={{ color: "#991b1b" }}>
+                <Text style={{ color: "#ef4444" }}>
                   {JSON.stringify(err) || "Unknown error"}
                 </Text>
               );
@@ -594,18 +594,18 @@ export default function Campaigns() {
             alignItems: "center",
           }}
         >
-          <Text style={[typography.h2]}>Campaigns</Text>
+          <Text style={[typography.h2, { color: "#fff" }]}>Campaigns</Text>
           <View
             style={{
-              backgroundColor: colors.accent,
+              backgroundColor: "#2a2a2a",
               borderRadius: 999,
               paddingHorizontal: 10,
               paddingVertical: 4,
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: "#333",
             }}
           >
-            <Text style={{ color: colors.muted, fontSize: 12 }}>
+            <Text style={{ color: "#888", fontSize: 12 }}>
               {(activeData?.length || 0) +
                 (pausedData?.length || 0) +
                 (completedData?.length || 0)}{" "}
@@ -615,9 +615,18 @@ export default function Campaigns() {
         </View>
 
         {/* Filter block */}
-        <Card style={{ borderRadius: 16 }}>
+        <Card
+          style={{
+            borderRadius: 16,
+            backgroundColor: "#1a1a1a",
+            borderWidth: 1,
+            borderColor: "#333",
+          }}
+        >
           <CardHeader>
-            <Text style={[typography.h3]}>Filter Campaigns</Text>
+            <Text style={[typography.h3, { color: "#fff" }]}>
+              Filter Campaigns
+            </Text>
           </CardHeader>
           <CardContent>
             <View
@@ -688,16 +697,16 @@ export default function Campaigns() {
               borderRadius: 12,
               alignItems: "center",
               borderWidth: 1,
-              borderColor: colors.border,
-              backgroundColor: colors.card,
+              borderColor: "#333",
+              backgroundColor: "#1a1a1a",
             }}
           >
             <Ionicons
               name="information-circle-outline"
               size={22}
-              color={colors.muted}
+              color="#888"
             />
-            <Text style={{ color: colors.muted, marginTop: 8 }}>
+            <Text style={{ color: "#888", marginTop: 8 }}>
               No campaigns found for the selected filter
             </Text>
           </View>
@@ -705,7 +714,12 @@ export default function Campaigns() {
         {list.map((c, idx) => (
           <Card
             key={`${c.id || "unknown"}-${idx}`}
-            style={{ borderRadius: 16 }}
+            style={{
+              borderRadius: 16,
+              backgroundColor: "#1a1a1a",
+              borderWidth: 1,
+              borderColor: "#333",
+            }}
           >
             <CardContent>
               {/* Header row */}
@@ -717,7 +731,9 @@ export default function Campaigns() {
                   marginBottom: spacing.sm,
                 }}
               >
-                <Text style={{ fontWeight: "700", fontSize: 16 }}>
+                <Text
+                  style={{ fontWeight: "700", fontSize: 16, color: "#fff" }}
+                >
                   {c.name}
                 </Text>
                 {statusPill(
@@ -728,7 +744,7 @@ export default function Campaigns() {
                     : "Completed"
                 )}
               </View>
-              <Text style={{ color: colors.muted, marginBottom: spacing.md }}>
+              <Text style={{ color: "#888", marginBottom: spacing.md }}>
                 {c.description}
               </Text>
 
@@ -737,22 +753,14 @@ export default function Campaigns() {
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
                 >
-                  <Ionicons
-                    name="location-outline"
-                    size={16}
-                    color={colors.muted}
-                  />
-                  <Text>{c.location}</Text>
+                  <Ionicons name="location-outline" size={16} color="#888" />
+                  <Text style={{ color: "#888" }}>{c.location}</Text>
                 </View>
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
                 >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={16}
-                    color={colors.muted}
-                  />
-                  <Text>
+                  <Ionicons name="calendar-outline" size={16} color="#888" />
+                  <Text style={{ color: "#888" }}>
                     {(() => {
                       const sd = c.startDate ? new Date(c.startDate) : null;
                       const ed = c.endDate ? new Date(c.endDate) : null;
@@ -771,29 +779,27 @@ export default function Campaigns() {
                 <View
                   style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
                 >
-                  <Ionicons
-                    name="people-outline"
-                    size={16}
-                    color={colors.muted}
-                  />
-                  <Text>{c.volunteersNeeded} volunteers needed</Text>
+                  <Ionicons name="people-outline" size={16} color="#888" />
+                  <Text style={{ color: "#888" }}>
+                    {c.volunteersNeeded} volunteers needed
+                  </Text>
                 </View>
               </View>
 
               {/* Resource needed bloc */}
               <View
                 style={{
-                  backgroundColor: colors.mutedBackground,
+                  backgroundColor: "#2a2a2a",
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: "#444",
                   padding: spacing.md,
                   marginBottom: spacing.md,
                 }}
               >
                 <Text
                   style={{
-                    color: colors.muted,
+                    color: "#888",
                     fontSize: 12,
                     marginBottom: spacing.sm,
                   }}
@@ -833,9 +839,9 @@ export default function Campaigns() {
                           <Ionicons
                             name="cube-outline"
                             size={14}
-                            color={colors.cardForeground}
+                            color="#fff"
                           />
-                          <Text style={{ fontSize: 12 }}>
+                          <Text style={{ fontSize: 12, color: "#fff" }}>
                             {chip.qty} {chip.label}
                             {chip.unit ? ` (${chip.unit})` : ""}
                           </Text>
@@ -856,9 +862,9 @@ export default function Campaigns() {
                             <Ionicons
                               name="restaurant-outline"
                               size={14}
-                              color={colors.cardForeground}
+                              color="#fff"
                             />
-                            <Text style={{ fontSize: 12 }}>
+                            <Text style={{ fontSize: 12, color: "#fff" }}>
                               {totals.food} food
                             </Text>
                           </View>
@@ -874,9 +880,9 @@ export default function Campaigns() {
                             <Ionicons
                               name="shirt-outline"
                               size={14}
-                              color={colors.cardForeground}
+                              color="#fff"
                             />
-                            <Text style={{ fontSize: 12 }}>
+                            <Text style={{ fontSize: 12, color: "#fff" }}>
                               {totals.clothes} clothes
                             </Text>
                           </View>
@@ -892,9 +898,9 @@ export default function Campaigns() {
                             <Ionicons
                               name="cash-outline"
                               size={14}
-                              color={colors.cardForeground}
+                              color="#fff"
                             />
-                            <Text style={{ fontSize: 12 }}>
+                            <Text style={{ fontSize: 12, color: "#fff" }}>
                               LKR {totals.funds}
                             </Text>
                           </View>
@@ -902,7 +908,7 @@ export default function Campaigns() {
                         {totals.food <= 0 &&
                           totals.clothes <= 0 &&
                           totals.funds <= 0 && (
-                            <Text style={{ fontSize: 12, color: colors.muted }}>
+                            <Text style={{ fontSize: 12, color: "#888" }}>
                               Details unavailable in list. Open campaign to view
                               more.
                             </Text>
@@ -947,8 +953,12 @@ export default function Campaigns() {
                 isRequestedByMe(c) && (
                   <Button
                     variant="outline"
-                    style={{ width: "100%", backgroundColor: "#e5e7eb" }}
-                    textStyle={{ color: colors.muted }}
+                    style={{
+                      width: "100%",
+                      backgroundColor: "#2a2a2a",
+                      borderColor: "#444",
+                    }}
+                    textStyle={{ color: "#888" }}
                   >
                     Pending
                   </Button>
@@ -956,8 +966,12 @@ export default function Campaigns() {
               {c.status === "completed" && (
                 <Button
                   variant="outline"
-                  style={{ width: "100%", backgroundColor: "#e5e7eb" }}
-                  textStyle={{ color: colors.muted }}
+                  style={{
+                    width: "100%",
+                    backgroundColor: "#2a2a2a",
+                    borderColor: "#444",
+                  }}
+                  textStyle={{ color: "#888" }}
                 >
                   Campaign Completed
                 </Button>
@@ -995,9 +1009,9 @@ export default function Campaigns() {
                   width: "110%",
                   maxWidth: 500,
                   borderRadius: 16,
-                  backgroundColor: colors.card,
+                  backgroundColor: "#1a1a1a",
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: "#333",
                   overflow: "hidden",
                 }}
               >
@@ -1006,15 +1020,15 @@ export default function Campaigns() {
                   style={{
                     padding: spacing.lg,
                     borderBottomWidth: 1,
-                    borderColor: colors.border,
+                    borderColor: "#333",
                   }}
                 >
-                  <Text style={{ fontSize: 18, fontWeight: "700" }}>
+                  <Text
+                    style={{ fontSize: 18, fontWeight: "700", color: "#fff" }}
+                  >
                     Join Campaign: {selectedCampaign?.name}
                   </Text>
-                  <Text
-                    style={{ marginTop: 4, color: colors.muted, fontSize: 13 }}
-                  >
+                  <Text style={{ marginTop: 4, color: "#888", fontSize: 13 }}>
                     Submit your request to join this campaign as an agent.
                   </Text>
                 </View>
@@ -1030,22 +1044,28 @@ export default function Campaigns() {
                   {/* Campaign Summary */}
                   <View
                     style={{
-                      backgroundColor: colors.mutedBackground,
+                      backgroundColor: "#2a2a2a",
                       borderRadius: 12,
                       borderWidth: 1,
-                      borderColor: colors.border,
+                      borderColor: "#444",
                       padding: spacing.md,
                     }}
                   >
-                    <Text style={{ fontWeight: "700", marginBottom: 8 }}>
+                    <Text
+                      style={{
+                        fontWeight: "700",
+                        marginBottom: 8,
+                        color: "#fff",
+                      }}
+                    >
                       Campaign Summary
                     </Text>
                     <View style={{ gap: 4 }}>
-                      <Text style={{ fontSize: 13 }}>
+                      <Text style={{ fontSize: 13, color: "#fff" }}>
                         <Text style={{ fontWeight: "700" }}>Location: </Text>
                         {selectedCampaign?.location}
                       </Text>
-                      <Text style={{ fontSize: 13 }}>
+                      <Text style={{ fontSize: 13, color: "#fff" }}>
                         <Text style={{ fontWeight: "700" }}>Duration: </Text>
                         {(() => {
                           const sd = selectedCampaign?.startDate
@@ -1072,7 +1092,7 @@ export default function Campaigns() {
 
                   {/* Experience */}
                   <View style={{ gap: 6 }}>
-                    <Text style={{ fontWeight: "600" }}>
+                    <Text style={{ fontWeight: "600", color: "#fff" }}>
                       Relevant Experience
                     </Text>
                     <TextInput
@@ -1082,15 +1102,17 @@ export default function Campaigns() {
                         setJoinRequest({ ...joinRequest, experience: t })
                       }
                       placeholder="Describe your experience with aid distribution, logistics, or community work..."
+                      placeholderTextColor="#888"
                       multiline
                       numberOfLines={3}
                       style={{
                         minHeight: 80,
                         borderWidth: 1,
-                        borderColor: colors.border,
+                        borderColor: "#444",
+                        backgroundColor: "#2a2a2a",
+                        color: "#fff",
                         borderRadius: 12,
                         padding: spacing.md,
-                        backgroundColor: colors.card,
                         textAlignVertical: "top",
                       }}
                     />
@@ -1098,7 +1120,7 @@ export default function Campaigns() {
 
                   {/* Motivation */}
                   <View style={{ gap: 6 }}>
-                    <Text style={{ fontWeight: "600" }}>
+                    <Text style={{ fontWeight: "600", color: "#fff" }}>
                       Why do you want to join?
                     </Text>
                     <TextInput
@@ -1108,15 +1130,17 @@ export default function Campaigns() {
                         setJoinRequest({ ...joinRequest, motivation: t })
                       }
                       placeholder="Tell us why you're interested in this campaign..."
+                      placeholderTextColor="#888"
                       multiline
                       numberOfLines={2}
                       style={{
                         minHeight: 64,
                         borderWidth: 1,
-                        borderColor: colors.border,
+                        borderColor: "#444",
                         borderRadius: 12,
                         padding: spacing.md,
-                        backgroundColor: colors.card,
+                        backgroundColor: "#2a2a2a",
+                        color: "#fff",
                         textAlignVertical: "top",
                       }}
                     />
@@ -1124,7 +1148,9 @@ export default function Campaigns() {
 
                   {/* Availability */}
                   <View style={{ gap: 6 }}>
-                    <Text style={{ fontWeight: "600" }}>Availability</Text>
+                    <Text style={{ fontWeight: "600", color: "#fff" }}>
+                      Availability
+                    </Text>
                     <TextInput
                       maxLength={100}
                       value={joinRequest.availability}
@@ -1132,13 +1158,15 @@ export default function Campaigns() {
                         setJoinRequest({ ...joinRequest, availability: t })
                       }
                       placeholder="e.g., Weekends, evenings, full-time"
+                      placeholderTextColor="#888"
                       style={{
                         height: 44,
                         borderWidth: 1,
-                        borderColor: colors.border,
+                        borderColor: "#444",
+                        backgroundColor: "#2a2a2a",
+                        color: "#fff",
                         borderRadius: 12,
                         paddingHorizontal: spacing.md,
-                        backgroundColor: colors.card,
                       }}
                     />
                   </View>
@@ -1149,7 +1177,7 @@ export default function Campaigns() {
                   style={{
                     padding: spacing.lg,
                     borderTopWidth: 1,
-                    borderColor: colors.border,
+                    borderColor: "#333",
                     flexDirection: "row",
                     gap: spacing.md,
                     justifyContent: "flex-end",
@@ -1159,6 +1187,7 @@ export default function Campaigns() {
                     variant="outline"
                     onPress={() => setShowJoinModal(false)}
                     style={{ height: 44 }}
+                    textStyle={{ color: "#fff" }}
                   >
                     Cancel
                   </Button>

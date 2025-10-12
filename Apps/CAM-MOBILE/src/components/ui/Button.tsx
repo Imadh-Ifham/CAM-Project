@@ -54,7 +54,7 @@ export const Button: React.FC<Props> = ({
         return {
           backgroundColor: "transparent",
           borderWidth: 1,
-          borderColor: colors.border,
+          borderColor: "#444",
         };
       case "ghost":
         return {
@@ -63,13 +63,12 @@ export const Button: React.FC<Props> = ({
       case "primary":
       default:
         return {
-          backgroundColor: colors.primary,
+          backgroundColor: "#3b82f6",
         };
     }
   })();
 
-  const contentColor =
-    variant === "primary" ? colors.primaryForeground : colors.cardForeground;
+  const contentColor = variant === "primary" ? "#fff" : "#fff";
 
   return (
     <Pressable

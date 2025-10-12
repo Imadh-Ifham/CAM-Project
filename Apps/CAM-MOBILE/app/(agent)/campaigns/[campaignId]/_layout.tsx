@@ -18,7 +18,7 @@ export default function CampaignLayout() {
   const router = useRouter();
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: "#0f0f0f" }}>
       {/* Header */}
       <View
         style={{
@@ -26,7 +26,7 @@ export default function CampaignLayout() {
           paddingVertical: spacing.md,
           marginTop: 30,
           borderBottomWidth: 1,
-          borderColor: colors.border,
+          borderColor: "#333",
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
@@ -41,17 +41,13 @@ export default function CampaignLayout() {
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
-            <Ionicons
-              name="chevron-back"
-              size={20}
-              color={colors.cardForeground}
-            />
+            <Ionicons name="chevron-back" size={20} color="#fff" />
           </Pressable>
           <View>
-            <Text style={{ fontWeight: "700", fontSize: 18 }}>
+            <Text style={{ fontWeight: "700", fontSize: 18, color: "#fff" }}>
               Campaign Management
             </Text>
-            <Text style={{ color: colors.muted, marginTop: 2 }}>{name}</Text>
+            <Text style={{ color: "#888", marginTop: 2 }}>{name}</Text>
           </View>
         </View>
 
@@ -60,7 +56,7 @@ export default function CampaignLayout() {
           const st = String(status || "").toLowerCase();
           const pill =
             st === "active"
-              ? { bg: colors.green, fg: "#fff", label: "Active" }
+              ? { bg: "#10b981", fg: "#fff", label: "Active" }
               : st === "paused"
               ? { bg: "#2563eb", fg: "#fff", label: "Paused" }
               : { bg: "#6b7280", fg: "#fff", label: "Completed" };

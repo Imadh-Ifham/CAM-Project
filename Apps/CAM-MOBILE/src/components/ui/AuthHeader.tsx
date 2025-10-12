@@ -22,20 +22,17 @@ export const AuthHeader: React.FC<AuthHeaderProps> = (props) => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   return (
-    <SafeAreaView
-      edges={["top"]}
-      style={{ backgroundColor: colors.background }}
-    >
+    <SafeAreaView edges={["top"]} style={{ backgroundColor: "#0f0f0f" }}>
       <View
         style={{
           paddingTop: insets.top,
           paddingHorizontal: spacing.lg,
           paddingVertical: spacing.md,
           borderBottomWidth: 1,
-          borderBottomColor: colors.border,
+          borderBottomColor: "#333",
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: colors.background,
+          backgroundColor: "#0f0f0f",
         }}
       >
         <Pressable
@@ -44,17 +41,21 @@ export const AuthHeader: React.FC<AuthHeaderProps> = (props) => {
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Feather name="arrow-left" size={18} color={colors.cardForeground} />
+          <Feather name="arrow-left" size={18} color="#fff" />
         </Pressable>
         {icon ? (
           <Feather
             name={icon}
             size={28}
-            color={iconColor || colors.primary}
+            color={iconColor || "#3b82f6"}
             style={{ marginRight: spacing.sm }}
           />
         ) : null}
-        <Text style={[{ marginLeft: spacing.xs }, typography.h3]}>{title}</Text>
+        <Text
+          style={[{ marginLeft: spacing.xs, color: "#fff" }, typography.h3]}
+        >
+          {title}
+        </Text>
       </View>
     </SafeAreaView>
   );

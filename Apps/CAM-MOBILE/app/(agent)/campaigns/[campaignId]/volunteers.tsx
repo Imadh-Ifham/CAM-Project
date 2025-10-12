@@ -222,7 +222,14 @@ export default function CampaignVolunteers() {
                         />
                       </View>
                       <View>
-                        <Text style={{ fontWeight: "700" }}>{r.name}</Text>
+                        <Text
+                          style={{
+                            fontWeight: "700",
+                            color: colors.cardForeground,
+                          }}
+                        >
+                          {r.name}
+                        </Text>
                         <Text style={{ color: colors.muted, fontSize: 12 }}>
                           Age: {r.age}
                         </Text>
@@ -279,7 +286,7 @@ export default function CampaignVolunteers() {
                       >
                         Emergency Contact:
                       </Text>
-                      <Text>
+                      <Text style={{ color: colors.cardForeground }}>
                         {r.emergencyContact} - {r.emergencyPhone}
                       </Text>
                     </View>
@@ -393,7 +400,13 @@ export default function CampaignVolunteers() {
                         gap: 8,
                       }}
                     >
-                      <Text style={{ fontWeight: "700" }} numberOfLines={1}>
+                      <Text
+                        style={{
+                          fontWeight: "700",
+                          color: colors.cardForeground,
+                        }}
+                        numberOfLines={1}
+                      >
                         {v.name}
                       </Text>
                     </View>
@@ -524,7 +537,7 @@ function Field({
       <Text style={{ color: colors.muted, fontWeight: "700", marginBottom: 4 }}>
         {label}:
       </Text>
-      <Text>{value}</Text>
+      <Text style={{ color: colors.cardForeground }}>{value}</Text>
     </View>
   );
 }

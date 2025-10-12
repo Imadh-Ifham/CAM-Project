@@ -165,7 +165,7 @@ export default function CampaignOverview() {
       }}
     >
       {icon}
-      <Text>{text}</Text>
+      <Text style={{ color: colors.cardForeground }}>{text}</Text>
     </View>
   );
 
@@ -173,7 +173,7 @@ export default function CampaignOverview() {
     <View
       style={{
         height: 8,
-        backgroundColor: colors.mutedBackground,
+        backgroundColor: "#2a2a2a",
         borderRadius: 999,
       }}
     >
@@ -396,21 +396,21 @@ export default function CampaignOverview() {
   const statusBadgeStyle = (status?: string) => {
     const s = (status || "").toLowerCase();
     if (s.includes("complete"))
-      return { bg: "#dcfce7", fg: "#166534", border: "#86efac" };
+      return { bg: "#1a2b1f", fg: "#10b981", border: "#10b981" };
     if (s.includes("progress"))
-      return { bg: "#dbeafe", fg: "#1d4ed8", border: "#93c5fd" };
+      return { bg: "#1a2332", fg: "#3b82f6", border: "#3b82f6" };
     if (s.includes("schedule"))
-      return { bg: "#f3f4f6", fg: "#4b5563", border: "#e5e7eb" };
+      return { bg: "#2a2a2a", fg: "#888", border: "#444" };
     if (s.includes("deplet") || s.includes("cancel"))
-      return { bg: "#fee2e2", fg: "#991b1b", border: "#fecaca" };
-    return { bg: "#f3f4f6", fg: "#374151", border: "#e5e7eb" };
+      return { bg: "#2a1a1a", fg: "#ef4444", border: "#ef4444" };
+    return { bg: "#2a2a2a", fg: "#fff", border: "#444" };
   };
   const categoryColor = (cat?: string) => {
     const c = (cat || "").toLowerCase();
-    if (c.includes("food")) return "#16a34a";
-    if (c.includes("medical")) return "#0891b2";
-    if (c.includes("cloth")) return "#6b7280";
-    if (c.includes("fund")) return "#b45309";
+    if (c.includes("food")) return "#10b981";
+    if (c.includes("medical")) return "#06b6d4";
+    if (c.includes("cloth")) return "#888888";
+    if (c.includes("fund")) return "#f59e0b";
     return "#6366f1";
   };
 
@@ -424,17 +424,15 @@ export default function CampaignOverview() {
         borderColor: color,
       }}
     >
-      <Text style={{ fontSize: 12, color }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: color }}>{label}</Text>
     </View>
   );
 
   if (isFetching) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator />
-        <Text style={{ marginTop: 8, color: colors.muted }}>
-          Loading overview…
-        </Text>
+        <ActivityIndicator color="#3b82f6" />
+        <Text style={{ marginTop: 8, color: "#888" }}>Loading overview…</Text>
       </View>
     );
   }
@@ -450,10 +448,10 @@ export default function CampaignOverview() {
           padding: spacing.lg,
         }}
       >
-        <Text style={{ color: "#991b1b", fontWeight: "700", marginBottom: 6 }}>
+        <Text style={{ color: "#ef4444", fontWeight: "700", marginBottom: 6 }}>
           Failed to load campaign overview
         </Text>
-        <Text style={{ color: colors.muted, textAlign: "center" }}>
+        <Text style={{ color: "#888", textAlign: "center" }}>
           {typeof err?.data === "string"
             ? err.data
             : err?.data?.message || "Unknown error"}
@@ -463,7 +461,7 @@ export default function CampaignOverview() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: "#0f0f0f" }}>
       <ScrollView
         contentContainerStyle={{
           padding: spacing.lg,
@@ -575,12 +573,19 @@ export default function CampaignOverview() {
                           gap: 8,
                         }}
                       >
-                        <Text style={{ fontWeight: "600" }}>{name}</Text>
+                        <Text
+                          style={{
+                            fontWeight: "600",
+                            color: colors.cardForeground,
+                          }}
+                        >
+                          {name}
+                        </Text>
                         {isComplete && (
                           <Ionicons
                             name="checkmark-circle-outline"
                             size={16}
-                            color="#16a34a"
+                            color="#10b981"
                           />
                         )}
                       </View>
@@ -646,7 +651,14 @@ export default function CampaignOverview() {
                           gap: spacing.sm,
                         }}
                       >
-                        <Text style={{ fontWeight: "700" }}>Details</Text>
+                        <Text
+                          style={{
+                            fontWeight: "700",
+                            color: colors.cardForeground,
+                          }}
+                        >
+                          Details
+                        </Text>
                         <Text style={{ color: colors.muted }}>
                           Target {targetEff}
                           {unit ? ` ${unit}` : ""} • Collected {collectedAmt}
@@ -689,7 +701,13 @@ export default function CampaignOverview() {
             </View>
           </CardHeader>
           <CardContent>
-            <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+            <Text
+              style={{
+                fontWeight: "700",
+                marginBottom: 6,
+                color: colors.cardForeground,
+              }}
+            >
               {campaign.name}
             </Text>
             <Text style={{ color: colors.muted, marginBottom: spacing.md }}>
@@ -742,7 +760,7 @@ export default function CampaignOverview() {
                       : "information-circle-outline"
                   }
                   size={16}
-                  color={campaign.isUrgent ? "#dc2626" : colors.muted}
+                  color={campaign.isUrgent ? "#ef4444" : colors.muted}
                 />
               }
               text={`Urgent: ${campaign.isUrgent ? "Yes" : "No"}`}
@@ -832,7 +850,11 @@ export default function CampaignOverview() {
                       color={colors.muted}
                     />
                   </View>
-                  <Text style={{ fontWeight: "600" }}>No recent activity</Text>
+                  <Text
+                    style={{ fontWeight: "600", color: colors.cardForeground }}
+                  >
+                    No recent activity
+                  </Text>
                 </View>
                 <Text style={{ color: colors.muted }}>
                   Start collecting or create distributions to see activity here.
@@ -862,7 +884,7 @@ export default function CampaignOverview() {
                       height: 36,
                       borderRadius: 18,
                       backgroundColor:
-                        log.kind === "collection" ? "#dbeafe" : "#dcfce7",
+                        log.kind === "collection" ? "#1a2332" : "#1a2b1f",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
@@ -870,7 +892,7 @@ export default function CampaignOverview() {
                     <Ionicons
                       name={log.icon}
                       size={18}
-                      color={log.kind === "collection" ? "#1d4ed8" : "#166534"}
+                      color={log.kind === "collection" ? "#3b82f6" : "#10b981"}
                     />
                   </View>
                   <View style={{ flex: 1, gap: 6 }}>
@@ -883,7 +905,11 @@ export default function CampaignOverview() {
                       }}
                     >
                       <Text
-                        style={{ fontWeight: "600", flex: 1 }}
+                        style={{
+                          fontWeight: "600",
+                          flex: 1,
+                          color: colors.cardForeground,
+                        }}
                         numberOfLines={2}
                       >
                         {log.title}
@@ -899,7 +925,13 @@ export default function CampaignOverview() {
                             borderColor: badge.border,
                           }}
                         >
-                          <Text style={{ fontSize: 12, color: badge.fg }}>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: badge.fg,
+                              fontWeight: "500",
+                            }}
+                          >
                             {log.status}
                           </Text>
                         </View>
@@ -930,7 +962,7 @@ export default function CampaignOverview() {
                       {!!log.qty && (
                         <Chip
                           label={`${log.qty}${log.unit ? ` ${log.unit}` : ""}`}
-                          color={"#4b5563"}
+                          color={"#888888"}
                         />
                       )}
                     </View>
@@ -1005,7 +1037,13 @@ export default function CampaignOverview() {
                     />
                   </View>
                   <View>
-                    <Text style={{ fontWeight: "600", fontSize: 14 }}>
+                    <Text
+                      style={{
+                        fontWeight: "600",
+                        fontSize: 14,
+                        color: colors.cardForeground,
+                      }}
+                    >
                       {name}
                     </Text>
                     <Text style={{ color: colors.muted, fontSize: 12 }}>
@@ -1022,7 +1060,7 @@ export default function CampaignOverview() {
                     borderColor: colors.border,
                   }}
                 >
-                  <Text style={{ fontSize: 12, color: colors.muted }}>
+                  <Text style={{ fontSize: 12, color: colors.cardForeground }}>
                     Call
                   </Text>
                 </View>

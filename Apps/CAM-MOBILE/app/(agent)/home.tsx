@@ -18,7 +18,7 @@ export default function AgentHome() {
   const volunteerEngagement = 92; // percent
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: "#0f0f0f" }}>
       <ScrollView
         contentContainerStyle={{
           padding: spacing.lg,
@@ -38,9 +38,11 @@ export default function AgentHome() {
             style={{
               flex: 1,
               borderRadius: 20,
-              backgroundColor: "#eef6ff",
+              backgroundColor: "#1a1a1a",
+              borderWidth: 1,
+              borderColor: "#333",
               shadowColor: "#000",
-              shadowOpacity: 0.08,
+              shadowOpacity: 0.3,
               shadowRadius: 10,
               shadowOffset: { width: 0, height: 4 },
               elevation: 2,
@@ -67,23 +69,21 @@ export default function AgentHome() {
                   style={{
                     fontSize: 26,
                     fontWeight: "800",
-                    color: colors.blue,
+                    color: "#60a5fa",
                   }}
                 >
                   {totalCollected}
                 </Text>
                 <Text
                   style={{
-                    color: colors.blue,
+                    color: "#fff",
                     marginTop: spacing.xs,
                     fontWeight: "600",
                   }}
                 >
                   Resources Collected
                 </Text>
-                <Text
-                  style={{ color: colors.muted, marginTop: 4, fontSize: 12 }}
-                >
+                <Text style={{ color: "#888", marginTop: 4, fontSize: 12 }}>
                   +25 this week
                 </Text>
               </View>
@@ -95,9 +95,11 @@ export default function AgentHome() {
             style={{
               flex: 1,
               borderRadius: 20,
-              backgroundColor: "#f6f1ff",
+              backgroundColor: "#1a1a1a",
+              borderWidth: 1,
+              borderColor: "#333",
               shadowColor: "#000",
-              shadowOpacity: 0.08,
+              shadowOpacity: 0.3,
               shadowRadius: 10,
               shadowOffset: { width: 0, height: 4 },
               elevation: 2,
@@ -125,22 +127,20 @@ export default function AgentHome() {
                   />
                 </LinearGradient>
                 <Text
-                  style={{ fontSize: 26, fontWeight: "800", color: "#7c3aed" }}
+                  style={{ fontSize: 26, fontWeight: "800", color: "#a78bfa" }}
                 >
                   {deliveriesMade}
                 </Text>
                 <Text
                   style={{
-                    color: "#7c3aed",
+                    color: "#fff",
                     marginTop: spacing.xs,
                     fontWeight: "600",
                   }}
                 >
                   Deliveries Made
                 </Text>
-                <Text
-                  style={{ color: colors.muted, marginTop: 4, fontSize: 12 }}
-                >
+                <Text style={{ color: "#888", marginTop: 4, fontSize: 12 }}>
                   100% on-time
                 </Text>
               </View>
@@ -150,12 +150,21 @@ export default function AgentHome() {
 
         {/* Active Campaigns Overview */}
         <View style={{ marginTop: spacing.xl }}>
-          <Text style={[typography.h2, { marginBottom: spacing.md }]}>
+          <Text
+            style={[typography.h2, { marginBottom: spacing.md, color: "#fff" }]}
+          >
             Active Campaigns Overview
           </Text>
           <View style={{ gap: spacing.md }}>
             {/* Active Campaigns card */}
-            <Card style={{ borderRadius: 20 }}>
+            <Card
+              style={{
+                borderRadius: 20,
+                backgroundColor: "#1a1a1a",
+                borderWidth: 1,
+                borderColor: "#333",
+              }}
+            >
               <CardContent>
                 <View
                   style={{
@@ -170,7 +179,7 @@ export default function AgentHome() {
                         width: 40,
                         height: 40,
                         borderRadius: 20,
-                        backgroundColor: "rgba(16,185,129,0.15)",
+                        backgroundColor: "rgba(16,185,129,0.3)",
                         alignItems: "center",
                         justifyContent: "center",
                         marginRight: spacing.md,
@@ -179,15 +188,15 @@ export default function AgentHome() {
                       <Ionicons
                         name="people-outline"
                         size={22}
-                        color="#059669"
+                        color="#10b981"
                       />
                     </View>
                     <View>
-                      <Text style={{ fontWeight: "700", color: "#065f46" }}>
+                      <Text style={{ fontWeight: "700", color: "#10b981" }}>
                         3 Active Campaigns
                       </Text>
                       <Text
-                        style={{ color: "#047857", marginTop: 2, fontSize: 12 }}
+                        style={{ color: "#888", marginTop: 2, fontSize: 12 }}
                       >
                         Managing resources & volunteers
                       </Text>
@@ -198,7 +207,14 @@ export default function AgentHome() {
             </Card>
 
             {/* Next Delivery card */}
-            <Card style={{ borderRadius: 20 }}>
+            <Card
+              style={{
+                borderRadius: 20,
+                backgroundColor: "#1a1a1a",
+                borderWidth: 1,
+                borderColor: "#333",
+              }}
+            >
               <CardContent>
                 <View
                   style={{
@@ -213,24 +229,20 @@ export default function AgentHome() {
                         width: 40,
                         height: 40,
                         borderRadius: 20,
-                        backgroundColor: "rgba(37,99,235,0.15)",
+                        backgroundColor: "rgba(37,99,235,0.3)",
                         alignItems: "center",
                         justifyContent: "center",
                         marginRight: spacing.md,
                       }}
                     >
-                      <Ionicons
-                        name="cube-outline"
-                        size={22}
-                        color={colors.blue}
-                      />
+                      <Ionicons name="cube-outline" size={22} color="#3b82f6" />
                     </View>
                     <View>
-                      <Text style={{ fontWeight: "700", color: "#1e3a8a" }}>
+                      <Text style={{ fontWeight: "700", color: "#3b82f6" }}>
                         Next Delivery
                       </Text>
                       <Text
-                        style={{ color: "#1d4ed8", marginTop: 2, fontSize: 12 }}
+                        style={{ color: "#888", marginTop: 2, fontSize: 12 }}
                       >
                         Community Center A – Tomorrow
                       </Text>
@@ -239,7 +251,7 @@ export default function AgentHome() {
                   <View>
                     <Text
                       style={{
-                        backgroundColor: colors.blue,
+                        backgroundColor: "#3b82f6",
                         color: "#fff",
                         paddingHorizontal: 10,
                         paddingVertical: 6,
@@ -256,7 +268,14 @@ export default function AgentHome() {
             </Card>
 
             {/* Pending Volunteer Approvals */}
-            <Card style={{ borderRadius: 20 }}>
+            <Card
+              style={{
+                borderRadius: 20,
+                backgroundColor: "#1a1a1a",
+                borderWidth: 1,
+                borderColor: "#333",
+              }}
+            >
               <CardContent>
                 <View
                   style={{
@@ -271,7 +290,7 @@ export default function AgentHome() {
                         width: 40,
                         height: 40,
                         borderRadius: 20,
-                        backgroundColor: "rgba(249,115,22,0.15)",
+                        backgroundColor: "rgba(249,115,22,0.3)",
                         alignItems: "center",
                         justifyContent: "center",
                         marginRight: spacing.md,
@@ -280,15 +299,15 @@ export default function AgentHome() {
                       <Ionicons
                         name="checkmark-done-outline"
                         size={22}
-                        color={colors.orange}
+                        color="#f97316"
                       />
                     </View>
                     <View>
-                      <Text style={{ fontWeight: "700", color: "#9a3412" }}>
+                      <Text style={{ fontWeight: "700", color: "#f97316" }}>
                         Pending Volunteer Approvals
                       </Text>
                       <Text
-                        style={{ color: "#ea580c", marginTop: 2, fontSize: 12 }}
+                        style={{ color: "#888", marginTop: 2, fontSize: 12 }}
                       >
                         2 applications awaiting review
                       </Text>
@@ -297,7 +316,7 @@ export default function AgentHome() {
                   <View>
                     <Text
                       style={{
-                        backgroundColor: colors.orange,
+                        backgroundColor: "#f97316",
                         color: "#fff",
                         paddingHorizontal: 10,
                         paddingVertical: 6,
@@ -316,15 +335,24 @@ export default function AgentHome() {
         </View>
 
         {/* Weekly Performance (image 3) */}
-        <Card style={{ borderRadius: 20, marginTop: spacing.xl }}>
+        <Card
+          style={{
+            borderRadius: 20,
+            marginTop: spacing.xl,
+            backgroundColor: "#1a1a1a",
+            borderWidth: 1,
+            borderColor: "#333",
+          }}
+        >
           <CardHeader>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Ionicons
-                name="bar-chart-outline"
-                size={18}
-                color={colors.muted}
-              />
-              <Text style={[typography.h3, { marginLeft: spacing.sm }]}>
+              <Ionicons name="bar-chart-outline" size={18} color="#888" />
+              <Text
+                style={[
+                  typography.h3,
+                  { marginLeft: spacing.sm, color: "#fff" },
+                ]}
+              >
                 Weekly Performance
               </Text>
             </View>
@@ -334,17 +362,13 @@ export default function AgentHome() {
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
-              <Text style={{ color: colors.cardForeground }}>
-                Collection Target
-              </Text>
-              <Text style={{ color: colors.muted }}>
-                {collectionTarget} / 100
-              </Text>
+              <Text style={{ color: "#fff" }}>Collection Target</Text>
+              <Text style={{ color: "#888" }}>{collectionTarget} / 100</Text>
             </View>
             <View
               style={{
                 height: 8,
-                backgroundColor: colors.mutedBackground,
+                backgroundColor: "#333",
                 borderRadius: 999,
                 marginTop: spacing.sm,
               }}
@@ -354,7 +378,7 @@ export default function AgentHome() {
                   height: 8,
                   borderRadius: 999,
                   width: `${collectionTarget}%`,
-                  backgroundColor: colors.green,
+                  backgroundColor: "#10b981",
                 }}
               />
             </View>
@@ -367,17 +391,13 @@ export default function AgentHome() {
                 marginTop: spacing.lg,
               }}
             >
-              <Text style={{ color: colors.cardForeground }}>
-                Volunteer Engagement
-              </Text>
-              <Text style={{ color: colors.muted }}>
-                {volunteerEngagement}%
-              </Text>
+              <Text style={{ color: "#fff" }}>Volunteer Engagement</Text>
+              <Text style={{ color: "#888" }}>{volunteerEngagement}%</Text>
             </View>
             <View
               style={{
                 height: 8,
-                backgroundColor: colors.mutedBackground,
+                backgroundColor: "#333",
                 borderRadius: 999,
                 marginTop: spacing.sm,
               }}
@@ -387,7 +407,7 @@ export default function AgentHome() {
                   height: 8,
                   borderRadius: 999,
                   width: `${volunteerEngagement}%`,
-                  backgroundColor: colors.blue,
+                  backgroundColor: "#3b82f6",
                 }}
               />
             </View>
@@ -395,11 +415,24 @@ export default function AgentHome() {
         </Card>
 
         {/* Resource Inventory (image 4) */}
-        <Card style={{ borderRadius: 20, marginTop: spacing.xl }}>
+        <Card
+          style={{
+            borderRadius: 20,
+            marginTop: spacing.xl,
+            backgroundColor: "#1a1a1a",
+            borderWidth: 1,
+            borderColor: "#333",
+          }}
+        >
           <CardHeader>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Ionicons name="cube-outline" size={18} color={colors.muted} />
-              <Text style={[typography.h3, { marginLeft: spacing.sm }]}>
+              <Ionicons name="cube-outline" size={18} color="#888" />
+              <Text
+                style={[
+                  typography.h3,
+                  { marginLeft: spacing.sm, color: "#fff" },
+                ]}
+              >
                 Resource Inventory
               </Text>
             </View>
@@ -410,11 +443,11 @@ export default function AgentHome() {
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: "#fff1e6",
+                  backgroundColor: "#2a1a1a",
                   borderRadius: 16,
                   padding: spacing.md,
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: "#444",
                 }}
               >
                 <View
@@ -427,19 +460,19 @@ export default function AgentHome() {
                   <Ionicons
                     name="restaurant-outline"
                     size={18}
-                    color="#ea580c"
+                    color="#f97316"
                     style={{ marginRight: 6 }}
                   />
-                  <Text style={{ color: "#ea580c", fontWeight: "700" }}>
+                  <Text style={{ color: "#f97316", fontWeight: "700" }}>
                     Food Items
                   </Text>
                 </View>
                 <Text
-                  style={{ color: "#ea580c", fontSize: 28, fontWeight: "800" }}
+                  style={{ color: "#f97316", fontSize: 28, fontWeight: "800" }}
                 >
                   128
                 </Text>
-                <Text style={{ color: "#ea580c", marginTop: 2, fontSize: 12 }}>
+                <Text style={{ color: "#f97316", marginTop: 2, fontSize: 12 }}>
                   in stock
                 </Text>
               </View>
@@ -447,11 +480,11 @@ export default function AgentHome() {
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: "#eef6ff",
+                  backgroundColor: "#1a1f2a",
                   borderRadius: 16,
                   padding: spacing.md,
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: "#444",
                 }}
               >
                 <View
@@ -464,25 +497,23 @@ export default function AgentHome() {
                   <Ionicons
                     name="shirt-outline"
                     size={18}
-                    color={colors.blue}
+                    color="#3b82f6"
                     style={{ marginRight: 6 }}
                   />
-                  <Text style={{ color: colors.blue, fontWeight: "700" }}>
+                  <Text style={{ color: "#3b82f6", fontWeight: "700" }}>
                     Clothing
                   </Text>
                 </View>
                 <Text
                   style={{
-                    color: colors.blue,
+                    color: "#3b82f6",
                     fontSize: 28,
                     fontWeight: "800",
                   }}
                 >
                   67
                 </Text>
-                <Text
-                  style={{ color: colors.blue, marginTop: 2, fontSize: 12 }}
-                >
+                <Text style={{ color: "#3b82f6", marginTop: 2, fontSize: 12 }}>
                   items
                 </Text>
               </View>
@@ -490,11 +521,11 @@ export default function AgentHome() {
               <View
                 style={{
                   flex: 1,
-                  backgroundColor: "#ecfdf5",
+                  backgroundColor: "#1a2a1f",
                   borderRadius: 16,
                   padding: spacing.md,
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: "#444",
                 }}
               >
                 <View
@@ -507,19 +538,19 @@ export default function AgentHome() {
                   <Ionicons
                     name="cash-outline"
                     size={18}
-                    color="#16a34a"
+                    color="#10b981"
                     style={{ marginRight: 6 }}
                   />
-                  <Text style={{ color: "#16a34a", fontWeight: "700" }}>
+                  <Text style={{ color: "#10b981", fontWeight: "700" }}>
                     Funds
                   </Text>
                 </View>
                 <Text
-                  style={{ color: "#16a34a", fontSize: 28, fontWeight: "800" }}
+                  style={{ color: "#10b981", fontSize: 28, fontWeight: "800" }}
                 >
                   $2.4K
                 </Text>
-                <Text style={{ color: "#16a34a", marginTop: 2, fontSize: 12 }}>
+                <Text style={{ color: "#10b981", marginTop: 2, fontSize: 12 }}>
                   available
                 </Text>
               </View>
