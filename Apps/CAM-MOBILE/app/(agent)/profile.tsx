@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, CardContent, CardHeader } from "../../src/components/ui/Card";
@@ -8,22 +8,30 @@ import { colors } from "../../src/styles/colors";
 import { spacing } from "../../src/styles/spacing";
 import { typography } from "../../src/styles/typography";
 import { auth } from "../../src/services/firebase";
+import {
+  useGetCampaignsQuery,
+  useGetMeQuery,
+} from "@/src/store/services/campaignsApi";
 
 export default function AgentProfile() {
   const router = useRouter();
-
-  // Mock agent profile data (replace with API later)
-  const agent = {
-    name: "John Doe",
-    phone: "+1234567890",
-    id: "AG-2024-001",
-    joinDate: "January 10, 2024",
-    activeCampaigns: 1,
-    type: "Collection & Distribution",
-    location: "Downtown District",
-    totalCollected: 450,
-    deliveriesMade: 12,
-  };
+  // Real user (auth/me)
+  const { data: me } = useGetMeQuery();
+  const agentId = (me as any)?.user?.agentId || (me as any)?.agentId || "";
+  const email = (me as any)?.user?.email || (me as any)?.email || "";
+  const displayName =
+    (me as any)?.user?.fullName ||
+    (me as any)?.fullName ||
+    (email ? email.split("@")[0] : "Agent");
+  // Campaigns assigned to this agent (backend supports filters; fallbacks included)
+  const { data: assignedCampaigns = [] } = useGetCampaignsQuery(
+    agentId ? { agentId, assigned: true } : { assigned: true }
+  );
+  const activeCampaignsCount = Array.isArray(assignedCampaigns)
+    ? assignedCampaigns.filter(
+        (c: any) => String(c.status).toLowerCase() === "active"
+      ).length
+    : 0;
 
   const Row = ({
     label,
@@ -163,10 +171,10 @@ export default function AgentProfile() {
                     color: colors.cardForeground,
                   }}
                 >
-                  {agent.name}
+                  {displayName}
                 </Text>
                 <Text style={{ color: colors.muted, marginTop: 2 }}>
-                  {agent.phone}
+                  {email}
                 </Text>
                 <View
                   style={{
@@ -208,7 +216,8 @@ export default function AgentProfile() {
                     color: colors.green,
                   }}
                 >
-                  {agent.totalCollected}
+                  {/* Placeholder metric – backend aggregate not available here */}
+                  0
                 </Text>
                 <Text
                   style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}
@@ -232,7 +241,7 @@ export default function AgentProfile() {
                     color: colors.blue,
                   }}
                 >
-                  {agent.deliveriesMade}
+                  0
                 </Text>
                 <Text
                   style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}
@@ -250,14 +259,14 @@ export default function AgentProfile() {
             <Text style={[typography.h3]}>Agent Information</Text>
           </CardHeader>
           <CardContent style={{ paddingTop: 0 }}>
-            <Row label="Agent ID" value={agent.id} />
-            <Row label="Join Date" value={agent.joinDate} />
+            <Row label="Agent ID" value={agentId || "—"} />
+            {/* Join Date not available from /auth/me; keep placeholder */}
+            <Row label="Join Date" value={"—"} />
             <Row
               label="Active Campaigns"
-              value={String(agent.activeCampaigns)}
+              value={String(activeCampaignsCount)}
             />
-            <Row label="Agent Type" value={agent.type} />
-            <Row label="Location Coverage" value={agent.location} />
+            {/* Removed Agent Type and Location Coverage as requested */}
             <Row
               label="Verification Status"
               value={<VerifiedBadge />}
@@ -392,75 +401,46 @@ export default function AgentProfile() {
             <Text style={[typography.h3]}>Campaign History</Text>
           </CardHeader>
           <CardContent style={{ gap: spacing.md }}>
-            <View
-              style={{
-                borderLeftWidth: 3,
-                borderLeftColor: colors.green,
-                paddingLeft: spacing.md,
-              }}
-            >
-              <Text
-                style={{
-                  fontWeight: "700",
-                  color: colors.cardForeground,
-                  fontSize: 14,
-                }}
-              >
-                Winter Relief 2024
-              </Text>
+            {Array.isArray(assignedCampaigns) &&
+            assignedCampaigns.length > 0 ? (
+              assignedCampaigns.map((c: any, idx: number) => {
+                const active =
+                  String(c.status || "").toLowerCase() === "active";
+                const key = String(
+                  c?.campaignID ||
+                    c?._id ||
+                    c?.id ||
+                    `${c?.name || "campaign"}-${idx}`
+                );
+                return (
+                  <View
+                    key={key}
+                    style={{
+                      borderLeftWidth: 3,
+                      borderLeftColor: active ? colors.green : colors.border,
+                      paddingLeft: spacing.md,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontWeight: "700",
+                        color: colors.cardForeground,
+                        fontSize: 14,
+                      }}
+                    >
+                      {c.name}
+                    </Text>
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>
+                      {active ? "Active Campaign" : (c.status || "").toString()}
+                    </Text>
+                  </View>
+                );
+              })
+            ) : (
               <Text style={{ color: colors.muted, fontSize: 12 }}>
-                Active Campaign
+                No assigned campaigns found.
               </Text>
-              <Text style={{ color: colors.green, fontSize: 12 }}>
-                450 resources collected
-              </Text>
-            </View>
-            <View
-              style={{
-                borderLeftWidth: 3,
-                borderLeftColor: colors.border,
-                paddingLeft: spacing.md,
-              }}
-            >
-              <Text
-                style={{
-                  fontWeight: "700",
-                  color: colors.cardForeground,
-                  fontSize: 14,
-                }}
-              >
-                Emergency Food Drive
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>
-                Completed Dec 2023
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>
-                320 resources distributed
-              </Text>
-            </View>
-            <View
-              style={{
-                borderLeftWidth: 3,
-                borderLeftColor: colors.border,
-                paddingLeft: spacing.md,
-              }}
-            >
-              <Text
-                style={{
-                  fontWeight: "700",
-                  color: colors.cardForeground,
-                  fontSize: 14,
-                }}
-              >
-                Back to School Support
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>
-                Completed Aug 2023
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>
-                280 items delivered
-              </Text>
-            </View>
+            )}
           </CardContent>
         </Card>
 
@@ -473,6 +453,9 @@ export default function AgentProfile() {
             <Button
               variant="outline"
               style={{ justifyContent: "flex-start", height: 50 }}
+              onPress={() =>
+                Alert.alert("Coming soon", "Edit profile is under development.")
+              }
             >
               <Ionicons
                 name="person-outline"
@@ -486,6 +469,12 @@ export default function AgentProfile() {
             <Button
               variant="outline"
               style={{ justifyContent: "flex-start", height: 50 }}
+              onPress={() =>
+                Alert.alert(
+                  "Coming soon",
+                  "Notification preferences are under development."
+                )
+              }
             >
               <Ionicons
                 name="notifications-outline"
@@ -499,6 +488,12 @@ export default function AgentProfile() {
             <Button
               variant="outline"
               style={{ justifyContent: "flex-start", height: 50 }}
+              onPress={() =>
+                Alert.alert(
+                  "Coming soon",
+                  "Contact support is under development."
+                )
+              }
             >
               <Ionicons
                 name="call-outline"
