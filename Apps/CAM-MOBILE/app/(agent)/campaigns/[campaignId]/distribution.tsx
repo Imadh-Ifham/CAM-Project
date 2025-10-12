@@ -19,6 +19,7 @@ import { Button } from "../../../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { Alert } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useGetCampaignByIdQuery } from "@/src/store/services/campaignsApi";
 import {
@@ -54,6 +55,9 @@ export default function CampaignDistribution() {
   });
   // Resource selection must be declared before hooks that depend on it
   const [resourceId, setResourceId] = useState<string | undefined>();
+  // Track manual selection like in Collect to avoid implicit UI changes
+  const [didManuallySelectResource, setDidManuallySelectResource] =
+    useState(false);
   const { data: snapshots = [], refetch: refetchSnapshots } =
     useGetCampaignSnapshotsQuery(campaignId!, {
       skip: !campaignId,
@@ -68,7 +72,9 @@ export default function CampaignDistribution() {
   const selectedResSnapshot: any | undefined =
     resourceId && Array.isArray(snapshots)
       ? (resSnapshot as any) ||
-        (snapshots as any).find((s: any) => s.resourceId === resourceId)
+        (snapshots as any).find(
+          (s: any) => String(s.resourceId) === String(resourceId)
+        )
       : undefined;
 
   // Backend hooks
@@ -79,7 +85,9 @@ export default function CampaignDistribution() {
   // Strictly scope distributions to current campaign to avoid bleed across routes
   const campaignResourceIds = useMemo(() => {
     const set = new Set<string>();
-    (campaign?.resources || []).forEach((r: any) => r?.id && set.add(r.id));
+    (campaign?.resources || []).forEach(
+      (r: any) => r?.id && set.add(String(r.id))
+    );
     return set;
   }, [campaign]);
   const filteredDistributions = useMemo(() => {
@@ -131,13 +139,27 @@ export default function CampaignDistribution() {
     lastAlertedDistResourceIdRef.current = null;
     setResourceId(undefined);
     setTargetQty("");
+    setDidManuallySelectResource(false);
   }, [campaignId]);
+
+  // Also reset selection on focus only if no manual selection has been made (matches Collect pattern)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!didManuallySelectResource) {
+        setResourceId(undefined);
+        setTargetQty("");
+        lastAlertedDistResourceIdRef.current = null;
+        setDidManuallySelectResource(false);
+      }
+      return undefined;
+    }, [campaignId, didManuallySelectResource])
+  );
 
   // Options
   const resourceOptions = useMemo(
     () =>
       (campaign?.resources || []).map((r) => ({
-        key: r.id,
+        key: String(r.id),
         label: `${r.name} (${r.unit})`,
         unit: r.unit,
         target: r.quantity,
@@ -155,7 +177,9 @@ export default function CampaignDistribution() {
     } as any);
   const selectedStockTotals: any | undefined = React.useMemo(
     () =>
-      (stockTotals as any[])?.find?.((r: any) => r.resourceId === resourceId),
+      (stockTotals as any[])?.find?.(
+        (r: any) => String(r.resourceId) === String(resourceId)
+      ),
     [stockTotals, resourceId]
   );
   const availableFromStock = selectedStockTotals?.totalAvailable;
@@ -170,9 +194,13 @@ export default function CampaignDistribution() {
     ? resourceOptions.find((r) => r.key === resourceId)?.unit
     : "";
   const insufficient =
-    !!resourceId && !!targetQty && Number(targetQty) > availableForSelected;
+    didManuallySelectResource &&
+    !!resourceId &&
+    !!targetQty &&
+    Number(targetQty) > availableForSelected;
   const maxDistributable = availableForSelected;
-  const inputDisabled = !!resourceId && Number(maxDistributable) <= 0;
+  const inputDisabled =
+    !(didManuallySelectResource && resourceId) || Number(maxDistributable) <= 0;
 
   // Determine if campaign requirement is fully distributed for selected resource
   const distributedForSelected = resourceId
@@ -197,6 +225,7 @@ export default function CampaignDistribution() {
     const targetQtySel = Number((selectedResSnapshot as any)?.targetQty) || 0;
     if (
       resourceId &&
+      didManuallySelectResource &&
       targetQtySel > 0 &&
       remainingToDistribute === 0 &&
       lastAlertedDistResourceIdRef.current !== resourceId
@@ -209,7 +238,12 @@ export default function CampaignDistribution() {
       );
       lastAlertedDistResourceIdRef.current = resourceId;
     }
-  }, [resourceId, remainingToDistribute, selectedResSnapshot]);
+  }, [
+    resourceId,
+    didManuallySelectResource,
+    remainingToDistribute,
+    selectedResSnapshot,
+  ]);
 
   // Details records hook at top-level
   const detailsJob: any | undefined = detailsModal.job;
@@ -302,6 +336,15 @@ export default function CampaignDistribution() {
             distributed: sum("distributedQty"),
             available: sum("availableQty"),
           };
+          // Robust campaign target fallback used across screens
+          const campaignTargetFromConfig = (campaign?.resources || []).reduce(
+            (acc: number, r: any) => acc + (Number(r.quantity || 0) || 0),
+            0
+          );
+          const campaignTargetEffective =
+            campaignSum.target > 0
+              ? campaignSum.target
+              : campaignTargetFromConfig;
           const isSingleResourceCampaign =
             (campaign?.resources || []).length === 1;
           const configTargetForSelected = resourceId
@@ -315,48 +358,52 @@ export default function CampaignDistribution() {
           const effectiveTargetForSelected = resourceId
             ? snapshotTargetForSelected > 0
               ? snapshotTargetForSelected
-              : configTargetForSelected
+              : configTargetForSelected > 0
+              ? configTargetForSelected
+              : isSingleResourceCampaign
+              ? campaignTargetEffective
+              : 0
             : 0;
-          const headerTarget = resourceId
-            ? effectiveTargetForSelected
-            : campaignSum.target > 0
-            ? campaignSum.target
-            : (campaign?.resources || []).reduce(
-                (acc: number, r: any) => acc + (Number(r.quantity || 0) || 0),
-                0
-              );
-          const headerCollected = resourceId
-            ? typeof (selectedResSnapshot as any)?.collectedQty === "number"
-              ? Number((selectedResSnapshot as any)?.collectedQty)
-              : isSingleResourceCampaign
-              ? campaignSum.collected
-              : 0
-            : campaignSum.collected;
-          const headerDistributed = resourceId
-            ? typeof (selectedResSnapshot as any)?.distributedQty === "number"
-              ? Number((selectedResSnapshot as any)?.distributedQty)
-              : isSingleResourceCampaign
-              ? campaignSum.distributed
-              : 0
-            : campaignSum.distributed;
-          const headerAvailable = resourceId
-            ? typeof selectedStockTotals?.totalAvailable === "number"
-              ? Number(selectedStockTotals.totalAvailable)
-              : typeof (selectedResSnapshot as any)?.availableQty === "number"
-              ? Number((selectedResSnapshot as any)?.availableQty)
-              : isSingleResourceCampaign
-              ? campaignSum.available
-              : 0
-            : (Array.isArray(stockTotals) ? (stockTotals as any[]) : []).length
-            ? (stockTotals as any[]).reduce(
-                (acc: number, r: any) => acc + (r.totalAvailable || 0),
-                0
-              )
-            : campaignSum.available;
+          const headerTarget =
+            didManuallySelectResource && resourceId
+              ? effectiveTargetForSelected
+              : campaignTargetEffective;
+          const headerCollected =
+            didManuallySelectResource && resourceId
+              ? typeof (selectedResSnapshot as any)?.collectedQty === "number"
+                ? Number((selectedResSnapshot as any)?.collectedQty)
+                : isSingleResourceCampaign
+                ? campaignSum.collected
+                : 0
+              : campaignSum.collected;
+          const headerDistributed =
+            didManuallySelectResource && resourceId
+              ? typeof (selectedResSnapshot as any)?.distributedQty === "number"
+                ? Number((selectedResSnapshot as any)?.distributedQty)
+                : isSingleResourceCampaign
+                ? campaignSum.distributed
+                : 0
+              : campaignSum.distributed;
+          const headerAvailable =
+            didManuallySelectResource && resourceId
+              ? typeof selectedStockTotals?.totalAvailable === "number"
+                ? Number(selectedStockTotals.totalAvailable)
+                : typeof (selectedResSnapshot as any)?.availableQty === "number"
+                ? Number((selectedResSnapshot as any)?.availableQty)
+                : isSingleResourceCampaign
+                ? campaignSum.available
+                : 0
+              : (Array.isArray(stockTotals) ? (stockTotals as any[]) : [])
+                  .length
+              ? (stockTotals as any[]).reduce(
+                  (acc: number, r: any) => acc + (r.totalAvailable || 0),
+                  0
+                )
+              : campaignSum.available;
           return (
             <ProgressHeader
               title={
-                resourceId
+                didManuallySelectResource && resourceId
                   ? `Progress · ${
                       resourceOptions.find((r) => r.key === resourceId)
                         ?.label || "Selected"
@@ -367,9 +414,11 @@ export default function CampaignDistribution() {
               collected={headerCollected}
               distributed={headerDistributed}
               available={headerAvailable}
-              unitLabel={unitLabel}
+              unitLabel={
+                didManuallySelectResource && resourceId ? unitLabel : ""
+              }
               stockTotals={
-                resourceId && selectedStockTotals
+                didManuallySelectResource && resourceId && selectedStockTotals
                   ? {
                       totalQuantity: selectedStockTotals.totalQuantity || 0,
                       totalConsumed: selectedStockTotals.totalConsumed || 0,
@@ -428,11 +477,15 @@ export default function CampaignDistribution() {
               >
                 <Text
                   style={{
-                    color: resourceId ? colors.cardForeground : colors.muted,
+                    color:
+                      didManuallySelectResource && resourceId
+                        ? colors.cardForeground
+                        : colors.muted,
                   }}
                 >
-                  {resourceOptions.find((r) => r.key === resourceId)?.label ||
-                    "Select resource"}
+                  {didManuallySelectResource && resourceId
+                    ? resourceOptions.find((r) => r.key === resourceId)?.label
+                    : "Select resource"}
                 </Text>
                 <Ionicons
                   name="chevron-down-outline"
@@ -443,7 +496,8 @@ export default function CampaignDistribution() {
             </View>
 
             {/* Completed banner when fully distributed against campaign target */}
-            {resourceId &&
+            {didManuallySelectResource &&
+              resourceId &&
               (Number((selectedResSnapshot as any)?.targetQty) || 0) > 0 &&
               remainingToDistribute === 0 && (
                 <View
@@ -483,7 +537,7 @@ export default function CampaignDistribution() {
                 <Text style={{ fontWeight: "600", marginBottom: 6 }}>
                   Target Quantity
                 </Text>
-                {resourceId && (
+                {didManuallySelectResource && resourceId && (
                   <View
                     style={{
                       flexDirection: "row",
@@ -529,7 +583,11 @@ export default function CampaignDistribution() {
                   keyboardType="numeric"
                   placeholder="Amount"
                   placeholderTextColor={colors.muted}
-                  editable={!!resourceId && Number(maxDistributable) > 0}
+                  editable={
+                    didManuallySelectResource &&
+                    !!resourceId &&
+                    Number(maxDistributable) > 0
+                  }
                   style={{
                     height: 44,
                     borderRadius: 12,
@@ -539,10 +597,14 @@ export default function CampaignDistribution() {
                     paddingHorizontal: spacing.md,
                     color: colors.cardForeground,
                     opacity:
-                      !!resourceId && Number(maxDistributable) > 0 ? 1 : 0.6,
+                      didManuallySelectResource &&
+                      !!resourceId &&
+                      Number(maxDistributable) > 0
+                        ? 1
+                        : 0.6,
                   }}
                 />
-                {resourceId && (
+                {didManuallySelectResource && resourceId && (
                   <Text
                     style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}
                   >
@@ -582,7 +644,7 @@ export default function CampaignDistribution() {
                 </Pressable>
               </View>
             </View>
-            {insufficient && (
+            {didManuallySelectResource && insufficient && (
               <View
                 style={{
                   flexDirection: "row",
@@ -800,7 +862,12 @@ export default function CampaignDistribution() {
             </View>
 
             <Button
-              disabled={!resourceId || !targetQty || creating}
+              disabled={
+                !didManuallySelectResource ||
+                !resourceId ||
+                !targetQty ||
+                creating
+              }
               style={{ width: "100%" }}
               onPress={async () => {
                 if (!resourceId || !targetQty) return;
@@ -841,6 +908,7 @@ export default function CampaignDistribution() {
                   }).unwrap();
                   // reset
                   setResourceId(undefined);
+                  setDidManuallySelectResource(false);
                   setTargetQty("");
                   setNotes("");
                   setPlannedStartAt(undefined);
@@ -1465,12 +1533,25 @@ export default function CampaignDistribution() {
         visible={resourcePicker}
         title="Select resource"
         options={resourceOptions.map((o) => o.label)}
-        selected={resourceOptions.find((r) => r.key === resourceId)?.label}
+        selected={
+          didManuallySelectResource && resourceId
+            ? resourceOptions.find((r) => r.key === resourceId)?.label
+            : undefined
+        }
         onSelect={(v) => {
           const match = resourceOptions.find((r) => r.label === v);
           setResourceId(match?.key);
           setTargetQty("");
+          setDidManuallySelectResource(true);
           setResourcePicker(false);
+          // Refresh snapshots and stock for the selected resource to update header immediately
+          setTimeout(() => {
+            try {
+              if (refetchResourceSnapshot) refetchResourceSnapshot();
+              if (refetchSnapshots) refetchSnapshots();
+              if (refetchStockTotals) refetchStockTotals();
+            } catch {}
+          }, 0);
         }}
         onClose={() => setResourcePicker(false)}
       />
