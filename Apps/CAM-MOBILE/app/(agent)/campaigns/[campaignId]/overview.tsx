@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -58,6 +58,40 @@ export default function CampaignOverview() {
   );
 
   const assignment = data as any;
+  // Resource IDs configured for this campaign (used as fallback scoping)
+  const campaignResourceIds = useMemo(() => {
+    const ids = new Set<string>();
+    (assignment?.campaign?.resources || []).forEach((r: any) => {
+      if (r?.id) ids.add(String(r.id));
+    });
+    return ids;
+  }, [assignment]);
+
+  // Strictly filter server lists to the current campaign to avoid bleed-over
+  const filteredLots = useMemo(() => {
+    const cid = String(campaignId || "");
+    return (lots as any[]).filter(
+      (l: any) =>
+        String(l?.campaignId || "") === cid ||
+        (l?.resourceId && campaignResourceIds.has(String(l.resourceId)))
+    );
+  }, [lots, campaignId, campaignResourceIds]);
+  const filteredDistributions = useMemo(() => {
+    const cid = String(campaignId || "");
+    return (distributions as any[]).filter(
+      (d: any) =>
+        String(d?.campaignId || "") === cid ||
+        (d?.resourceId && campaignResourceIds.has(String(d.resourceId)))
+    );
+  }, [distributions, campaignId, campaignResourceIds]);
+  const filteredCollections = useMemo(() => {
+    const cid = String(campaignId || "");
+    return (collections as any[]).filter(
+      (c: any) =>
+        String(c?.campaignId || "") === cid ||
+        (c?.resourceId && campaignResourceIds.has(String(c.resourceId)))
+    );
+  }, [collections, campaignId, campaignResourceIds]);
   const campaign = useMemo(() => {
     return {
       name: assignment?.campaign?.name || "Campaign",
@@ -157,7 +191,7 @@ export default function CampaignOverview() {
   // Build a quick index of latest lot per resource to show readable info
   const latestLotByResource: Record<string, any> = React.useMemo(() => {
     const map: Record<string, any> = {};
-    (lots as any[]).forEach((lot: any) => {
+    (filteredLots as any[]).forEach((lot: any) => {
       const id = lot?.resourceId;
       if (!id) return;
       const curr = map[id];
@@ -168,12 +202,18 @@ export default function CampaignOverview() {
       if (!curr || lotTime > currTime) map[id] = lot;
     });
     return map;
-  }, [lots]);
+  }, [filteredLots]);
 
   // Track expand/collapse per resource
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const toggleExpanded = (resId: string) =>
     setExpanded((prev) => ({ ...prev, [resId]: !prev[resId] }));
+
+  // Reset UI expansion states when campaign changes to avoid carryover
+  useEffect(() => {
+    setExpanded({});
+    setExpandedLogs({});
+  }, [campaignId]);
 
   // Build unified recent logs (lots + distributions), newest first
   const recentLogs = useMemo(() => {
@@ -195,21 +235,21 @@ export default function CampaignOverview() {
       const cfg = assignment?.campaign?.resources?.find?.(
         (r: any) => r.id === resId
       );
-      const last = (lots as any[]).find((l) => l.resourceId === resId);
+      const last = (filteredLots as any[]).find((l) => l.resourceId === resId);
       return cfg?.name || last?.resourceSnapshot?.name || resId;
     };
     const resourceUnit = (resId: string) => {
       const cfg = assignment?.campaign?.resources?.find?.(
         (r: any) => r.id === resId
       );
-      const last = (lots as any[]).find((l) => l.resourceId === resId);
+      const last = (filteredLots as any[]).find((l) => l.resourceId === resId);
       return cfg?.unit || last?.resourceSnapshot?.unit || "";
     };
 
     const logs: Log[] = [];
 
     // Collection lots (when a collection completes, a lot is created)
-    (lots as any[]).forEach((l) => {
+    (filteredLots as any[]).forEach((l) => {
       const unit = resourceUnit(l.resourceId);
       const resName = resourceName(l.resourceId);
       const cfg = assignment?.campaign?.resources?.find?.(
@@ -237,7 +277,7 @@ export default function CampaignOverview() {
     });
 
     // Distribution jobs
-    (distributions as any[]).forEach((d) => {
+    (filteredDistributions as any[]).forEach((d) => {
       const t =
         d.schedule?.completedAt ||
         d.schedule?.startedAt ||
@@ -292,7 +332,7 @@ export default function CampaignOverview() {
     });
 
     // Collection jobs
-    (collections as any[]).forEach((c) => {
+    (filteredCollections as any[]).forEach((c) => {
       const t =
         c.schedule?.completedAt ||
         c.schedule?.startedAt ||
@@ -345,7 +385,7 @@ export default function CampaignOverview() {
     return logs
       .filter((l) => Number.isFinite(l.time))
       .sort((a, b) => b.time - a.time);
-  }, [lots, distributions, collections, assignment]);
+  }, [filteredLots, filteredDistributions, filteredCollections, assignment]);
 
   // Expand/collapse per log card
   const [expandedLogs, setExpandedLogs] = useState<Record<string, boolean>>({});
