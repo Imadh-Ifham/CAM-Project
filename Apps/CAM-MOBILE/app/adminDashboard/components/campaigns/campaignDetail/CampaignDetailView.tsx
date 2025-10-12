@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -33,6 +33,10 @@ export default function CampaignDetailView() {
 
   // Using Redux to get selected campaign
   const selectedCampaign = useAppSelector(selectSelectedCampaign);
+
+  useEffect(() => {
+    console.log(selectedCampaign);
+  }, [selectedCampaign]);
 
   const handleEditCampaign = () => {
     router.push(

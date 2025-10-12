@@ -21,10 +21,12 @@ export type Campaign = {
   resources: Resources[];
 };
 
-type Resources = {
+export type Resources = {
+  id: string;
   name: string;
-  required: number;
-  available: number;
+  category: string;
+  requiredQuantity: number;
+  availableQuantity: number;
   unit: string;
 };
 
@@ -45,15 +47,7 @@ export interface CampaignFormData {
   city: string;
 
   // Resources
-  resources: Array<{
-    id: string;
-    name: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    estimatedCost: number;
-    description?: string;
-  }>;
+  resources: Resources[];
   estimatedBudget: number;
 
   // Schedule
@@ -89,10 +83,38 @@ export const mockCampaignDetail: Campaign = {
     email: "saman.perera@cam.lk",
   },
   resources: [
-    { name: "Food Packets", required: 1000, available: 750, unit: "packets" },
-    { name: "Water Bottles", required: 2000, available: 1500, unit: "bottles" },
-    { name: "Medical Kits", required: 50, available: 35, unit: "kits" },
-    { name: "Tents", required: 100, available: 80, unit: "tents" },
+    {
+      id: "1",
+      name: "Food Packets",
+      category: "food",
+      requiredQuantity: 1000,
+      availableQuantity: 750,
+      unit: "packets",
+    },
+    {
+      id: "2",
+      name: "Water Bottles",
+      category: "water",
+      requiredQuantity: 2000,
+      availableQuantity: 1500,
+      unit: "bottles",
+    },
+    {
+      id: "3",
+      name: "Medical Kits",
+      category: "medical",
+      requiredQuantity: 50,
+      availableQuantity: 35,
+      unit: "kits",
+    },
+    {
+      id: "4",
+      name: "Tents",
+      category: "shelter",
+      requiredQuantity: 100,
+      availableQuantity: 80,
+      unit: "tents",
+    },
   ],
 };
 

@@ -71,10 +71,14 @@ export type Campaign = {
     phone: string;
     email: string;
   };
-  resources: Array<{
-    name: string;
-    required: number;
-    available: number;
-    unit: string;
-  }>;
+  resources: Resources[];
+};
+
+export type Resources = {
+  id: string;
+  name: string;
+  category: string;
+  requiredQuantity: number;
+  availableQuantity: number;
+  unit: string;
 };

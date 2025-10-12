@@ -9,11 +9,12 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { CampaignFormData } from ".";
+import { CampaignFormData } from "@/src/types/campaign.type";
 
 interface CampaignLocationProps {
   formData: CampaignFormData;
   updateFormData: (updates: Partial<CampaignFormData>) => void;
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 const sriLankanDistricts = [
@@ -44,40 +45,71 @@ const sriLankanDistricts = [
   "Kegalle",
 ];
 
-const popularCities = {
+// Popular / notable cities / towns by district
+const popularCitiesByDistrict = {
   Colombo: [
-    "Colombo 01",
-    "Colombo 02",
-    "Colombo 03",
-    "Colombo 04",
-    "Colombo 05",
-    "Colombo 06",
-    "Colombo 07",
-    "Mount Lavinia",
-    "Dehiwala",
-    "Maharagama",
+    "Colombo",
+    "Sri Jayawardenepura Kotte",
+    "Dehiwala-Mount Lavinia",
+    "Moratuwa",
+    "Nawala",
   ],
-  Kandy: ["Kandy City", "Peradeniya", "Katugastota", "Gampola", "Nawalapitiya"],
-  Galle: ["Galle Fort", "Hikkaduwa", "Unawatuna", "Bentota", "Ambalangoda"],
-  Jaffna: ["Jaffna City", "Point Pedro", "Chavakachcheri", "Valvettithurai"],
-  Kurunegala: ["Kurunegala City", "Puttalam", "Chilaw", "Kuliyapitiya"],
+  Gampaha: ["Negombo", "Gampaha", "Wattala", "Ja-Ela"],
+  Kalutara: ["Kalutara", "Beruwala", "Horana"],
+  Kandy: ["Kandy", "Peradeniya", "Katugastota", "Gampola", "Nawalapitiya"],
+  Matale: ["Matale", "Dambulla", "Hunnasgiriya"],
+  "Nuwara Eliya": ["Nuwara Eliya", "Welimada", "Hatton"],
+  Galle: ["Galle", "Hikkaduwa", "Unawatuna", "Bentota", "Ambalangoda"],
+  Matara: ["Matara", "Tangalle", "Weligama"],
+  Hambantota: ["Hambantota", "Tangalle", "Kirinda"],
+  Jaffna: ["Jaffna", "Point Pedro", "Chavakachcheri", "Valvettithurai"],
+  Kilinochchi: ["Kilinochchi", "Poonakary"],
+  Mannar: ["Mannar", "Pesalai"],
+  Vavuniya: ["Vavuniya", "Pooneryn"],
+  Mullaitivu: ["Mullaitivu", "Mankulam"],
+  Batticaloa: ["Batticaloa", "Kattankudy"],
+  Ampara: ["Ampara", "Kalmunai"],
+  Trincomalee: ["Trincomalee", "Nilaveli"],
+  Kurunegala: ["Kurunegala", "Puttalam", "Chilaw", "Kuliyapitiya"],
+  Puttalam: ["Puttalam", "Chilaw", "Wennappuwa"],
+  Anuradhapura: ["Anuradhapura", "Medawachchiya", "Mihintale"],
+  Polonnaruwa: ["Polonnaruwa", "Habarana"],
+  Badulla: ["Badulla", "Welimada"],
+  Moneragala: ["Moneragala", "Buttala"],
+  Ratnapura: ["Ratnapura", "Pelmadulla", "Belihuloya"],
+  Kegalle: ["Kegalle", "Mawanella", "Kitulgala"],
 };
 
 export default function CampaignLocation({
   formData,
   updateFormData,
+  onValidationChange,
 }: CampaignLocationProps) {
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [searchDistrict, setSearchDistrict] = useState("");
   const [searchCity, setSearchCity] = useState("");
 
+  // Validation logic
+  const isDistrictValid = formData.district.trim().length > 0;
+  const isCityValid = formData.city.trim().length > 0;
+  const isValid = isDistrictValid && isCityValid;
+
+  // Notify parent about validation status
+  React.useEffect(() => {
+    if (onValidationChange) {
+      onValidationChange(isValid);
+    }
+  }, [isValid, onValidationChange]);
+
   const filteredDistricts = sriLankanDistricts.filter((district) =>
     district.toLowerCase().includes(searchDistrict.toLowerCase())
   );
 
   const availableCities =
-    popularCities[formData.district as keyof typeof popularCities] || [];
+    popularCitiesByDistrict[
+      formData.district as keyof typeof popularCitiesByDistrict
+    ] || [];
   const filteredCities = availableCities.filter((city) =>
     city.toLowerCase().includes(searchCity.toLowerCase())
   );
@@ -107,7 +139,12 @@ export default function CampaignLocation({
         <View style={styles.inputContainer}>
           <Text style={styles.label}>District *</Text>
           <TouchableOpacity
-            style={styles.dropdownButton}
+            style={[
+              styles.dropdownButton,
+              !isDistrictValid &&
+                formData.district === "" &&
+                styles.dropdownButtonError,
+            ]}
             onPress={() => setShowDistrictDropdown(!showDistrictDropdown)}
           >
             <Text
@@ -120,6 +157,13 @@ export default function CampaignLocation({
             </Text>
             <Ionicons name="chevron-down" size={20} color="#666" />
           </TouchableOpacity>
+          {!isDistrictValid && (
+            <View style={styles.validationContainer}>
+              <Text style={styles.validationError}>
+                Please select a district
+              </Text>
+            </View>
+          )}
 
           {showDistrictDropdown && (
             <View style={styles.dropdown}>
@@ -156,6 +200,7 @@ export default function CampaignLocation({
             style={[
               styles.dropdownButton,
               !formData.district && styles.disabledButton,
+              !isCityValid && formData.district && styles.dropdownButtonError,
             ]}
             onPress={() =>
               formData.district && setShowCityDropdown(!showCityDropdown)
@@ -175,6 +220,13 @@ export default function CampaignLocation({
             </Text>
             <Ionicons name="chevron-down" size={20} color="#666" />
           </TouchableOpacity>
+          {!isCityValid && formData.district && (
+            <View style={styles.validationContainer}>
+              <Text style={styles.validationError}>
+                Please select a city/area
+              </Text>
+            </View>
+          )}
 
           {showCityDropdown && availableCities.length > 0 && (
             <View style={styles.dropdown}>
@@ -210,21 +262,6 @@ export default function CampaignLocation({
               </Text>
             </View>
           )}
-        </View>
-
-        {/* Address */}
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Detailed Address</Text>
-          <TextInput
-            style={[styles.textInput, styles.textArea]}
-            value={formData.address}
-            onChangeText={(text) => updateFormData({ address: text })}
-            placeholder="Enter detailed address (street, landmarks, etc.)"
-            placeholderTextColor="#666"
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-          />
         </View>
       </View>
 
@@ -268,7 +305,7 @@ export default function CampaignLocation({
       </View>
 
       {/* Location Summary */}
-      {(formData.district || formData.city || formData.address) && (
+      {(formData.district || formData.city) && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Location Summary</Text>
           <View style={styles.summaryCard}>
@@ -284,11 +321,6 @@ export default function CampaignLocation({
             )}
             {formData.city && (
               <Text style={styles.summaryText}>City/Area: {formData.city}</Text>
-            )}
-            {formData.address && (
-              <Text style={styles.summaryText}>
-                Address: {formData.address}
-              </Text>
             )}
           </View>
         </View>
@@ -493,5 +525,17 @@ const styles = StyleSheet.create({
     color: "#bbb",
     fontSize: 13,
     lineHeight: 18,
+  },
+  dropdownButtonError: {
+    borderColor: "#ff4444",
+    borderWidth: 2,
+  },
+  validationContainer: {
+    marginTop: 8,
+  },
+  validationError: {
+    color: "#ff4444",
+    fontSize: 12,
+    fontWeight: "500",
   },
 });

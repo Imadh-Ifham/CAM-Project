@@ -116,9 +116,11 @@ class CampaignService {
         email: campaign.coordinator?.email || "",
       },
       resources: campaign.resources.map((resource) => ({
+        id: resource.id,
+        category: resource.category,
         name: resource.name,
-        required: resource.quantity,
-        available: resource.quantity, // For now, assuming required = available
+        requiredQuantity: resource.requiredQuantity,
+        availableQuantity: resource.availableQuantity,
         unit: resource.unit,
       })),
     };
@@ -129,7 +131,7 @@ class CampaignService {
    */
   async createCampaign(
     campaignData: CreateCampaignInput
-  ): Promise<ServiceResponse<ICampaign>> {
+  ): Promise<ServiceResponse<CampaignType>> {
     try {
       // Start a MongoDB session for transaction
       const session = await mongoose.startSession();
@@ -181,9 +183,13 @@ class CampaignService {
         // Commit the transaction
         await session.commitTransaction();
 
+        // Transform to Campaign type format
+        const transformedCampaign =
+          CampaignService.transformCampaignToFullFormat(savedCampaign);
+
         return {
           success: true,
-          data: savedCampaign,
+          data: transformedCampaign,
           message: "Campaign created successfully",
         };
       } catch (error) {

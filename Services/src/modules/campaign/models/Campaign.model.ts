@@ -6,7 +6,8 @@ interface ICampaignResource {
   id: string;
   name: string;
   category: string;
-  quantity: number;
+  requiredQuantity: number;
+  availableQuantity: number;
   unit: string;
 }
 
@@ -81,24 +82,15 @@ const CampaignResourceSchema = new Schema<ICampaignResource>({
     type: String,
     required: [true, "Resource category is required"],
     trim: true,
-    enum: {
-      values: [
-        "food",
-        "water",
-        "medical",
-        "shelter",
-        "clothing",
-        "equipment",
-        "transport",
-        "other",
-      ],
-      message: "Invalid resource category",
-    },
   },
-  quantity: {
+  requiredQuantity: {
     type: Number,
     required: [true, "Resource quantity is required"],
     min: [1, "Quantity must be at least 1"],
+  },
+  availableQuantity: {
+    type: Number,
+    default: 0,
   },
   unit: {
     type: String,

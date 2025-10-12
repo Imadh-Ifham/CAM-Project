@@ -9,11 +9,12 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { CampaignFormData } from ".";
+import { CampaignFormData, Resources } from "@/src/types/campaign.type";
 
 interface CampaignResourcesProps {
   formData: CampaignFormData;
   updateFormData: (updates: Partial<CampaignFormData>) => void;
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 // Resource interface is defined in CreateCampaign.tsx
@@ -60,39 +61,56 @@ const commonUnits = [
 export default function CampaignResources({
   formData,
   updateFormData,
+  onValidationChange,
 }: CampaignResourcesProps) {
   const [newResource, setNewResource] = useState<{
     name?: string;
-    quantity?: number;
+    requiredQuantity?: number;
     unit?: string;
     category?: string;
   }>({
     name: "",
-    quantity: 0,
+    requiredQuantity: 1,
     unit: "pieces",
     category: "food",
   });
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
 
+  // Validation logic
+  const hasValidResources =
+    formData.resources.length > 0 &&
+    formData.resources.some((resource) => resource.requiredQuantity > 0);
+  const isValid = hasValidResources;
+
+  // Notify parent about validation status
+  React.useEffect(() => {
+    if (onValidationChange) {
+      onValidationChange(isValid);
+    }
+  }, [isValid, onValidationChange]);
+
+  const generateResourceId = () => {
+    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  };
+
   const addResource = () => {
     if (
       !newResource.name ||
-      !newResource.quantity ||
-      newResource.quantity <= 0
+      !newResource.requiredQuantity ||
+      newResource.requiredQuantity <= 0
     ) {
       Alert.alert("Error", "Please fill in all resource details");
       return;
     }
 
-    const resource = {
-      id: Date.now().toString(),
+    const resource: Resources = {
+      id: generateResourceId(),
       name: newResource.name!,
       category: newResource.category!,
-      quantity: newResource.quantity!,
+      requiredQuantity: newResource.requiredQuantity!,
+      availableQuantity: 0, // Initially 0, will be updated during campaign execution
       unit: newResource.unit!,
-      estimatedCost: 0,
-      description: "",
     };
 
     updateFormData({
@@ -101,7 +119,7 @@ export default function CampaignResources({
 
     setNewResource({
       name: "",
-      quantity: 0,
+      requiredQuantity: 0,
       unit: "pieces",
       category: "food",
     });
@@ -114,15 +132,22 @@ export default function CampaignResources({
     });
   };
 
+  const updateResourceQuantity = (resourceId: string, quantity: number) => {
+    updateFormData({
+      resources: formData.resources.map((r) =>
+        r.id === resourceId ? { ...r, requiredQuantity: quantity } : r
+      ),
+    });
+  };
+
   const addCommonResource = (resourceName: string, category: string) => {
-    const resource = {
-      id: Date.now().toString(),
+    const resource: Resources = {
+      id: generateResourceId(),
       name: resourceName,
       category: category,
-      quantity: 1,
+      requiredQuantity: 1,
+      availableQuantity: 0,
       unit: "pieces",
-      estimatedCost: 0,
-      description: "",
     };
 
     updateFormData({
@@ -274,11 +299,11 @@ export default function CampaignResources({
                 <Text style={styles.formLabel}>Quantity</Text>
                 <TextInput
                   style={styles.formInput}
-                  value={newResource.quantity?.toString() || ""}
+                  value={newResource.requiredQuantity?.toString() || ""}
                   onChangeText={(text) =>
                     setNewResource({
                       ...newResource,
-                      quantity: parseInt(text) || 0,
+                      requiredQuantity: parseInt(text) || 0,
                     })
                   }
                   placeholder="0"
@@ -302,6 +327,16 @@ export default function CampaignResources({
             >
               <Text style={styles.addResourceButtonText}>Add Resource</Text>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Validation Message */}
+        {!hasValidResources && formData.resources.length > 0 && (
+          <View style={styles.validationContainer}>
+            <Ionicons name="warning" size={16} color="#ff4444" />
+            <Text style={styles.validationError}>
+              At least one resource must have a quantity greater than 0
+            </Text>
           </View>
         )}
 
@@ -337,10 +372,30 @@ export default function CampaignResources({
 
                   <View style={styles.resourceContent}>
                     <Text style={styles.resourceName}>{resource.name}</Text>
-                    <Text style={styles.resourceDetails}>
-                      {resource.quantity} {resource.unit} •{" "}
+                    <Text style={styles.resourceCategory}>
                       {category?.label || resource.category}
                     </Text>
+                    <View style={styles.quantityContainer}>
+                      <Text style={styles.quantityLabel}>Required:</Text>
+                      <TextInput
+                        style={[
+                          styles.quantityInput,
+                          resource.requiredQuantity === 0 &&
+                            styles.quantityInputError,
+                        ]}
+                        value={resource.requiredQuantity.toString()}
+                        onChangeText={(text) =>
+                          updateResourceQuantity(
+                            resource.id,
+                            parseInt(text) || 0
+                          )
+                        }
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor="#666"
+                      />
+                      <Text style={styles.unitText}>{resource.unit}</Text>
+                    </View>
                   </View>
 
                   <TouchableOpacity
@@ -547,10 +602,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  unitText: {
-    color: "#fff",
-    fontSize: 14,
-  },
   addResourceButton: {
     backgroundColor: "#00ff94",
     borderRadius: 8,
@@ -631,5 +682,54 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+  },
+  resourceCategory: {
+    color: "#888",
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  quantityContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  quantityLabel: {
+    color: "#bbb",
+    fontSize: 12,
+  },
+  quantityInput: {
+    backgroundColor: "#333",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    color: "#fff",
+    fontSize: 12,
+    minWidth: 50,
+    textAlign: "center",
+  },
+  unitText: {
+    color: "#888",
+    fontSize: 12,
+  },
+  validationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ff444420",
+    borderColor: "#ff4444",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  validationError: {
+    color: "#ff4444",
+    fontSize: 12,
+    fontWeight: "500",
+    flex: 1,
+  },
+  quantityInputError: {
+    borderColor: "#ff4444",
+    borderWidth: 1,
   },
 });
