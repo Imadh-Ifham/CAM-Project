@@ -38,13 +38,13 @@ export default function AdminAuthForm({ onSubmit, onRegister }: Props) {
             width: 80,
             height: 80,
             borderRadius: 40,
-            backgroundColor: "#dbeafe",
+            backgroundColor: colors.mutedBackground,
             alignItems: "center",
             justifyContent: "center",
             marginBottom: spacing.md,
           }}
         >
-          <Feather name="user-check" size={40} color="#2563eb" />
+          <Feather name="user-check" size={40} color={colors.primary} />
         </View>
         <Text style={[typography.h2, { marginBottom: spacing.xs }]}>
           Welcome Back, Admin
@@ -67,6 +67,7 @@ export default function AdminAuthForm({ onSubmit, onRegister }: Props) {
             value={email}
             onChangeText={setEmail}
             placeholder="Enter your email"
+            placeholderTextColor={colors.muted}
             keyboardType="email-address"
             autoCapitalize="none"
             style={{
@@ -77,6 +78,7 @@ export default function AdminAuthForm({ onSubmit, onRegister }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 12,
+              color: colors.cardForeground,
             }}
           />
         </View>
@@ -98,6 +100,7 @@ export default function AdminAuthForm({ onSubmit, onRegister }: Props) {
             value={password}
             onChangeText={setPassword}
             placeholder="Enter your password"
+            placeholderTextColor={colors.muted}
             secureTextEntry={!showPassword}
             style={{
               height: 48,
@@ -107,6 +110,7 @@ export default function AdminAuthForm({ onSubmit, onRegister }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 44,
+              color: colors.cardForeground,
             }}
           />
           <Pressable
@@ -158,7 +162,9 @@ export default function AdminAuthForm({ onSubmit, onRegister }: Props) {
       {/* Forgot password */}
       <View style={{ alignItems: "center", marginTop: spacing.lg }}>
         <Pressable onPress={() => {}}>
-          <Text style={{ fontSize: 14, fontWeight: "600" }}>
+          <Text
+            style={{ fontSize: 14, fontWeight: "600", color: colors.primary }}
+          >
             Forgot Password?
           </Text>
         </Pressable>

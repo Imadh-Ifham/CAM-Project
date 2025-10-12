@@ -55,13 +55,13 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
             width: 64,
             height: 64,
             borderRadius: 32,
-            backgroundColor: "#ffedd5", // orange-100
+            backgroundColor: colors.mutedBackground,
             alignItems: "center",
             justifyContent: "center",
             marginBottom: spacing.sm,
           }}
         >
-          <Feather name="users" size={28} color="#ea580c" />
+          <Feather name="users" size={28} color={colors.orange} />
         </View>
         <Text style={[typography.h2, { marginBottom: spacing.xs }]}>
           Make a Difference
@@ -88,6 +88,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
               value={data.fullName}
               onChangeText={(v) => setData((s) => ({ ...s, fullName: v }))}
               placeholder="Your name"
+              placeholderTextColor={colors.muted}
               style={{
                 height: 48,
                 borderRadius: 12,
@@ -96,6 +97,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
                 backgroundColor: colors.secondary,
                 paddingLeft: 36,
                 paddingRight: 12,
+                color: colors.cardForeground,
               }}
             />
           </View>
@@ -108,6 +110,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
             value={data.age}
             onChangeText={(v) => setData((s) => ({ ...s, age: v }))}
             placeholder="Age"
+            placeholderTextColor={colors.muted}
             keyboardType="number-pad"
             style={{
               height: 48,
@@ -116,6 +119,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
               borderColor: colors.border,
               backgroundColor: colors.secondary,
               paddingHorizontal: 12,
+              color: colors.cardForeground,
             }}
           />
         </View>
@@ -137,6 +141,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
             value={data.email}
             onChangeText={(v) => setData((s) => ({ ...s, email: v }))}
             placeholder="Enter your email"
+            placeholderTextColor={colors.muted}
             keyboardType="email-address"
             autoCapitalize="none"
             style={{
@@ -147,6 +152,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 12,
+              color: colors.cardForeground,
             }}
           />
         </View>
@@ -168,6 +174,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
             value={data.phone}
             onChangeText={(v) => setData((s) => ({ ...s, phone: v }))}
             placeholder="Enter your phone number"
+            placeholderTextColor={colors.muted}
             keyboardType="phone-pad"
             style={{
               height: 48,
@@ -177,6 +184,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 12,
+              color: colors.cardForeground,
             }}
           />
         </View>
@@ -198,6 +206,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
             value={data.password}
             onChangeText={(v) => setData((s) => ({ ...s, password: v }))}
             placeholder="Create a password"
+            placeholderTextColor={colors.muted}
             secureTextEntry={!showPassword}
             style={{
               height: 48,
@@ -207,6 +216,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 44,
+              color: colors.cardForeground,
             }}
           />
           <Pressable
@@ -248,6 +258,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
             value={data.confirmPassword}
             onChangeText={(v) => setData((s) => ({ ...s, confirmPassword: v }))}
             placeholder="Confirm your password"
+            placeholderTextColor={colors.muted}
             secureTextEntry={!showPassword}
             style={{
               height: 48,
@@ -257,6 +268,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 12,
+              color: colors.cardForeground,
             }}
           />
         </View>
@@ -271,6 +283,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
           value={data.skills}
           onChangeText={(v) => setData((s) => ({ ...s, skills: v }))}
           placeholder="e.g., First Aid, Driving, Languages, Cooking..."
+          placeholderTextColor={colors.muted}
           multiline
           numberOfLines={3}
           textAlignVertical="top"
@@ -281,6 +294,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
             borderColor: colors.border,
             backgroundColor: colors.secondary,
             padding: 12,
+            color: colors.cardForeground,
           }}
         />
       </View>
@@ -294,6 +308,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
           value={data.availability}
           onChangeText={(v) => setData((s) => ({ ...s, availability: v }))}
           placeholder="e.g., Weekends, evenings, 5-10 hours/week"
+          placeholderTextColor={colors.muted}
           style={{
             height: 48,
             borderRadius: 12,
@@ -301,6 +316,7 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
             borderColor: colors.border,
             backgroundColor: colors.secondary,
             paddingHorizontal: 12,
+            color: colors.cardForeground,
           }}
         />
       </View>
@@ -331,7 +347,9 @@ export default function VolunteerSignupForm({ onSubmit, onLogin }: Props) {
       {/* Sign in link */}
       <View style={{ alignItems: "center", marginTop: spacing.lg }}>
         <Pressable onPress={onLogin}>
-          <Text style={{ fontSize: 14, fontWeight: "600" }}>
+          <Text
+            style={{ fontSize: 14, fontWeight: "600", color: colors.primary }}
+          >
             Already have an account? Sign in
           </Text>
         </Pressable>

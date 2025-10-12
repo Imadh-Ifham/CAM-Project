@@ -36,13 +36,13 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
             width: 80,
             height: 80,
             borderRadius: 40,
-            backgroundColor: "#ecfdf5",
+            backgroundColor: colors.mutedBackground,
             alignItems: "center",
             justifyContent: "center",
             marginBottom: spacing.md,
           }}
         >
-          <Feather name="user-check" size={40} color="#16a34a" />
+          <Feather name="user-check" size={40} color={colors.green} />
         </View>
         <Text style={[typography.h2, { marginBottom: spacing.xs }]}>
           Welcome Back, Agent
@@ -67,6 +67,7 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
             value={email}
             onChangeText={setEmail}
             placeholder="Enter your email"
+            placeholderTextColor={colors.muted}
             keyboardType="email-address"
             autoCapitalize="none"
             style={{
@@ -77,6 +78,7 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 12,
+              color: colors.cardForeground,
             }}
           />
         </View>
@@ -98,6 +100,7 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
             value={password}
             onChangeText={setPassword}
             placeholder="Enter your password"
+            placeholderTextColor={colors.muted}
             secureTextEntry={!showPassword}
             style={{
               height: 48,
@@ -107,6 +110,7 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 44,
+              color: colors.cardForeground,
             }}
           />
           <Pressable
@@ -159,7 +163,9 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
       {/* Forgot password */}
       <View style={{ alignItems: "center", marginTop: spacing.lg }}>
         <Pressable onPress={() => {}}>
-          <Text style={{ fontSize: 14, fontWeight: "600" }}>
+          <Text
+            style={{ fontSize: 14, fontWeight: "600", color: colors.primary }}
+          >
             Forgot Password?
           </Text>
         </Pressable>
@@ -191,7 +197,13 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
           textStyle={{ fontWeight: "700" }}
         >
           <Feather name="user" size={16} color={colors.cardForeground} />
-          <Text style={{ marginLeft: spacing.sm, fontWeight: "700" }}>
+          <Text
+            style={{
+              marginLeft: spacing.sm,
+              fontWeight: "700",
+              color: colors.cardForeground,
+            }}
+          >
             Create Agent Account
           </Text>
         </Button>
@@ -233,18 +245,18 @@ export default function AgentAuthForm({ onSubmit, onRegister }: Props) {
           }}
           style={{
             height: 40,
-            borderColor: "#f59e0b",
-            backgroundColor: "#fef3c7",
+            borderColor: colors.orange,
+            backgroundColor: colors.mutedBackground,
             borderWidth: 1,
             borderStyle: "dashed",
           }}
-          textStyle={{ color: "#92400e", fontSize: 12, fontWeight: "600" }}
+          textStyle={{ color: colors.orange, fontSize: 12, fontWeight: "600" }}
         >
-          <Feather name="zap" size={14} color="#92400e" />
+          <Feather name="zap" size={14} color={colors.orange} />
           <Text
             style={{
               marginLeft: spacing.xs,
-              color: "#92400e",
+              color: colors.orange,
               fontSize: 12,
               fontWeight: "600",
             }}

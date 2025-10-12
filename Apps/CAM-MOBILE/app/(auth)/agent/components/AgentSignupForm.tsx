@@ -54,13 +54,13 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
             width: 64,
             height: 64,
             borderRadius: 32,
-            backgroundColor: "#dcfce7", // green-100
+            backgroundColor: colors.mutedBackground,
             alignItems: "center",
             justifyContent: "center",
             marginBottom: spacing.sm,
           }}
         >
-          <Feather name="user-check" size={28} color="#16a34a" />
+          <Feather name="user-check" size={28} color={colors.green} />
         </View>
         <Text style={[typography.h2, { marginBottom: spacing.xs }]}>
           Become an Agent
@@ -86,6 +86,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
             value={data.fullName}
             onChangeText={(v) => setData((s) => ({ ...s, fullName: v }))}
             placeholder="Enter your full name"
+            placeholderTextColor={colors.muted}
             style={{
               height: 48,
               borderRadius: 12,
@@ -94,6 +95,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 12,
+              color: colors.cardForeground,
             }}
           />
         </View>
@@ -115,6 +117,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
             value={data.email}
             onChangeText={(v) => setData((s) => ({ ...s, email: v }))}
             placeholder="Enter your email"
+            placeholderTextColor={colors.muted}
             keyboardType="email-address"
             autoCapitalize="none"
             style={{
@@ -125,6 +128,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 12,
+              color: colors.cardForeground,
             }}
           />
         </View>
@@ -146,6 +150,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
             value={data.phone}
             onChangeText={(v) => setData((s) => ({ ...s, phone: v }))}
             placeholder="Enter your phone number"
+            placeholderTextColor={colors.muted}
             keyboardType="phone-pad"
             style={{
               height: 48,
@@ -155,6 +160,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 12,
+              color: colors.cardForeground,
             }}
           />
         </View>
@@ -169,6 +175,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
           value={data.organization}
           onChangeText={(v) => setData((s) => ({ ...s, organization: v }))}
           placeholder="Your organization or group"
+          placeholderTextColor={colors.muted}
           style={{
             height: 48,
             borderRadius: 12,
@@ -176,6 +183,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
             borderColor: colors.border,
             backgroundColor: colors.secondary,
             paddingHorizontal: 12,
+            color: colors.cardForeground,
           }}
         />
       </View>
@@ -196,6 +204,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
             value={data.password}
             onChangeText={(v) => setData((s) => ({ ...s, password: v }))}
             placeholder="Create a password"
+            placeholderTextColor={colors.muted}
             secureTextEntry={!showPassword}
             style={{
               height: 48,
@@ -205,6 +214,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 44,
+              color: colors.cardForeground,
             }}
           />
           <Pressable
@@ -246,6 +256,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
             value={data.confirmPassword}
             onChangeText={(v) => setData((s) => ({ ...s, confirmPassword: v }))}
             placeholder="Confirm your password"
+            placeholderTextColor={colors.muted}
             secureTextEntry={!showPassword}
             style={{
               height: 48,
@@ -255,6 +266,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
               backgroundColor: colors.secondary,
               paddingLeft: 36,
               paddingRight: 12,
+              color: colors.cardForeground,
             }}
           />
         </View>
@@ -269,6 +281,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
           value={data.experience}
           onChangeText={(v) => setData((s) => ({ ...s, experience: v }))}
           placeholder="Tell us about your experience with community work or why you want to become an agent..."
+          placeholderTextColor={colors.muted}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
@@ -279,6 +292,7 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
             borderColor: colors.border,
             backgroundColor: colors.secondary,
             padding: 12,
+            color: colors.cardForeground,
           }}
         />
       </View>
@@ -309,7 +323,9 @@ export default function AgentSignupForm({ onSubmit, onLogin }: Props) {
       {/* Sign in link */}
       <View style={{ alignItems: "center", marginTop: spacing.lg }}>
         <Pressable onPress={onLogin}>
-          <Text style={{ fontSize: 14, fontWeight: "600" }}>
+          <Text
+            style={{ fontSize: 14, fontWeight: "600", color: colors.primary }}
+          >
             Already have an account? Sign in
           </Text>
         </Pressable>
