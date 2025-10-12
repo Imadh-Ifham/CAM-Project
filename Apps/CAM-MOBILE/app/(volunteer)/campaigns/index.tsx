@@ -634,28 +634,44 @@ export default function VolunteerCampaignsIndex() {
                       padding: spacing.md,
                     }}
                   >
-                    <Text style={{ fontWeight: "700", marginBottom: 8 }}>
+                    <Text
+                      style={{
+                        fontWeight: "700",
+                        marginBottom: 8,
+                        color: colors.cardForeground,
+                      }}
+                    >
                       Campaign Details
                     </Text>
                     <View style={{ gap: 4 }}>
-                      <Text style={{ fontSize: 13 }}>
+                      <Text
+                        style={{ fontSize: 13, color: colors.cardForeground }}
+                      >
                         <Text style={{ fontWeight: "700" }}>Agent: </Text>
                         {selectedCampaign?.agent}
                       </Text>
-                      <Text style={{ fontSize: 13 }}>
+                      <Text
+                        style={{ fontSize: 13, color: colors.cardForeground }}
+                      >
                         <Text style={{ fontWeight: "700" }}>Location: </Text>
                         {selectedCampaign?.location}
                       </Text>
-                      <Text style={{ fontSize: 13 }}>
+                      <Text
+                        style={{ fontSize: 13, color: colors.cardForeground }}
+                      >
                         <Text style={{ fontWeight: "700" }}>Duration: </Text>
                         {selectedCampaign?.startDate} -{" "}
                         {selectedCampaign?.endDate}
                       </Text>
-                      <Text style={{ fontSize: 13 }}>
+                      <Text
+                        style={{ fontSize: 13, color: colors.cardForeground }}
+                      >
                         <Text style={{ fontWeight: "700" }}>Tasks: </Text>
                         {selectedCampaign?.taskTypes}
                       </Text>
-                      <Text style={{ fontSize: 13 }}>
+                      <Text
+                        style={{ fontSize: 13, color: colors.cardForeground }}
+                      >
                         <Text style={{ fontWeight: "700" }}>Volunteers: </Text>
                         {selectedCampaign?.volunteers}/
                         {selectedCampaign?.volunteersNeeded}
@@ -665,7 +681,12 @@ export default function VolunteerCampaignsIndex() {
 
                   {/* Personal Information */}
                   <View style={{ gap: spacing.md }}>
-                    <Text style={{ fontWeight: "700" }}>
+                    <Text
+                      style={{
+                        fontWeight: "700",
+                        color: colors.cardForeground,
+                      }}
+                    >
                       Personal Information
                     </Text>
                     <View style={{ flexDirection: "row", gap: spacing.md }}>
@@ -688,6 +709,7 @@ export default function VolunteerCampaignsIndex() {
                             })
                           }
                           placeholder="Your full name"
+                          placeholderTextColor={colors.muted}
                           style={{
                             height: 44,
                             borderWidth: 1,
@@ -695,6 +717,7 @@ export default function VolunteerCampaignsIndex() {
                             borderRadius: 12,
                             paddingHorizontal: spacing.md,
                             backgroundColor: colors.card,
+                            color: colors.cardForeground,
                           }}
                         />
                       </View>
@@ -717,6 +740,7 @@ export default function VolunteerCampaignsIndex() {
                             })
                           }
                           placeholder="Age"
+                          placeholderTextColor={colors.muted}
                           keyboardType="number-pad"
                           style={{
                             height: 44,
@@ -725,6 +749,7 @@ export default function VolunteerCampaignsIndex() {
                             borderRadius: 12,
                             paddingHorizontal: spacing.md,
                             backgroundColor: colors.card,
+                            color: colors.cardForeground,
                           }}
                         />
                       </View>
@@ -749,6 +774,7 @@ export default function VolunteerCampaignsIndex() {
                           })
                         }
                         placeholder="your.email@example.com"
+                        placeholderTextColor={colors.muted}
                         keyboardType="email-address"
                         style={{
                           height: 44,
@@ -757,6 +783,7 @@ export default function VolunteerCampaignsIndex() {
                           borderRadius: 12,
                           paddingHorizontal: spacing.md,
                           backgroundColor: colors.card,
+                          color: colors.cardForeground,
                         }}
                       />
                     </View>
@@ -780,6 +807,7 @@ export default function VolunteerCampaignsIndex() {
                           })
                         }
                         placeholder="+1234567890"
+                        placeholderTextColor={colors.muted}
                         keyboardType="phone-pad"
                         style={{
                           height: 44,
@@ -788,6 +816,7 @@ export default function VolunteerCampaignsIndex() {
                           borderRadius: 12,
                           paddingHorizontal: spacing.md,
                           backgroundColor: colors.card,
+                          color: colors.cardForeground,
                         }}
                       />
                     </View>
@@ -795,7 +824,12 @@ export default function VolunteerCampaignsIndex() {
 
                   {/* Skills & Experience */}
                   <View style={{ gap: spacing.md }}>
-                    <Text style={{ fontWeight: "700" }}>
+                    <Text
+                      style={{
+                        fontWeight: "700",
+                        color: colors.cardForeground,
+                      }}
+                    >
                       Skills & Experience
                     </Text>
                     <View>
@@ -817,6 +851,7 @@ export default function VolunteerCampaignsIndex() {
                           })
                         }
                         placeholder="e.g., First Aid, Driving, Languages, Organization..."
+                        placeholderTextColor={colors.muted}
                         multiline
                         numberOfLines={2}
                         style={{
@@ -827,6 +862,7 @@ export default function VolunteerCampaignsIndex() {
                           padding: spacing.md,
                           backgroundColor: colors.card,
                           textAlignVertical: "top",
+                          color: colors.cardForeground,
                         }}
                       />
                     </View>
@@ -849,6 +885,7 @@ export default function VolunteerCampaignsIndex() {
                           })
                         }
                         placeholder="Describe any previous volunteer work..."
+                        placeholderTextColor={colors.muted}
                         multiline
                         numberOfLines={2}
                         style={{
@@ -859,6 +896,7 @@ export default function VolunteerCampaignsIndex() {
                           padding: spacing.md,
                           backgroundColor: colors.card,
                           textAlignVertical: "top",
+                          color: colors.cardForeground,
                         }}
                       />
                     </View>
@@ -881,6 +919,7 @@ export default function VolunteerCampaignsIndex() {
                           })
                         }
                         placeholder="Select preferred tasks"
+                        placeholderTextColor={colors.muted}
                         style={{
                           height: 44,
                           borderWidth: 1,
@@ -888,6 +927,7 @@ export default function VolunteerCampaignsIndex() {
                           borderRadius: 12,
                           paddingHorizontal: spacing.md,
                           backgroundColor: colors.card,
+                          color: colors.cardForeground,
                         }}
                       />
                     </View>
@@ -914,6 +954,7 @@ export default function VolunteerCampaignsIndex() {
                           })
                         }
                         placeholder="e.g., Weekends, evenings, 10-15 hours/week"
+                        placeholderTextColor={colors.muted}
                         style={{
                           height: 44,
                           borderWidth: 1,
@@ -921,6 +962,7 @@ export default function VolunteerCampaignsIndex() {
                           borderRadius: 12,
                           paddingHorizontal: spacing.md,
                           backgroundColor: colors.card,
+                          color: colors.cardForeground,
                         }}
                       />
                     </View>
@@ -943,6 +985,7 @@ export default function VolunteerCampaignsIndex() {
                           })
                         }
                         placeholder="Tell us what motivates you to help..."
+                        placeholderTextColor={colors.muted}
                         multiline
                         numberOfLines={2}
                         style={{
@@ -953,6 +996,7 @@ export default function VolunteerCampaignsIndex() {
                           padding: spacing.md,
                           backgroundColor: colors.card,
                           textAlignVertical: "top",
+                          color: colors.cardForeground,
                         }}
                       />
                     </View>
@@ -960,7 +1004,14 @@ export default function VolunteerCampaignsIndex() {
 
                   {/* Emergency Contact */}
                   <View style={{ gap: spacing.md }}>
-                    <Text style={{ fontWeight: "700" }}>Emergency Contact</Text>
+                    <Text
+                      style={{
+                        fontWeight: "700",
+                        color: colors.cardForeground,
+                      }}
+                    >
+                      Emergency Contact
+                    </Text>
                     <View>
                       <Text
                         style={{
@@ -980,6 +1031,7 @@ export default function VolunteerCampaignsIndex() {
                           })
                         }
                         placeholder="Contact person name"
+                        placeholderTextColor={colors.muted}
                         style={{
                           height: 44,
                           borderWidth: 1,
@@ -987,6 +1039,7 @@ export default function VolunteerCampaignsIndex() {
                           borderRadius: 12,
                           paddingHorizontal: spacing.md,
                           backgroundColor: colors.card,
+                          color: colors.cardForeground,
                         }}
                       />
                     </View>
@@ -1009,6 +1062,7 @@ export default function VolunteerCampaignsIndex() {
                           })
                         }
                         placeholder="Emergency contact number"
+                        placeholderTextColor={colors.muted}
                         keyboardType="phone-pad"
                         style={{
                           height: 44,
@@ -1017,6 +1071,7 @@ export default function VolunteerCampaignsIndex() {
                           borderRadius: 12,
                           paddingHorizontal: spacing.md,
                           backgroundColor: colors.card,
+                          color: colors.cardForeground,
                         }}
                       />
                     </View>
