@@ -5,11 +5,16 @@ import { colors } from "../../../../src/styles/colors";
 import { spacing } from "../../../../src/styles/spacing";
 import CampaignNavBar from "../../../../src/components/ui/CampaignNavBar";
 import { Ionicons } from "@expo/vector-icons";
+import { useGetCampaignByIdQuery } from "../../../../src/store/services/campaignsApi";
 
 export default function CampaignLayout() {
   const params = useLocalSearchParams();
   const campaignId = String(params.campaignId || "");
-  const name = "Winter Relief 2024"; // replace with API later
+  const { data: campaign } = useGetCampaignByIdQuery(campaignId, {
+    skip: !campaignId,
+  } as any);
+  const name = (campaign as any)?.name || "Campaign";
+  const status = ((campaign as any)?.status || "active") as string;
   const router = useRouter();
 
   return (
@@ -51,18 +56,29 @@ export default function CampaignLayout() {
         </View>
 
         {/* Right: Status pill */}
-        <View
-          style={{
-            backgroundColor: colors.green,
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 999,
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>
-            Active
-          </Text>
-        </View>
+        {(() => {
+          const st = String(status || "").toLowerCase();
+          const pill =
+            st === "active"
+              ? { bg: colors.green, fg: "#fff", label: "Active" }
+              : st === "paused"
+              ? { bg: "#2563eb", fg: "#fff", label: "Paused" }
+              : { bg: "#6b7280", fg: "#fff", label: "Completed" };
+          return (
+            <View
+              style={{
+                backgroundColor: pill.bg,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 999,
+              }}
+            >
+              <Text style={{ color: pill.fg, fontWeight: "700", fontSize: 12 }}>
+                {pill.label}
+              </Text>
+            </View>
+          );
+        })()}
       </View>
 
       {/* Tabs */}

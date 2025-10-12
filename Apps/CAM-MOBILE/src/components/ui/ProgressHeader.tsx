@@ -53,6 +53,18 @@ export function ProgressHeader({
   );
   const providedResources = requiredResources || [];
   const resourcesFromApi = (campaignData as any)?.resources || [];
+  const readQty = (r: any) => {
+    const v =
+      r?.quantity ??
+      r?.targetQty ??
+      r?.targetQuantity ??
+      r?.requiredQty ??
+      r?.requiredQuantity ??
+      0;
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  };
+  const readUnit = (r: any) => r?.unit ?? r?.measureUnit ?? r?.units ?? "";
   const effectiveResources: Array<{
     id?: string;
     name: string;
@@ -64,8 +76,8 @@ export function ProgressHeader({
       : resourcesFromApi.map((r: any) => ({
           id: r.id,
           name: r.name,
-          unit: r.unit,
-          quantity: r.quantity,
+          unit: readUnit(r),
+          quantity: readQty(r),
         }));
   const safeNum = (n: any) => (typeof n === "number" && isFinite(n) ? n : 0);
   const T = Math.max(safeNum(target), 0);
@@ -80,10 +92,10 @@ export function ProgressHeader({
   const pctAvailable = T > 0 ? clampPct((A / T) * 100) : 0;
   const remainingToCollect = Math.max(T - C, 0);
   const remainingToDistribute = Math.max(T - D, 0);
-  const fallbackTarget = effectiveResources.reduce(
-    (acc, r) => acc + (Number(r.quantity || 0) || 0),
-    0
-  );
+  const fallbackTarget = effectiveResources.reduce((acc, r) => {
+    const n = Number((r as any)?.quantity ?? 0);
+    return acc + (isNaN(n) ? 0 : n);
+  }, 0);
   const Tdisplay = T > 0 ? T : fallbackTarget;
 
   const Bar = ({ value, color }: { value: number; color: string }) => (

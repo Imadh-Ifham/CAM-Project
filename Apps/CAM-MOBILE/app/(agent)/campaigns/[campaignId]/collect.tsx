@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
 import { Button } from "../../../../src/components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { useGetCampaignByIdQuery } from "@/src/store/services/campaignsApi";
 import {
   useCreateCollectionJobMutation,
@@ -27,9 +28,9 @@ import {
   useCompleteCollectionJobMutation,
   useUpdateCollectionJobMutation,
   useCancelCollectionJobMutation,
+  useGetCollectionJobRecordsQuery,
 } from "@/src/store/services/collectionsApi";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useGetCollectionJobRecordsQuery } from "@/src/store/services/collectionsApi";
 import {
   useGetCampaignSnapshotsQuery,
   useGetResourceSnapshotQuery,
@@ -52,6 +53,10 @@ export default function CampaignCollect() {
   });
   // Resource selection must be declared before hooks that depend on it
   const [resourceId, setResourceId] = useState<string | undefined>();
+  // Track if the user manually selected a resource in this session.
+  // This prevents any implicit/default selection from showing up in the UI.
+  const [didManuallySelectResource, setDidManuallySelectResource] =
+    useState(false);
   const { data: snapshots = [], refetch: refetchSnapshots } =
     useGetCampaignSnapshotsQuery(campaignId!, {
       skip: !campaignId,
@@ -59,15 +64,18 @@ export default function CampaignCollect() {
       pollingInterval: 15000,
       refetchOnFocus: true,
     } as any);
-  const { data: resSnapshot } = useGetResourceSnapshotQuery(
-    resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
-    { skip: !campaignId || !resourceId } as any
-  );
+  const { data: resSnapshot, refetch: refetchResSnapshot } =
+    useGetResourceSnapshotQuery(
+      resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
+      { skip: !campaignId || !resourceId } as any
+    );
   // Fallback for selected resource: if single-resource query is null, find it in campaign snapshots
   const selectedResSnapshot: any | undefined =
     resourceId && Array.isArray(snapshots)
       ? (resSnapshot as any) ||
-        (snapshots as any).find((s: any) => s.resourceId === resourceId)
+        (snapshots as any).find(
+          (s: any) => String(s.resourceId) === String(resourceId)
+        )
       : undefined;
   const [createJob, { isLoading: creating }] = useCreateCollectionJobMutation();
   const { data: jobs } = useGetCollectionsByCampaignQuery(
@@ -103,10 +111,38 @@ export default function CampaignCollect() {
     open: boolean;
     job?: any;
   }>({ open: false });
-  // Track if we already alerted for a completed resource to avoid repeat alerts
-  const [lastAlertedResourceId, setLastAlertedResourceId] = useState<
-    string | null
-  >(null);
+  // Track if we already alerted for a completed resource (ref guard avoids StrictMode double fire)
+  const lastAlertedResourceIdRef = useRef<string | null>(null);
+
+  // On campaign change or initial mount, clear selection to prevent auto-select carryover
+  useEffect(() => {
+    setResourceId(undefined);
+    setTargetQty("");
+    setDidManuallySelectResource(false);
+  }, [campaignId]);
+
+  // Also reset selection whenever this screen gets focus (prevents carryover across tabs/routes)
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only clear if user hasn't manually selected yet. This avoids
+      // wiping selection when closing in-screen modals (which trigger focus).
+      if (!didManuallySelectResource) {
+        setResourceId(undefined);
+        setTargetQty("");
+        lastAlertedResourceIdRef.current = null;
+        setDidManuallySelectResource(false);
+      }
+      return undefined;
+    }, [campaignId, didManuallySelectResource])
+  );
+
+  // If selection is cleared (resourceId undefined), allow alert to fire on next selection
+  useEffect(() => {
+    if (!resourceId) {
+      lastAlertedResourceIdRef.current = null;
+      setDidManuallySelectResource(false);
+    }
+  }, [resourceId]);
 
   // Details modal data fetch (must be at top level to respect Rules of Hooks)
   const detailsJob: any | undefined = detailsModal.job;
@@ -116,15 +152,31 @@ export default function CampaignCollect() {
     { skip: !detailsModal.open || !detailsJobId }
   );
 
+  // Helpers to read resource config safely across backend variants
+  const getResourceTarget = React.useCallback((r: any) => {
+    const v =
+      r?.quantity ??
+      r?.targetQty ??
+      r?.targetQuantity ??
+      r?.requiredQty ??
+      r?.requiredQuantity ??
+      0;
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  }, []);
+  const getResourceUnit = React.useCallback((r: any) => {
+    return r?.unit ?? r?.measureUnit ?? r?.units ?? "";
+  }, []);
+
   const resourceOptions = useMemo(
     () =>
       (campaign?.resources || []).map((r) => ({
-        key: r.id,
+        key: String(r.id),
         label: `${r.name} (${r.unit})`,
-        unit: r.unit,
-        target: r.quantity,
+        unit: getResourceUnit(r),
+        target: getResourceTarget(r),
       })),
-    [campaign]
+    [campaign, getResourceTarget, getResourceUnit]
   );
 
   const collections = jobs || [];
@@ -133,7 +185,7 @@ export default function CampaignCollect() {
   const unitLabel = resourceId
     ? resourceOptions.find((r) => r.key === resourceId)?.unit
     : "";
-  // Aggregate campaign snapshot sums
+  // Aggregate campaign snapshot sums (raw sums from progress snapshots)
   const campaignSum = React.useMemo(() => {
     const toNum = (n: any) => (typeof n === "number" ? n : 0);
     const sum = (key: string) =>
@@ -148,6 +200,16 @@ export default function CampaignCollect() {
       available: sum("availableQty"),
     };
   }, [snapshots]);
+
+  // Compute effective campaign target with a reliable fallback to campaign config when snapshots are empty
+  const campaignTargetFromConfig = React.useMemo(() => {
+    return (campaign?.resources || []).reduce(
+      (acc: number, r: any) => acc + getResourceTarget(r),
+      0
+    );
+  }, [campaign, getResourceTarget]);
+  const campaignTargetEffective =
+    campaignSum.target > 0 ? campaignSum.target : campaignTargetFromConfig;
   const isSingleResourceCampaign = (campaign?.resources || []).length === 1;
   // Use snapshot target when available; otherwise fall back to campaign-configured quantity
   const configTargetForSelected = resourceId
@@ -159,8 +221,13 @@ export default function CampaignCollect() {
   const effectiveTargetForSelected = resourceId
     ? snapshotTargetForSelected > 0
       ? snapshotTargetForSelected
-      : configTargetForSelected
+      : configTargetForSelected > 0
+      ? configTargetForSelected
+      : isSingleResourceCampaign
+      ? campaignTargetEffective
+      : 0
     : 0;
+  // Remaining needed is based on collected vs target (not stock): remaining = target - collected
   const effectiveCollectedForSelected = resourceId
     ? typeof (selectedResSnapshot as any)?.collectedQty === "number"
       ? Number((selectedResSnapshot as any)?.collectedQty)
@@ -181,7 +248,7 @@ export default function CampaignCollect() {
     }
   }, [remainingNeeded]);
 
-  // Alert once when selecting a resource that is fully collected
+  // Alert once when selecting a resource that is fully collected (only after a manual selection)
   useEffect(() => {
     const name = resourceId
       ? (resourceOptions.find((r) => r.key === resourceId)?.label || "").split(
@@ -190,9 +257,10 @@ export default function CampaignCollect() {
       : "";
     if (
       resourceId &&
+      didManuallySelectResource &&
       effectiveTargetForSelected > 0 &&
       remainingNeeded === 0 &&
-      lastAlertedResourceId !== resourceId
+      lastAlertedResourceIdRef.current !== resourceId
     ) {
       Alert.alert(
         "Collection Complete",
@@ -200,9 +268,14 @@ export default function CampaignCollect() {
           name || "this resource"
         } are complete. Arrange distributions to locations.`
       );
-      setLastAlertedResourceId(resourceId);
+      lastAlertedResourceIdRef.current = resourceId;
     }
-  }, [resourceId, effectiveTargetForSelected, remainingNeeded]);
+  }, [
+    resourceId,
+    didManuallySelectResource,
+    effectiveTargetForSelected,
+    remainingNeeded,
+  ]);
 
   // Refresh snapshots when collections list changes
   useEffect(() => {
@@ -285,7 +358,7 @@ export default function CampaignCollect() {
         {/* Progress summary header */}
         <ProgressHeader
           title={
-            resourceId
+            didManuallySelectResource && resourceId
               ? `Progress · ${
                   resourceOptions.find((r) => r.key === resourceId)?.label ||
                   "Selected"
@@ -293,26 +366,12 @@ export default function CampaignCollect() {
               : "Campaign Progress"
           }
           target={
-            resourceId
+            didManuallySelectResource && resourceId
               ? effectiveTargetForSelected
-              : (() => {
-                  const fromSnapshots = (
-                    Array.isArray(snapshots) ? snapshots : ([] as any[])
-                  ).reduce(
-                    (acc: number, s: any) => acc + (s.targetQty || 0),
-                    0
-                  );
-                  if (fromSnapshots > 0) return fromSnapshots;
-                  const fromConfig = (campaign?.resources || []).reduce(
-                    (acc: number, r: any) =>
-                      acc + (Number(r.quantity || 0) || 0),
-                    0
-                  );
-                  return fromConfig;
-                })()
+              : campaignTargetEffective
           }
           collected={
-            resourceId
+            didManuallySelectResource && resourceId
               ? typeof (selectedResSnapshot as any)?.collectedQty === "number"
                 ? Number((selectedResSnapshot as any)?.collectedQty)
                 : isSingleResourceCampaign
@@ -321,7 +380,7 @@ export default function CampaignCollect() {
               : campaignSum.collected
           }
           distributed={
-            resourceId
+            didManuallySelectResource && resourceId
               ? typeof (selectedResSnapshot as any)?.distributedQty === "number"
                 ? Number((selectedResSnapshot as any)?.distributedQty)
                 : isSingleResourceCampaign
@@ -330,7 +389,7 @@ export default function CampaignCollect() {
               : campaignSum.distributed
           }
           available={
-            resourceId
+            didManuallySelectResource && resourceId
               ? typeof (selectedResSnapshot as any)?.availableQty === "number"
                 ? Number((selectedResSnapshot as any)?.availableQty)
                 : isSingleResourceCampaign
@@ -339,7 +398,7 @@ export default function CampaignCollect() {
               : campaignSum.available
           }
           unitLabel={
-            resourceId
+            didManuallySelectResource && resourceId
               ? resourceOptions.find((r) => r.key === resourceId)?.unit
               : ""
           }
@@ -390,11 +449,15 @@ export default function CampaignCollect() {
               >
                 <Text
                   style={{
-                    color: resourceId ? colors.cardForeground : colors.muted,
+                    color:
+                      didManuallySelectResource && resourceId
+                        ? colors.cardForeground
+                        : colors.muted,
                   }}
                 >
-                  {resourceOptions.find((r) => r.key === resourceId)?.label ||
-                    "Select resource"}
+                  {didManuallySelectResource && resourceId
+                    ? resourceOptions.find((r) => r.key === resourceId)?.label
+                    : "Select resources"}
                 </Text>
                 <Ionicons
                   name="chevron-down-outline"
@@ -405,7 +468,8 @@ export default function CampaignCollect() {
             </View>
 
             {/* Completed banner when fully collected */}
-            {resourceId &&
+            {didManuallySelectResource &&
+              resourceId &&
               effectiveTargetForSelected > 0 &&
               remainingNeeded === 0 && (
                 <View
@@ -441,42 +505,45 @@ export default function CampaignCollect() {
 
             {/* Target Quantity */}
             <View>
-              {resourceId && (
+              {didManuallySelectResource && resourceId && (
                 <Text
                   style={{ color: colors.muted, marginTop: 6, fontSize: 12 }}
                 >
-                  Max {effectiveTargetForSelected} {unitLabel || "units"} can be
-                  collected for this resource.
+                  Target: {effectiveTargetForSelected}
+                  {unitLabel ? ` ${unitLabel}` : ""} · Remaining:{" "}
+                  {remainingNeeded}
+                  {unitLabel ? ` ${unitLabel}` : ""}
                 </Text>
               )}
               <Text style={{ fontWeight: "600", marginBottom: 6 }}>
                 Target Quantity
               </Text>
-              {typeof remainingNeeded === "number" && (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                    marginBottom: 6,
-                    padding: spacing.sm,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    backgroundColor: colors.mutedBackground,
-                  }}
-                >
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={16}
-                    color={colors.muted}
-                  />
-                  <Text style={{ color: colors.muted, flex: 1 }}>
-                    Remaining needed: {remainingNeeded}
-                    {unitLabel ? ` ${unitLabel}` : ""}
-                  </Text>
-                </View>
-              )}
+              {didManuallySelectResource &&
+                typeof remainingNeeded === "number" && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 6,
+                      padding: spacing.sm,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor: colors.mutedBackground,
+                    }}
+                  >
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={16}
+                      color={colors.muted}
+                    />
+                    <Text style={{ color: colors.muted, flex: 1 }}>
+                      Remaining needed: {remainingNeeded}
+                      {unitLabel ? ` ${unitLabel}` : ""}
+                    </Text>
+                  </View>
+                )}
               <TextInput
                 value={targetQty}
                 onChangeText={(val) => {
@@ -499,12 +566,11 @@ export default function CampaignCollect() {
                 keyboardType="numeric"
                 placeholder="Enter quantity"
                 placeholderTextColor={colors.muted}
+                // Allow editing only after a resource is selected and if more is needed
                 editable={
-                  !(
-                    typeof remainingNeeded === "number" &&
-                    remainingNeeded <= 0 &&
-                    !!resourceId
-                  )
+                  didManuallySelectResource &&
+                  !!resourceId &&
+                  !(typeof remainingNeeded === "number" && remainingNeeded <= 0)
                 }
                 style={{
                   height: 44,
@@ -515,22 +581,24 @@ export default function CampaignCollect() {
                   paddingHorizontal: spacing.md,
                   color: colors.cardForeground,
                   opacity:
-                    typeof remainingNeeded === "number" &&
-                    remainingNeeded <= 0 &&
-                    !!resourceId
+                    !didManuallySelectResource ||
+                    !resourceId ||
+                    (typeof remainingNeeded === "number" &&
+                      remainingNeeded <= 0)
                       ? 0.6
                       : 1,
                 }}
               />
-              {typeof remainingNeeded === "number" && (
-                <Text
-                  style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}
-                >
-                  Max {remainingNeeded}
-                  {unitLabel ? ` ${unitLabel}` : ""} can be collected for this
-                  resource.
-                </Text>
-              )}
+              {didManuallySelectResource &&
+                typeof remainingNeeded === "number" && (
+                  <Text
+                    style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}
+                  >
+                    Max {remainingNeeded}
+                    {unitLabel ? ` ${unitLabel}` : ""} can be collected for this
+                    resource.
+                  </Text>
+                )}
             </View>
 
             {/* Volunteer assignment */}
@@ -754,6 +822,7 @@ export default function CampaignCollect() {
             {/* Submit */}
             <Button
               disabled={
+                !didManuallySelectResource ||
                 !resourceId ||
                 !targetQty ||
                 creating ||
@@ -788,9 +857,13 @@ export default function CampaignCollect() {
                         : undefined,
                   }).unwrap();
                   Alert.alert("Success", "Collection job created.");
+                  // Refresh snapshots so remaining/headers update immediately
+                  if (refetchSnapshots) await refetchSnapshots();
+                  if (refetchResSnapshot) await refetchResSnapshot();
                   // Reset fields on success
                   setResourceId(undefined);
                   setTargetQty("");
+                  setDidManuallySelectResource(false);
                   setNotes("");
                   setNoVolunteer(true);
                   setVolunteerId(undefined);
@@ -922,6 +995,7 @@ export default function CampaignCollect() {
                       onPress={async () => {
                         try {
                           await startJob({ campaignId, jobId: c._id }).unwrap();
+                          if (refetchSnapshots) await refetchSnapshots();
                           Alert.alert("Started", "Collection started");
                         } catch (e: any) {
                           Alert.alert(
@@ -984,6 +1058,7 @@ export default function CampaignCollect() {
                             campaignId,
                             jobId: c._id,
                           }).unwrap();
+                          if (refetchSnapshots) await refetchSnapshots();
                           Alert.alert("Completed", "Collection completed");
                         } catch (e: any) {
                           Alert.alert(
@@ -1020,6 +1095,7 @@ export default function CampaignCollect() {
                             campaignId,
                             jobId: c._id,
                           }).unwrap();
+                          if (refetchSnapshots) await refetchSnapshots();
                           Alert.alert("Cancelled", "Collection cancelled");
                         } catch (e: any) {
                           Alert.alert(
@@ -1298,10 +1374,20 @@ export default function CampaignCollect() {
           >
             {resourceOptions.map((opt, idx) => (
               <Pressable
-                key={opt.key}
+                key={opt.key || `${opt.label}-${idx}`}
                 onPress={() => {
+                  // Clear previous quantity and set new resource
+                  setTargetQty("");
                   setResourceId(opt.key);
+                  setDidManuallySelectResource(true);
                   setPickerOpen(false);
+                  // Ensure fresh snapshot for selected resource
+                  setTimeout(() => {
+                    try {
+                      if (refetchResSnapshot) refetchResSnapshot();
+                      if (refetchSnapshots) refetchSnapshots();
+                    } catch {}
+                  }, 0);
                 }}
                 style={{
                   paddingVertical: spacing.md,
@@ -1311,7 +1397,7 @@ export default function CampaignCollect() {
                 }}
               >
                 <Text style={{ flex: 1 }}>{opt.label}</Text>
-                {resourceId === opt.key && (
+                {didManuallySelectResource && resourceId === opt.key && (
                   <Ionicons name="checkmark" size={18} color={colors.primary} />
                 )}
               </Pressable>
