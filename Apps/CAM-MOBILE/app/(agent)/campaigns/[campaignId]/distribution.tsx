@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -123,14 +123,12 @@ export default function CampaignDistribution() {
     open: boolean;
     job?: any;
   }>({ open: false });
-  // Track last alerted resource to avoid repeated alerts when distribution completed per campaign target
-  const [lastAlertedDistResourceId, setLastAlertedDistResourceId] = useState<
-    string | null
-  >(null);
+  // Track last alerted resource (ref to avoid StrictMode duplicate alerts)
+  const lastAlertedDistResourceIdRef = useRef<string | null>(null);
   // Reset UI state on campaign change to prevent carryover
   useEffect(() => {
     setDetailsModal({ open: false });
-    setLastAlertedDistResourceId(null);
+    lastAlertedDistResourceIdRef.current = null;
     setResourceId(undefined);
     setTargetQty("");
   }, [campaignId]);
@@ -201,7 +199,7 @@ export default function CampaignDistribution() {
       resourceId &&
       targetQtySel > 0 &&
       remainingToDistribute === 0 &&
-      lastAlertedDistResourceId !== resourceId
+      lastAlertedDistResourceIdRef.current !== resourceId
     ) {
       Alert.alert(
         "Distribution Complete",
@@ -209,7 +207,7 @@ export default function CampaignDistribution() {
           name || "this resource"
         } have fulfilled the campaign requirement.`
       );
-      setLastAlertedDistResourceId(resourceId);
+      lastAlertedDistResourceIdRef.current = resourceId;
     }
   }, [resourceId, remainingToDistribute, selectedResSnapshot]);
 
