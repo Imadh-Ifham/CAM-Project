@@ -44,10 +44,10 @@ export class CollectionJobService {
         name: resource.name,
         category: resource.category,
         unit: resource.unit,
-        quantity: resource.quantity,
+        quantity: resource.availableQuantity,
         // estimatedCost and description were removed from Campaign.resources on develop
         // Keep snapshot minimal and backward compatible
-        targetQty: resource.quantity,
+        targetQty: resource.requiredQuantity,
       },
       coordinatorProfile: assignment.coordinatorProfile || undefined,
       targetQty,

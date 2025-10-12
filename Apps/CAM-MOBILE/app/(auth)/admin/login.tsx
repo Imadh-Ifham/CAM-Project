@@ -136,10 +136,55 @@ export default function VolunteerLoginScreen() {
         onRegister={() => router.push("/(auth)/volunteer/signup" as any)}
       />
 
-      {/* Dummy Button for Quick Dashboard Access */}
+      {/* Quick Access with Real Auth */}
       <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
         <Pressable
-          onPress={() => router.replace("/adminDashboard" as any)}
+          onPress={async () => {
+            setError(null);
+            setDetail(null);
+            setSuccess(null);
+
+            try {
+              // Use predefined admin credentials for quick access
+              const adminCredentials = {
+                email: "admin@gmail.com",
+                password: "Admin1234",
+              };
+
+              setSuccess("Logging in with admin credentials...");
+
+              await login(adminCredentials);
+
+              setSuccess("Quick login successful! Redirecting...");
+              setTimeout(() => {
+                router.replace("/adminDashboard" as any);
+              }, 800);
+            } catch (e: any) {
+              setDetail(e);
+              // Handle authentication errors
+              const code = e?.code || e?.cause?.code;
+              const msg = e?.message || e?.cause?.message;
+
+              if (code === "auth/user-not-found") {
+                setError(
+                  "Admin account not found. Please contact system administrator."
+                );
+              } else if (code === "auth/wrong-password") {
+                setError(
+                  "Admin credentials are incorrect. Please contact system administrator."
+                );
+              } else if (code === "auth/invalid-email") {
+                setError("Invalid admin email format.");
+              } else if (code === "auth/too-many-requests") {
+                setError("Too many failed attempts. Please try again later.");
+              } else {
+                setError(
+                  "Quick login failed. Please use manual login or contact administrator."
+                );
+              }
+              console.error("Quick admin login failed", e);
+            }
+          }}
           style={{
             backgroundColor: "#00ff94",
             paddingVertical: 12,
@@ -156,7 +201,7 @@ export default function VolunteerLoginScreen() {
               fontSize: 16,
             }}
           >
-            🚀 Go to Admin Dashboard (Demo)
+            🚀 Quick Admin Login
           </Text>
         </Pressable>
         <Text
@@ -167,7 +212,7 @@ export default function VolunteerLoginScreen() {
             marginTop: 4,
           }}
         >
-          Skip login for testing
+          Login with admin@cam.com
         </Text>
       </View>
     </AdminAuthLayout>

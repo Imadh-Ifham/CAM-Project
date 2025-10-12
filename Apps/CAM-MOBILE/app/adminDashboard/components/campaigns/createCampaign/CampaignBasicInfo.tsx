@@ -13,6 +13,7 @@ import { CampaignFormData } from "@/src/types/campaign.type";
 interface CampaignBasicInfoProps {
   formData: CampaignFormData;
   updateFormData: (updates: Partial<CampaignFormData>) => void;
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 const campaignTypes = [
@@ -73,7 +74,19 @@ const priorityLevels = [
 export default function CampaignBasicInfo({
   formData,
   updateFormData,
+  onValidationChange,
 }: CampaignBasicInfoProps) {
+  // Validation logic
+  const isNameValid = formData.name.trim().length >= 3;
+  const isDescriptionValid = formData.description.trim().length >= 15;
+  const isValid = isNameValid && isDescriptionValid;
+
+  // Notify parent about validation status
+  React.useEffect(() => {
+    if (onValidationChange) {
+      onValidationChange(isValid);
+    }
+  }, [isValid, onValidationChange]);
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.section}>
@@ -83,19 +96,38 @@ export default function CampaignBasicInfo({
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Campaign Name *</Text>
           <TextInput
-            style={styles.textInput}
+            style={[
+              styles.textInput,
+              formData.name.length > 0 && !isNameValid && styles.textInputError,
+            ]}
             value={formData.name}
             onChangeText={(text) => updateFormData({ name: text })}
             placeholder="Enter campaign name"
             placeholderTextColor="#666"
           />
+          <View style={styles.validationContainer}>
+            <Text style={styles.characterCount}>
+              {formData.name.length} characters
+            </Text>
+            {formData.name.length > 0 && !isNameValid && (
+              <Text style={styles.validationError}>
+                Minimum 3 characters required
+              </Text>
+            )}
+          </View>
         </View>
 
         {/* Campaign Description */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Description *</Text>
           <TextInput
-            style={[styles.textInput, styles.textArea]}
+            style={[
+              styles.textInput,
+              styles.textArea,
+              formData.description.length > 0 &&
+                !isDescriptionValid &&
+                styles.textInputError,
+            ]}
             value={formData.description}
             onChangeText={(text) => updateFormData({ description: text })}
             placeholder="Describe the campaign objectives and scope"
@@ -104,6 +136,16 @@ export default function CampaignBasicInfo({
             numberOfLines={4}
             textAlignVertical="top"
           />
+          <View style={styles.validationContainer}>
+            <Text style={styles.characterCount}>
+              {formData.description.length} characters
+            </Text>
+            {formData.description.length > 0 && !isDescriptionValid && (
+              <Text style={styles.validationError}>
+                Minimum 15 characters required
+              </Text>
+            )}
+          </View>
         </View>
       </View>
 
@@ -340,5 +382,24 @@ const styles = StyleSheet.create({
     color: "#bbb",
     fontSize: 13,
     lineHeight: 18,
+  },
+  textInputError: {
+    borderColor: "#ff4444",
+    borderWidth: 2,
+  },
+  validationContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  characterCount: {
+    color: "#888",
+    fontSize: 12,
+  },
+  validationError: {
+    color: "#ff4444",
+    fontSize: 12,
+    fontWeight: "500",
   },
 });

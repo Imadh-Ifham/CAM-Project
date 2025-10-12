@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { CampaignFormData } from "../../../types/campaign.type";
+import { CampaignFormData, Resources } from "../../../types/campaign.type";
 
 const isValidDate = (dateString: string): boolean => {
   const date = new Date(dateString);
@@ -96,7 +96,7 @@ export const validateCreateCampaign = (
 
   // Resources Validation
   if (Array.isArray(resources)) {
-    resources.forEach((resource: any, index: number) => {
+    resources.forEach((resource: Resources, index: number) => {
       if (!resource.id || typeof resource.id !== "string") {
         errors.push(`Resource ${index + 1}: ID is required`);
       }
@@ -114,23 +114,15 @@ export const validateCreateCampaign = (
       }
 
       if (
-        !resource.quantity ||
-        typeof resource.quantity !== "number" ||
-        resource.quantity < 1
+        !resource.requiredQuantity ||
+        typeof resource.requiredQuantity !== "number" ||
+        resource.requiredQuantity < 1
       ) {
         errors.push(`Resource ${index + 1}: Valid quantity is required`);
       }
 
       if (!resource.unit || typeof resource.unit !== "string") {
         errors.push(`Resource ${index + 1}: Unit is required`);
-      }
-
-      if (
-        resource.estimatedCost === undefined ||
-        typeof resource.estimatedCost !== "number" ||
-        resource.estimatedCost < 0
-      ) {
-        errors.push(`Resource ${index + 1}: Valid estimated cost is required`);
       }
     });
   }
@@ -175,6 +167,7 @@ export const validateCampaignId = (
   next: NextFunction
 ): void => {
   const { campaignId } = req.params;
+  console.log("Validating campaign ID:", campaignId);
 
   if (
     !campaignId ||

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -14,8 +14,10 @@ import CampaignOverview from "./CampaignOverview";
 import CampaignTeam from "./CampaignTeam";
 import CampaignResources from "./CampaignResources";
 import CampaignProgress from "./CampaignProgress";
-import { useAppSelector } from "@/src/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/src/store/hooks";
 import { selectSelectedCampaign } from "@/src/store/selectors";
+import API from "@/src/api/API";
+import { fetchCampaignsThunk } from "@/src/store/thunks/campaignThunk";
 
 // Mock campaign data - in a real app, this would come from an API
 
@@ -28,16 +30,28 @@ const tabItems = [
 
 export default function CampaignDetailView() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const params = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState("overview");
 
   // Using Redux to get selected campaign
   const selectedCampaign = useAppSelector(selectSelectedCampaign);
 
+  useEffect(() => {
+    console.log(selectedCampaign);
+  }, [selectedCampaign]);
+
   const handleEditCampaign = () => {
     router.push(
       `/adminDashboard/components/campaigns/editCampaign/${params.id}` as any
     );
+  };
+  const fetchCampaigns = async () => {
+    try {
+      await dispatch(fetchCampaignsThunk());
+    } catch (error) {
+      console.error("Failed to fetch campaigns:", error);
+    }
   };
 
   const handleDeleteCampaign = () => {
@@ -50,8 +64,22 @@ export default function CampaignDetailView() {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            // Handle delete logic here
-            router.back();
+            console.log("Deleting campaign:", selectedCampaign.campaignID);
+            fetch(`${API.CAMPAIGN}${selectedCampaign.campaignID}`, {
+              method: "DELETE",
+            })
+              .then((response) => {
+                if (!response.ok) {
+                  throw new Error("Failed to delete campaign");
+                }
+                fetchCampaigns();
+                // Optionally show a success message
+                Alert.alert("Success", "Campaign deleted successfully.");
+                router.back();
+              })
+              .catch((error) => {
+                Alert.alert("Error", error.message);
+              });
           },
         },
       ]

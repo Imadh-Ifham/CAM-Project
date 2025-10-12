@@ -84,7 +84,7 @@ export class ProgressService {
     const resource = (campaign?.resources || []).find(
       (r: any) => r.id === resourceId
     );
-    const targetQty = resource?.quantity || 0;
+    const targetQty = resource?.requiredQuantity || 0;
 
     // We start without reservation; reservedQty = 0 for now
     const reservedQty = 0;

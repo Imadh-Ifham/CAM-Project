@@ -83,7 +83,7 @@ class CampaignService {
       priority: campaign.priority,
       location: campaign.location || `${campaign.city}, ${campaign.district}`,
       startDate: campaign.startDate.toISOString(),
-      volunteers: campaign.volunteers || 0,
+      volunteers: campaign.volunteers.length || 0,
       progress: campaign.progress || 0,
       budget: campaign.estimatedBudget || 0,
     };
@@ -116,9 +116,11 @@ class CampaignService {
         email: campaign.coordinator?.email || "",
       },
       resources: campaign.resources.map((resource) => ({
+        id: resource.id,
+        category: resource.category,
         name: resource.name,
-        required: resource.quantity,
-        available: resource.quantity, // For now, assuming required = available
+        requiredQuantity: resource.requiredQuantity,
+        availableQuantity: resource.availableQuantity,
         unit: resource.unit,
       })),
     };
@@ -129,7 +131,7 @@ class CampaignService {
    */
   async createCampaign(
     campaignData: CreateCampaignInput
-  ): Promise<ServiceResponse<ICampaign>> {
+  ): Promise<ServiceResponse<CampaignType>> {
     try {
       // Start a MongoDB session for transaction
       const session = await mongoose.startSession();
@@ -142,18 +144,6 @@ class CampaignService {
 
         // Generate unique campaign ID
         const campaignID = await this.generateCampaignID(campaignData.type);
-
-        // Calculate estimated budget from resources if not provided
-        if (
-          campaignData.estimatedBudget === 0 &&
-          campaignData.resources.length > 0
-        ) {
-          campaignData.estimatedBudget = campaignData.resources.reduce(
-            (total, resource) =>
-              total + resource.quantity * resource.estimatedCost,
-            0
-          );
-        }
 
         // Create the campaign document
         const campaignDoc = new Campaign({
@@ -181,9 +171,13 @@ class CampaignService {
         // Commit the transaction
         await session.commitTransaction();
 
+        // Transform to Campaign type format
+        const transformedCampaign =
+          CampaignService.transformCampaignToFullFormat(savedCampaign);
+
         return {
           success: true,
-          data: savedCampaign,
+          data: transformedCampaign,
           message: "Campaign created successfully",
         };
       } catch (error) {
@@ -258,7 +252,13 @@ class CampaignService {
       // Build query object
       const query: any = {};
 
-      if (filters.status) query.status = filters.status;
+      // By default, exclude cancelled campaigns unless status is explicitly provided
+      if (filters.status) {
+        query.status = filters.status;
+      } else {
+        query.status = { $ne: "cancelled" };
+      }
+
       if (filters.type) query.type = filters.type;
       if (filters.priority) query.priority = filters.priority;
       if (filters.district) query.district = new RegExp(filters.district, "i");

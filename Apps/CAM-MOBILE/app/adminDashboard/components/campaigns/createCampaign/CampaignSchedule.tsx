@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,20 +9,62 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { CampaignFormData } from "@/src/types/campaign.type";
 
 interface CampaignScheduleProps {
   formData: CampaignFormData;
   updateFormData: (updates: Partial<CampaignFormData>) => void;
+  onValidationChange?: (isValid: boolean) => void;
 }
+
+// Export validation function for parent component
+export const validateCampaignSchedule = (
+  formData: CampaignFormData
+): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const startDate =
+    typeof formData.startDate === "string"
+      ? new Date(formData.startDate)
+      : formData.startDate;
+  const endDate =
+    typeof formData.endDate === "string"
+      ? new Date(formData.endDate)
+      : formData.endDate;
+
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  // Check if start date is in the past
+  if (startDate < today) {
+    return false;
+  }
+
+  // Check if end date is before or equal to start date
+  if (endDate <= startDate) {
+    return false;
+  }
+
+  // Check if campaign duration is reasonable (at least 1 day)
+  const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays < 1) {
+    return false;
+  }
+
+  return true;
+};
 
 export default function CampaignSchedule({
   formData,
   updateFormData,
+  onValidationChange,
 }: CampaignScheduleProps) {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const formatDate = (date: Date | string) => {
     const dateObj = typeof date === "string" ? new Date(date) : date;
@@ -32,6 +74,55 @@ export default function CampaignSchedule({
       day: "numeric",
     });
   };
+
+  const validateSchedule = () => {
+    const errors: string[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for comparison
+
+    const startDate =
+      typeof formData.startDate === "string"
+        ? new Date(formData.startDate)
+        : formData.startDate;
+    const endDate =
+      typeof formData.endDate === "string"
+        ? new Date(formData.endDate)
+        : formData.endDate;
+
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    // Check if start date is in the past
+    if (startDate < today) {
+      errors.push("Start date cannot be in the past");
+    }
+
+    // Check if end date is before start date
+    if (endDate <= startDate) {
+      errors.push("End date must be after start date");
+    }
+
+    // Check if campaign duration is reasonable (at least 1 day)
+    const duration = calculateDuration();
+    if (duration < 1) {
+      errors.push("Campaign must be at least 1 day long");
+    }
+
+    setValidationErrors(errors);
+    const isValid = errors.length === 0;
+
+    // Notify parent component about validation status
+    if (onValidationChange) {
+      onValidationChange(isValid);
+    }
+
+    return isValid;
+  };
+
+  // Run validation when dates change
+  useEffect(() => {
+    validateSchedule();
+  }, [formData.startDate, formData.endDate]);
 
   const calculateDuration = () => {
     const startDate =
@@ -68,7 +159,18 @@ export default function CampaignSchedule({
   };
 
   const handleStartDateChange = (event: any, selectedDate?: Date) => {
-    setShowStartDatePicker(Platform.OS === "ios");
+    if (Platform.OS === "android") {
+      setShowStartDatePicker(false);
+    }
+
+    // Handle user cancellation or selection
+    if (event.type === "dismissed" || !selectedDate) {
+      if (Platform.OS === "ios") {
+        setShowStartDatePicker(false);
+      }
+      return;
+    }
+
     if (selectedDate) {
       // Ensure end date is after start date
       const currentEndDate =
@@ -87,11 +189,27 @@ export default function CampaignSchedule({
       } else {
         updateFormData({ startDate: selectedDate.toISOString() });
       }
+
+      // Close iOS picker after selection
+      if (Platform.OS === "ios") {
+        setShowStartDatePicker(false);
+      }
     }
   };
 
   const handleEndDateChange = (event: any, selectedDate?: Date) => {
-    setShowEndDatePicker(Platform.OS === "ios");
+    if (Platform.OS === "android") {
+      setShowEndDatePicker(false);
+    }
+
+    // Handle user cancellation or selection
+    if (event.type === "dismissed" || !selectedDate) {
+      if (Platform.OS === "ios") {
+        setShowEndDatePicker(false);
+      }
+      return;
+    }
+
     if (selectedDate) {
       const currentStartDate =
         typeof formData.startDate === "string"
@@ -104,6 +222,11 @@ export default function CampaignSchedule({
         return;
       }
       updateFormData({ endDate: selectedDate.toISOString() });
+
+      // Close iOS picker after selection
+      if (Platform.OS === "ios") {
+        setShowEndDatePicker(false);
+      }
     }
   };
 
@@ -117,7 +240,11 @@ export default function CampaignSchedule({
         <View style={styles.dateContainer}>
           <Text style={styles.label}>Start Date</Text>
           <TouchableOpacity
-            style={styles.dateButton}
+            style={[
+              styles.dateButton,
+              validationErrors.some((error) => error.includes("Start date")) &&
+                styles.dateButtonError,
+            ]}
             onPress={() => setShowStartDatePicker(true)}
           >
             <Ionicons name="calendar" size={20} color="#00ff94" />
@@ -132,7 +259,11 @@ export default function CampaignSchedule({
         <View style={styles.dateContainer}>
           <Text style={styles.label}>End Date</Text>
           <TouchableOpacity
-            style={styles.dateButton}
+            style={[
+              styles.dateButton,
+              validationErrors.some((error) => error.includes("End date")) &&
+                styles.dateButtonError,
+            ]}
             onPress={() => setShowEndDatePicker(true)}
           >
             <Ionicons name="calendar" size={20} color="#00ff94" />
@@ -140,6 +271,18 @@ export default function CampaignSchedule({
             <Ionicons name="chevron-down" size={16} color="#666" />
           </TouchableOpacity>
         </View>
+
+        {/* Validation Errors */}
+        {validationErrors.length > 0 && (
+          <View style={styles.errorContainer}>
+            {validationErrors.map((error, index) => (
+              <View key={index} style={styles.errorRow}>
+                <Ionicons name="alert-circle" size={16} color="#ff4444" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Duration Display */}
         <View style={styles.durationDisplay}>
@@ -265,39 +408,24 @@ export default function CampaignSchedule({
       </View>
 
       {/* Date Pickers */}
-      {showStartDatePicker && (
-        <DateTimePicker
-          value={
-            typeof formData.startDate === "string"
-              ? new Date(formData.startDate)
-              : formData.startDate
-          }
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={handleStartDateChange}
-          minimumDate={new Date()}
-          textColor="#fff"
-        />
-      )}
-
-      {showEndDatePicker && (
-        <DateTimePicker
-          value={
-            typeof formData.endDate === "string"
-              ? new Date(formData.endDate)
-              : formData.endDate
-          }
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={handleEndDateChange}
-          minimumDate={
-            typeof formData.startDate === "string"
-              ? new Date(formData.startDate)
-              : formData.startDate
-          }
-          textColor="#fff"
-        />
-      )}
+      <DateTimePickerModal
+        isVisible={showStartDatePicker}
+        mode="date"
+        onConfirm={(date) => handleStartDateChange({ type: "set" }, date)}
+        onCancel={() => setShowStartDatePicker(false)}
+        minimumDate={new Date()}
+      />
+      <DateTimePickerModal
+        isVisible={showEndDatePicker}
+        mode="date"
+        onConfirm={(date) => handleEndDateChange({ type: "set" }, date)}
+        onCancel={() => setShowEndDatePicker(false)}
+        minimumDate={
+          typeof formData.startDate === "string"
+            ? new Date(formData.startDate)
+            : formData.startDate
+        }
+      />
     </ScrollView>
   );
 }
@@ -336,6 +464,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+  },
+  dateButtonError: {
+    borderColor: "#ff4444",
+    backgroundColor: "#2a1a1a",
   },
   dateText: {
     color: "#fff",
@@ -470,5 +602,24 @@ const styles = StyleSheet.create({
   },
   urgentText: {
     color: "#ff4444",
+  },
+  errorContainer: {
+    backgroundColor: "#2a1a1a",
+    borderWidth: 1,
+    borderColor: "#ff4444",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  errorText: {
+    color: "#ff8888",
+    fontSize: 14,
+    flex: 1,
   },
 });

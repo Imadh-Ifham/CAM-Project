@@ -26,11 +26,18 @@ import {
 import { selectCampaignFormData } from "@/src/store/selectors";
 import { createCampaignThunk } from "@/src/store/thunks/campaignThunk";
 import { CampaignFormData } from "@/src/types/campaign.type";
-import { auth } from "@/src/services/firebase";
+import { useEffect } from "react";
 
 export default function CreateCampaign() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
+  const [stepValidations, setStepValidations] = useState<boolean[]>([
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
 
   const dispatch = useAppDispatch();
 
@@ -50,6 +57,23 @@ export default function CreateCampaign() {
   const updateFormDataHandler = (updates: Partial<CampaignFormData>) => {
     dispatch(updateFormData(updates));
   };
+
+  const updateStepValidation = (stepIndex: number, isValid: boolean) => {
+    setStepValidations((prev) => {
+      const newValidations = [...prev];
+      newValidations[stepIndex] = isValid;
+      return newValidations;
+    });
+  };
+
+  useEffect(() => {
+    console.log(
+      "Current Step:",
+      currentStep,
+      "Campaign Form Data:",
+      campaignFormData
+    );
+  }, [currentStep]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -118,6 +142,7 @@ export default function CreateCampaign() {
           <CampaignBasicInfo
             formData={campaignFormData}
             updateFormData={updateFormDataHandler}
+            onValidationChange={(isValid) => updateStepValidation(0, isValid)}
           />
         );
       case 1:
@@ -125,6 +150,7 @@ export default function CreateCampaign() {
           <CampaignLocation
             formData={campaignFormData}
             updateFormData={updateFormDataHandler}
+            onValidationChange={(isValid) => updateStepValidation(1, isValid)}
           />
         );
       case 2:
@@ -132,6 +158,7 @@ export default function CreateCampaign() {
           <CampaignResources
             formData={campaignFormData}
             updateFormData={updateFormDataHandler}
+            onValidationChange={(isValid) => updateStepValidation(2, isValid)}
           />
         );
       case 3:
@@ -139,6 +166,7 @@ export default function CreateCampaign() {
           <CampaignSchedule
             formData={campaignFormData}
             updateFormData={updateFormDataHandler}
+            onValidationChange={(isValid) => updateStepValidation(3, isValid)}
           />
         );
       case 4:
@@ -155,6 +183,10 @@ export default function CreateCampaign() {
 
   const isLastStep = currentStep === steps.length - 1;
   const isFirstStep = currentStep === 0;
+  const isCurrentStepValid = stepValidations[currentStep];
+
+  // For step 4 (Team), allow proceeding without validation for now
+  const canProceed = currentStep === 4 ? true : isCurrentStepValid;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -268,17 +300,20 @@ export default function CreateCampaign() {
 
         <TouchableOpacity
           onPress={isLastStep ? handleSubmit : handleNext}
-          disabled={isLastStep ? createLoading : false}
+          disabled={isLastStep ? createLoading : !canProceed}
           style={[
             styles.navButton,
             styles.nextButton,
-            isLastStep && createLoading && styles.navButtonDisabled,
+            (isLastStep && createLoading) || !canProceed
+              ? styles.navButtonDisabled
+              : {},
           ]}
         >
           <Text
             style={[
               styles.navButtonText,
-              isLastStep && createLoading && styles.navButtonTextDisabled,
+              ((isLastStep && createLoading) || !canProceed) &&
+                styles.navButtonTextDisabled,
             ]}
           >
             {isLastStep && createLoading

@@ -130,23 +130,6 @@ export default function CampaignsIndex() {
       return dateString; // Fallback to original string if parsing fails
     }
   };
-
-  const formatDateTime = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true, // This enables AM/PM format
-      });
-    } catch (error) {
-      return dateString; // Fallback to original string if parsing fails
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0f0f0f" />

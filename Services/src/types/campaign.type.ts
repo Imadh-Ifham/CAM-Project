@@ -15,15 +15,7 @@ export interface CampaignFormData {
   city: string;
 
   // Resources
-  resources: Array<{
-    id: string;
-    name: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    estimatedCost: number;
-    description?: string;
-  }>;
+  resources: Resources[];
   estimatedBudget: number;
 
   // Schedule
@@ -61,7 +53,7 @@ export type Campaign = {
   location: string;
   startDate: string;
   endDate: string;
-  volunteers: number;
+  volunteers: string[];
   targetVolunteers: number;
   progress: number;
   budget: number;
@@ -71,10 +63,14 @@ export type Campaign = {
     phone: string;
     email: string;
   };
-  resources: Array<{
-    name: string;
-    required: number;
-    available: number;
-    unit: string;
-  }>;
+  resources: Resources[];
+};
+
+export type Resources = {
+  id: string;
+  name: string;
+  category: string;
+  requiredQuantity: number;
+  availableQuantity: number;
+  unit: string;
 };

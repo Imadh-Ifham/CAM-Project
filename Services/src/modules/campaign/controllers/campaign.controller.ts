@@ -267,6 +267,7 @@ class CampaignController {
   async deleteCampaign(req: Request, res: Response): Promise<void> {
     try {
       const { campaignId } = req.params;
+      console.log("Deleting campaign with ID:", campaignId);
 
       if (!campaignId) {
         res.status(400).json({
