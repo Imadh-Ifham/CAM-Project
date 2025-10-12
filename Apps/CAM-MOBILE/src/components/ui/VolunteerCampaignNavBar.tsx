@@ -11,7 +11,6 @@ const keys = [
   { key: "overview", label: "Overview" },
   { key: "collect", label: "Collect" },
   { key: "distribution", label: "Distribution" },
-  { key: "tasks", label: "Tasks" },
 ];
 
 export const VolunteerCampaignNavBar: React.FC<Props> = ({

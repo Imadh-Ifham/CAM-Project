@@ -12,7 +12,6 @@ const keys = [
   { key: "collect", label: "Collect" },
   { key: "distribution", label: "Distribution" },
   { key: "volunteers", label: "Volunteers" },
-  { key: "tasks", label: "Tasks" },
 ];
 
 export const CampaignNavBar: React.FC<Props> = ({ campaignId, activeKey }) => {
