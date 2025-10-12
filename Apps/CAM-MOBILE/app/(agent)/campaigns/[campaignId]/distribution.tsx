@@ -132,6 +132,7 @@ export default function CampaignDistribution() {
     setDetailsModal({ open: false });
     setLastAlertedDistResourceId(null);
     setResourceId(undefined);
+    setTargetQty("");
   }, [campaignId]);
 
   // Options
@@ -530,7 +531,7 @@ export default function CampaignDistribution() {
                   keyboardType="numeric"
                   placeholder="Amount"
                   placeholderTextColor={colors.muted}
-                  editable={!(!!resourceId && Number(maxDistributable) <= 0)}
+                  editable={!!resourceId && Number(maxDistributable) > 0}
                   style={{
                     height: 44,
                     borderRadius: 12,
@@ -540,7 +541,7 @@ export default function CampaignDistribution() {
                     paddingHorizontal: spacing.md,
                     color: colors.cardForeground,
                     opacity:
-                      !!resourceId && Number(maxDistributable) <= 0 ? 0.6 : 1,
+                      !!resourceId && Number(maxDistributable) > 0 ? 1 : 0.6,
                   }}
                 />
                 {resourceId && (
@@ -1470,6 +1471,7 @@ export default function CampaignDistribution() {
         onSelect={(v) => {
           const match = resourceOptions.find((r) => r.label === v);
           setResourceId(match?.key);
+          setTargetQty("");
           setResourcePicker(false);
         }}
         onClose={() => setResourcePicker(false)}

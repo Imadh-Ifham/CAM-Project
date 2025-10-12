@@ -59,10 +59,11 @@ export default function CampaignCollect() {
       pollingInterval: 15000,
       refetchOnFocus: true,
     } as any);
-  const { data: resSnapshot } = useGetResourceSnapshotQuery(
-    resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
-    { skip: !campaignId || !resourceId } as any
-  );
+  const { data: resSnapshot, refetch: refetchResSnapshot } =
+    useGetResourceSnapshotQuery(
+      resourceId && campaignId ? { campaignId, resourceId } : ({} as any),
+      { skip: !campaignId || !resourceId } as any
+    );
   // Fallback for selected resource: if single-resource query is null, find it in campaign snapshots
   const selectedResSnapshot: any | undefined =
     resourceId && Array.isArray(snapshots)
@@ -161,6 +162,7 @@ export default function CampaignCollect() {
       ? snapshotTargetForSelected
       : configTargetForSelected
     : 0;
+  // Remaining needed is based on collected vs target (not stock): remaining = target - collected
   const effectiveCollectedForSelected = resourceId
     ? typeof (selectedResSnapshot as any)?.collectedQty === "number"
       ? Number((selectedResSnapshot as any)?.collectedQty)
@@ -445,8 +447,10 @@ export default function CampaignCollect() {
                 <Text
                   style={{ color: colors.muted, marginTop: 6, fontSize: 12 }}
                 >
-                  Max {effectiveTargetForSelected} {unitLabel || "units"} can be
-                  collected for this resource.
+                  Target: {effectiveTargetForSelected}
+                  {unitLabel ? ` ${unitLabel}` : ""} · Remaining:{" "}
+                  {remainingNeeded}
+                  {unitLabel ? ` ${unitLabel}` : ""}
                 </Text>
               )}
               <Text style={{ fontWeight: "600", marginBottom: 6 }}>
@@ -499,12 +503,10 @@ export default function CampaignCollect() {
                 keyboardType="numeric"
                 placeholder="Enter quantity"
                 placeholderTextColor={colors.muted}
+                // Allow editing only after a resource is selected and if more is needed
                 editable={
-                  !(
-                    typeof remainingNeeded === "number" &&
-                    remainingNeeded <= 0 &&
-                    !!resourceId
-                  )
+                  !!resourceId &&
+                  !(typeof remainingNeeded === "number" && remainingNeeded <= 0)
                 }
                 style={{
                   height: 44,
@@ -515,9 +517,9 @@ export default function CampaignCollect() {
                   paddingHorizontal: spacing.md,
                   color: colors.cardForeground,
                   opacity:
-                    typeof remainingNeeded === "number" &&
-                    remainingNeeded <= 0 &&
-                    !!resourceId
+                    !resourceId ||
+                    (typeof remainingNeeded === "number" &&
+                      remainingNeeded <= 0)
                       ? 0.6
                       : 1,
                 }}
@@ -788,6 +790,9 @@ export default function CampaignCollect() {
                         : undefined,
                   }).unwrap();
                   Alert.alert("Success", "Collection job created.");
+                  // Refresh snapshots so remaining/headers update immediately
+                  if (refetchSnapshots) await refetchSnapshots();
+                  if (refetchResSnapshot) await refetchResSnapshot();
                   // Reset fields on success
                   setResourceId(undefined);
                   setTargetQty("");
@@ -922,6 +927,7 @@ export default function CampaignCollect() {
                       onPress={async () => {
                         try {
                           await startJob({ campaignId, jobId: c._id }).unwrap();
+                          if (refetchSnapshots) await refetchSnapshots();
                           Alert.alert("Started", "Collection started");
                         } catch (e: any) {
                           Alert.alert(
@@ -984,6 +990,7 @@ export default function CampaignCollect() {
                             campaignId,
                             jobId: c._id,
                           }).unwrap();
+                          if (refetchSnapshots) await refetchSnapshots();
                           Alert.alert("Completed", "Collection completed");
                         } catch (e: any) {
                           Alert.alert(
@@ -1020,6 +1027,7 @@ export default function CampaignCollect() {
                             campaignId,
                             jobId: c._id,
                           }).unwrap();
+                          if (refetchSnapshots) await refetchSnapshots();
                           Alert.alert("Cancelled", "Collection cancelled");
                         } catch (e: any) {
                           Alert.alert(
@@ -1298,10 +1306,18 @@ export default function CampaignCollect() {
           >
             {resourceOptions.map((opt, idx) => (
               <Pressable
-                key={opt.key}
+                key={opt.key || `${opt.label}-${idx}`}
                 onPress={() => {
+                  // Clear previous quantity and set new resource
+                  setTargetQty("");
                   setResourceId(opt.key);
                   setPickerOpen(false);
+                  // Ensure fresh snapshot for selected resource
+                  setTimeout(() => {
+                    try {
+                      if (refetchResSnapshot) refetchResSnapshot();
+                    } catch {}
+                  }, 0);
                 }}
                 style={{
                   paddingVertical: spacing.md,
