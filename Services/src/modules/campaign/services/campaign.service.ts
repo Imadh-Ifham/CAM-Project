@@ -145,18 +145,6 @@ class CampaignService {
         // Generate unique campaign ID
         const campaignID = await this.generateCampaignID(campaignData.type);
 
-        // Calculate estimated budget from resources if not provided
-        if (
-          campaignData.estimatedBudget === 0 &&
-          campaignData.resources.length > 0
-        ) {
-          campaignData.estimatedBudget = campaignData.resources.reduce(
-            (total, resource) =>
-              total + resource.quantity * resource.estimatedCost,
-            0
-          );
-        }
-
         // Create the campaign document
         const campaignDoc = new Campaign({
           campaignID,

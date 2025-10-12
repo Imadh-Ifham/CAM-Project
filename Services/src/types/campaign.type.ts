@@ -15,15 +15,7 @@ export interface CampaignFormData {
   city: string;
 
   // Resources
-  resources: Array<{
-    id: string;
-    name: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    estimatedCost: number;
-    description?: string;
-  }>;
+  resources: Resources[];
   estimatedBudget: number;
 
   // Schedule
