@@ -65,10 +65,10 @@ export default function CampaignResources({
 
   const totalResources = campaign.resources.length;
   const completeResources = campaign.resources.filter(
-    (r) => r.available >= r.required
+    (r) => r.availableQuantity >= r.requiredQuantity
   ).length;
   const criticalResources = campaign.resources.filter(
-    (r) => (r.available / r.required) * 100 < 50
+    (r) => (r.availableQuantity / r.requiredQuantity) * 100 < 50
   ).length;
 
   return (
@@ -117,10 +117,11 @@ export default function CampaignResources({
       {/* Resources List */}
       <View style={styles.resourcesList}>
         {filteredResources.map((resource, index) => {
-          const percentage = (resource.available / resource.required) * 100;
+          const percentage =
+            (resource.availableQuantity / resource.requiredQuantity) * 100;
           const progressColor = getProgressColor(
-            resource.available,
-            resource.required
+            resource.availableQuantity,
+            resource.requiredQuantity
           );
 
           return (
@@ -142,8 +143,8 @@ export default function CampaignResources({
                         styles.statusBadge,
                         {
                           backgroundColor: getStatusBgColor(
-                            resource.available,
-                            resource.required
+                            resource.availableQuantity,
+                            resource.requiredQuantity
                           ),
                         },
                       ]}
@@ -153,20 +154,24 @@ export default function CampaignResources({
                           styles.statusText,
                           {
                             color: getStatusColor(
-                              resource.available,
-                              resource.required
+                              resource.availableQuantity,
+                              resource.requiredQuantity
                             ),
                           },
                         ]}
                       >
-                        {getStatusText(resource.available, resource.required)}
+                        {getStatusText(
+                          resource.availableQuantity,
+                          resource.requiredQuantity
+                        )}
                       </Text>
                     </View>
                   </View>
 
                   <View style={styles.resourceStats}>
                     <Text style={styles.resourceCount}>
-                      {resource.available} / {resource.required} {resource.unit}
+                      {resource.availableQuantity} / {resource.requiredQuantity}{" "}
+                      {resource.unit}
                     </Text>
                     <Text style={styles.resourcePercentage}>
                       {percentage.toFixed(0)}%
