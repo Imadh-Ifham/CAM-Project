@@ -71,26 +71,38 @@ export default function OnStartScreen() {
               padding: spacing.lg,
             }}
           >
-            <Text style={{ color: "#fff", fontSize: 24, fontWeight: "800" }}>
+            <Text
+              style={{
+                color: colors.primaryForeground,
+                fontSize: 24,
+                fontWeight: "800",
+              }}
+            >
               CAM
             </Text>
-            <Text style={{ color: "#fff", opacity: 0.9 }}>
+            <Text style={{ color: colors.primaryForeground, opacity: 0.9 }}>
               Community Aid Map
             </Text>
           </View>
         </View>
 
         {/* Intro */}
-        <View style={{ alignItems: "center", marginBottom: spacing.lg }}>
+        <View style={{ alignItems: "center", marginBottom: spacing.xl }}>
           <Text
             style={[
               typography.h2,
-              { textAlign: "center", marginBottom: spacing.sm },
+              {
+                textAlign: "center",
+                marginBottom: spacing.sm,
+                color: colors.cardForeground,
+              },
             ]}
           >
             Making Aid Distribution Simple
           </Text>
-          <Text style={{ textAlign: "center", color: colors.muted }}>
+          <Text
+            style={{ textAlign: "center", color: colors.muted, lineHeight: 22 }}
+          >
             Connect with your community through coordinated aid distribution.
             Join as an Agent to manage resources or as a Volunteer to help
             deliver aid to those in need.
@@ -116,11 +128,30 @@ export default function OnStartScreen() {
                   width: 48,
                   height: 48,
                   borderRadius: 24,
-                  backgroundColor: colors.accent,
+                  backgroundColor: colors.green,
                   marginBottom: spacing.sm,
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
-              />
-              <Text style={{ fontSize: 12 }}>{f.label}</Text>
+              >
+                <View
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: colors.primaryForeground,
+                  }}
+                />
+              </View>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: colors.cardForeground,
+                  textAlign: "center",
+                }}
+              >
+                {f.label}
+              </Text>
             </View>
           ))}
         </View>
@@ -129,18 +160,45 @@ export default function OnStartScreen() {
         <Text
           style={[
             typography.h3,
-            { textAlign: "center", marginBottom: spacing.md },
+            {
+              textAlign: "center",
+              marginBottom: spacing.lg,
+              color: colors.cardForeground,
+            },
           ]}
         >
           Choose Your Role
         </Text>
 
         <Pressable onPress={() => router.push("volunteer/login" as any)}>
-          <Card>
+          <Card
+            style={{
+              marginBottom: spacing.lg,
+              borderColor: colors.orange,
+              borderWidth: 1,
+            }}
+          >
             <CardContent>
               <View style={{ alignItems: "center" }}>
-                <Text style={{ fontSize: 56, color: "#f97316" }}>◎</Text>
-                <Text style={[typography.h2, { marginTop: spacing.sm }]}>
+                <View
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 32,
+                    backgroundColor: colors.mutedBackground,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: spacing.sm,
+                  }}
+                >
+                  <Text style={{ fontSize: 32, color: colors.orange }}>👥</Text>
+                </View>
+                <Text
+                  style={[
+                    typography.h3,
+                    { marginTop: spacing.sm, color: colors.cardForeground },
+                  ]}
+                >
                   Volunteer Login
                 </Text>
                 <Text
@@ -148,20 +206,29 @@ export default function OnStartScreen() {
                     color: colors.muted,
                     textAlign: "center",
                     marginTop: spacing.sm,
+                    lineHeight: 20,
                   }}
                 >
                   Join campaigns and help deliver aid to communities
                 </Text>
                 <View
                   style={{
-                    backgroundColor: "#fff7ed",
+                    backgroundColor: colors.mutedBackground,
                     padding: spacing.md,
                     borderRadius: 12,
                     marginTop: spacing.md,
                     alignSelf: "stretch",
+                    borderLeftWidth: 3,
+                    borderLeftColor: colors.orange,
                   }}
                 >
-                  <Text style={{ color: "#c2410c", fontSize: 12 }}>
+                  <Text
+                    style={{
+                      color: colors.orange,
+                      fontSize: 12,
+                      lineHeight: 18,
+                    }}
+                  >
                     • Join active campaigns{"\n"}• Complete volunteer tasks
                     {"\n"}• Make a community impact
                   </Text>
@@ -172,11 +239,34 @@ export default function OnStartScreen() {
         </Pressable>
 
         <Pressable onPress={() => router.push("agent/login" as any)}>
-          <Card style={{ marginBottom: spacing.lg }}>
+          <Card
+            style={{
+              marginBottom: spacing.lg,
+              borderColor: colors.green,
+              borderWidth: 1,
+            }}
+          >
             <CardContent>
               <View style={{ alignItems: "center" }}>
-                <Text style={{ fontSize: 56, color: "#16a34a" }}>✓</Text>
-                <Text style={[typography.h2, { marginTop: spacing.sm }]}>
+                <View
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 32,
+                    backgroundColor: colors.mutedBackground,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: spacing.sm,
+                  }}
+                >
+                  <Text style={{ fontSize: 32, color: colors.green }}>🎯</Text>
+                </View>
+                <Text
+                  style={[
+                    typography.h3,
+                    { marginTop: spacing.sm, color: colors.cardForeground },
+                  ]}
+                >
                   Agent Login
                 </Text>
                 <Text
@@ -184,20 +274,29 @@ export default function OnStartScreen() {
                     color: colors.muted,
                     textAlign: "center",
                     marginTop: spacing.sm,
+                    lineHeight: 20,
                   }}
                 >
                   Manage resource collection and distribution campaigns
                 </Text>
                 <View
                   style={{
-                    backgroundColor: "#ecfdf5",
+                    backgroundColor: colors.mutedBackground,
                     padding: spacing.md,
                     borderRadius: 12,
                     marginTop: spacing.md,
                     alignSelf: "stretch",
+                    borderLeftWidth: 3,
+                    borderLeftColor: colors.green,
                   }}
                 >
-                  <Text style={{ color: "#047857", fontSize: 12 }}>
+                  <Text
+                    style={{
+                      color: colors.green,
+                      fontSize: 12,
+                      lineHeight: 18,
+                    }}
+                  >
                     • Create and manage campaigns{"\n"}• Collect community
                     resources{"\n"}• Coordinate with volunteers
                   </Text>
@@ -208,11 +307,30 @@ export default function OnStartScreen() {
         </Pressable>
 
         <Pressable onPress={() => router.push("admin/login" as any)}>
-          <Card>
+          <Card style={{ borderColor: colors.primary, borderWidth: 1 }}>
             <CardContent>
               <View style={{ alignItems: "center" }}>
-                <Text style={{ fontSize: 56, color: "#2563eb" }}>⚙️</Text>
-                <Text style={[typography.h2, { marginTop: spacing.sm }]}>
+                <View
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 32,
+                    backgroundColor: colors.mutedBackground,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: spacing.sm,
+                  }}
+                >
+                  <Text style={{ fontSize: 32, color: colors.primary }}>
+                    ⚙️
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    typography.h3,
+                    { marginTop: spacing.sm, color: colors.cardForeground },
+                  ]}
+                >
                   Admin Login
                 </Text>
                 <Text
@@ -220,20 +338,29 @@ export default function OnStartScreen() {
                     color: colors.muted,
                     textAlign: "center",
                     marginTop: spacing.sm,
+                    lineHeight: 20,
                   }}
                 >
                   Access system controls and manage all user operations
                 </Text>
                 <View
                   style={{
-                    backgroundColor: "#eff6ff",
+                    backgroundColor: colors.mutedBackground,
                     padding: spacing.md,
                     borderRadius: 12,
                     marginTop: spacing.md,
                     alignSelf: "stretch",
+                    borderLeftWidth: 3,
+                    borderLeftColor: colors.primary,
                   }}
                 >
-                  <Text style={{ color: "#1d4ed8", fontSize: 12 }}>
+                  <Text
+                    style={{
+                      color: colors.primary,
+                      fontSize: 12,
+                      lineHeight: 18,
+                    }}
+                  >
                     • Monitor platform activities{"\n"}• Manage agents &
                     volunteers
                     {"\n"}• Configure campaigns & reports
