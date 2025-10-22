@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, Alert } from "react-native";
 import { colors } from "../../../../src/styles/colors";
 import { spacing } from "../../../../src/styles/spacing";
@@ -22,7 +22,7 @@ type DistributionItem = {
 
 export default function VolunteerCampaignDistribution() {
   // Mock distributions assigned by agent to this volunteer
-  const assignedDistributions: DistributionItem[] = [
+  const [distributions, setDistributions] = useState<DistributionItem[]>([
     {
       id: 1,
       resource: "Food Packages",
@@ -60,11 +60,39 @@ export default function VolunteerCampaignDistribution() {
       instructions: "Delivered to emergency department reception desk.",
       priority: "High",
     },
-  ];
+  ]);
 
-  const activeCount = assignedDistributions.filter(
+  const activeCount = distributions.filter(
     (d) => d.status !== "Completed"
   ).length;
+
+  useEffect(() => {
+    console.log("Distributions state changed:", distributions);
+  }, [distributions]);
+
+  const handleStartDelivery = (id: number) => {
+    console.log("🚀 Start Delivery clicked for ID:", id);
+    console.log("📦 Current distributions before update:", distributions);
+
+    Alert.alert("Start Delivery", "Are you ready to start this delivery?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Start",
+        onPress: () => {
+          console.log("✅ User confirmed - updating status to In Progress");
+
+          // Update status to In Progress
+          const updatedDistributions = distributions.map((dist) =>
+            dist.id === id ? { ...dist, status: "In Progress" as const } : dist
+          );
+
+          console.log("📦 Updated distributions:", updatedDistributions);
+          setDistributions(updatedDistributions);
+          console.log("✨ setDistributions called");
+        },
+      },
+    ]);
+  };
 
   const StatusBadge = ({ status }: { status: DistributionItem["status"] }) => {
     const map: Record<DistributionItem["status"], string> = {
@@ -119,14 +147,28 @@ export default function VolunteerCampaignDistribution() {
     );
   };
 
-  const startDelivery = (id: number) => {
-    Alert.alert(
-      "Start Delivery",
-      "Delivery started! Please follow the instructions."
-    );
-  };
   const markDelivered = (id: number) => {
-    Alert.alert("Mark Delivered", "Delivery marked as completed. Thank you!");
+    console.log("✅ Mark Delivered clicked for ID:", id);
+    console.log("📦 Current distributions before completion:", distributions);
+
+    Alert.alert("Mark Delivered", "Confirm delivery completion?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Confirm",
+        onPress: () => {
+          console.log("🎉 User confirmed - marking as Completed");
+
+          // Update status to Completed
+          const updatedDistributions = distributions.map((dist) =>
+            dist.id === id ? { ...dist, status: "Completed" as const } : dist
+          );
+
+          console.log("📦 Completed distributions:", updatedDistributions);
+          setDistributions(updatedDistributions);
+          console.log("✨ setDistributions called for completion");
+        },
+      },
+    ]);
   };
 
   return (
@@ -167,221 +209,235 @@ export default function VolunteerCampaignDistribution() {
 
         {/* List */}
         <View style={{ gap: spacing.lg }}>
-          {assignedDistributions.map((d) => (
-            <Card key={d.id} style={{ borderRadius: 16 }}>
-              <CardContent style={{ padding: spacing.lg }}>
-                {/* Title row */}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    marginBottom: spacing.sm,
-                  }}
-                >
-                  <View>
-                    <Text
-                      style={{
-                        fontWeight: "700",
-                        color: colors.cardForeground,
-                      }}
-                    >
-                      {d.resource}
-                    </Text>
-                    <Text style={{ color: colors.muted, fontSize: 12 }}>
-                      Qty: {d.quantity}
-                    </Text>
+          {distributions.map((d) => {
+            console.log(
+              `🔍 Rendering distribution ID ${d.id} with status: ${d.status}`
+            );
+            return (
+              <Card key={d.id} style={{ borderRadius: 16 }}>
+                <CardContent style={{ padding: spacing.lg }}>
+                  {/* Title row */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      marginBottom: spacing.sm,
+                    }}
+                  >
+                    <View>
+                      <Text
+                        style={{
+                          fontWeight: "700",
+                          color: colors.cardForeground,
+                        }}
+                      >
+                        {d.resource}
+                      </Text>
+                      <Text style={{ color: colors.muted, fontSize: 12 }}>
+                        Qty: {d.quantity}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: "flex-end", gap: 6 }}>
+                      <StatusBadge status={d.status} />
+                      <PriorityBadge priority={d.priority} />
+                    </View>
                   </View>
-                  <View style={{ alignItems: "flex-end", gap: 6 }}>
-                    <StatusBadge status={d.status} />
-                    <PriorityBadge priority={d.priority} />
-                  </View>
-                </View>
 
-                {/* Meta */}
-                <View style={{ gap: 6, marginBottom: spacing.md }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <Ionicons
-                      name="location-outline"
-                      size={14}
-                      color={colors.muted}
-                    />
-                    <Text
-                      style={{ color: colors.cardForeground, fontSize: 13 }}
-                    >
-                      {d.location}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <Ionicons
-                      name="person-outline"
-                      size={14}
-                      color={colors.muted}
-                    />
-                    <Text
-                      style={{ color: colors.cardForeground, fontSize: 13 }}
-                    >
-                      Recipient: {d.recipient}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={14}
-                      color={colors.muted}
-                    />
-                    <Text
-                      style={{ color: colors.cardForeground, fontSize: 13 }}
-                    >
-                      Delivery: {d.deliveryDate}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <Ionicons
-                      name="person-outline"
-                      size={14}
-                      color={colors.muted}
-                    />
-                    <Text
-                      style={{ color: colors.cardForeground, fontSize: 13 }}
-                    >
-                      Assigned by: {d.assignedBy}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Instructions */}
-                <View
-                  style={{
-                    backgroundColor: colors.mutedBackground,
-                    borderRadius: 12,
-                    padding: spacing.md,
-                    marginBottom: spacing.md,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.muted,
-                      fontSize: 12,
-                      marginBottom: 4,
-                    }}
-                  >
-                    Delivery Instructions:
-                  </Text>
-                  <Text style={{ color: colors.cardForeground, fontSize: 13 }}>
-                    {d.instructions}
-                  </Text>
-                </View>
-
-                {/* Actions */}
-                {d.status === "Assigned" && (
-                  <Button
-                    onPress={() => startDelivery(d.id)}
-                    style={{ backgroundColor: colors.green }}
-                  >
+                  {/* Meta */}
+                  <View style={{ gap: 6, marginBottom: spacing.md }}>
                     <View
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        justifyContent: "center",
-                        gap: 6,
+                        gap: 8,
                       }}
                     >
-                      <Ionicons name="bus-outline" size={16} color="#fff" />
-                      <Text style={{ color: "#fff", fontWeight: "700" }}>
-                        Start Delivery
+                      <Ionicons
+                        name="location-outline"
+                        size={14}
+                        color={colors.muted}
+                      />
+                      <Text
+                        style={{ color: colors.cardForeground, fontSize: 13 }}
+                      >
+                        {d.location}
                       </Text>
                     </View>
-                  </Button>
-                )}
-                {d.status === "In Progress" && (
-                  <View style={{ gap: spacing.sm }}>
-                    <Button onPress={() => markDelivered(d.id)}>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                        }}
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons
+                        name="person-outline"
+                        size={14}
+                        color={colors.muted}
+                      />
+                      <Text
+                        style={{ color: colors.cardForeground, fontSize: 13 }}
                       >
-                        <Ionicons
-                          name="checkmark-circle-outline"
-                          size={16}
-                          color={colors.card}
-                        />
-                        <Text style={{ color: colors.card, fontWeight: "700" }}>
-                          Mark Delivered
-                        </Text>
-                      </View>
-                    </Button>
-                    <Button variant="outline">
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
-                        }}
+                        Recipient: {d.recipient}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={14}
+                        color={colors.muted}
+                      />
+                      <Text
+                        style={{ color: colors.cardForeground, fontSize: 13 }}
                       >
-                        <Ionicons
-                          name="call-outline"
-                          size={16}
-                          color={colors.cardForeground}
-                        />
-                        <Text
-                          style={{
-                            color: colors.cardForeground,
-                            fontWeight: "700",
-                          }}
-                        >
-                          Contact Recipient
-                        </Text>
-                      </View>
-                    </Button>
+                        Delivery: {d.deliveryDate}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons
+                        name="person-outline"
+                        size={14}
+                        color={colors.muted}
+                      />
+                      <Text
+                        style={{ color: colors.cardForeground, fontSize: 13 }}
+                      >
+                        Assigned by: {d.assignedBy}
+                      </Text>
+                    </View>
                   </View>
-                )}
-                {d.status === "Completed" && (
+
+                  {/* Instructions */}
                   <View
                     style={{
-                      backgroundColor: "#d1fae5",
+                      backgroundColor: colors.mutedBackground,
                       borderRadius: 12,
                       padding: spacing.md,
-                      alignItems: "center",
+                      marginBottom: spacing.md,
                     }}
                   >
-                    <Text style={{ color: "#065f46", fontSize: 13 }}>
-                      ✅ Distribution completed successfully
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 12,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Delivery Instructions:
+                    </Text>
+                    <Text
+                      style={{ color: colors.cardForeground, fontSize: 13 }}
+                    >
+                      {d.instructions}
                     </Text>
                   </View>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+
+                  {/* Actions */}
+                  {d.status === "Assigned" && (
+                    <Button
+                      onPress={() => {
+                        console.log(
+                          `👆 Button pressed for ID: ${d.id}, current status: ${d.status}`
+                        );
+                        handleStartDelivery(d.id);
+                      }}
+                      style={{ backgroundColor: colors.green }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <Ionicons name="bus-outline" size={16} color="#fff" />
+                        <Text style={{ color: "#fff", fontWeight: "700" }}>
+                          Start Delivery
+                        </Text>
+                      </View>
+                    </Button>
+                  )}
+                  {d.status === "In Progress" && (
+                    <View style={{ gap: spacing.sm }}>
+                      <Button onPress={() => markDelivered(d.id)}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <Ionicons
+                            name="checkmark-circle-outline"
+                            size={16}
+                            color={colors.card}
+                          />
+                          <Text
+                            style={{ color: colors.card, fontWeight: "700" }}
+                          >
+                            Mark Delivered
+                          </Text>
+                        </View>
+                      </Button>
+                      <Button variant="outline">
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <Ionicons
+                            name="call-outline"
+                            size={16}
+                            color={colors.cardForeground}
+                          />
+                          <Text
+                            style={{
+                              color: colors.cardForeground,
+                              fontWeight: "700",
+                            }}
+                          >
+                            Contact Recipient
+                          </Text>
+                        </View>
+                      </Button>
+                    </View>
+                  )}
+                  {d.status === "Completed" && (
+                    <View
+                      style={{
+                        backgroundColor: "#d1fae5",
+                        borderRadius: 12,
+                        padding: spacing.md,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{ color: "#065f46", fontSize: 13 }}>
+                        ✅ Distribution completed successfully
+                      </Text>
+                    </View>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </View>
       </ScrollView>
     </View>

@@ -169,21 +169,34 @@ export default function VolunteerCampaignsIndex() {
     filter === "all" ? `${counts.all} Total` : `${filtered.length} Found`;
 
   const StatusPill = ({ s }: { s: CampaignStatus }) => {
-    const bg =
-      s === "Active"
-        ? colors.blue
-        : s === "Completed"
-        ? colors.green
-        : colors.muted;
+    const config = {
+      Active: {
+        bg: colors.blue,
+        icon: "radio-button-on" as const,
+      },
+      Completed: {
+        bg: colors.green,
+        icon: "checkmark-circle" as const,
+      },
+      Available: {
+        bg: colors.orange,
+        icon: "time" as const,
+      },
+    };
+    const { bg, icon } = config[s];
     return (
       <View
         style={{
           backgroundColor: bg,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
-          borderRadius: 999,
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+          borderRadius: 20,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
         }}
       >
+        <Ionicons name={icon} size={12} color="#fff" />
         <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>
           {s}
         </Text>
@@ -199,46 +212,47 @@ export default function VolunteerCampaignsIndex() {
     value: FilterKey;
   }) => {
     const selected = filter === value;
-    const style = (() => {
-      if (value === "available")
-        return selected
-          ? { backgroundColor: colors.blue, borderColor: colors.blue }
-          : {
-              backgroundColor: colors.mutedBackground,
-              borderColor: colors.border,
-            };
-      if (value === "active")
-        return selected
-          ? { backgroundColor: colors.green, borderColor: colors.green }
-          : { backgroundColor: "#ecfdf5", borderColor: colors.border };
-      if (value === "completed")
-        return selected
-          ? { backgroundColor: "#9ca3af", borderColor: "#9ca3af" }
-          : {
-              backgroundColor: colors.mutedBackground,
-              borderColor: colors.border,
-            };
-      // all
-      return selected
-        ? {
-            backgroundColor: colors.cardForeground,
-            borderColor: colors.cardForeground,
-          }
-        : {
-            backgroundColor: colors.mutedBackground,
-            borderColor: colors.border,
-          };
-    })();
+    const config = {
+      all: {
+        selectedBg: colors.cardForeground,
+        selectedBorder: colors.cardForeground,
+        selectedText: colors.card,
+        unselectedBg: colors.mutedBackground,
+        unselectedBorder: colors.border,
+        unselectedText: colors.cardForeground,
+      },
+      available: {
+        selectedBg: colors.orange,
+        selectedBorder: colors.orange,
+        selectedText: "#fff",
+        unselectedBg: colors.orange + "15",
+        unselectedBorder: colors.orange + "30",
+        unselectedText: colors.orange,
+      },
+      active: {
+        selectedBg: colors.blue,
+        selectedBorder: colors.blue,
+        selectedText: "#fff",
+        unselectedBg: colors.blue + "15",
+        unselectedBorder: colors.blue + "30",
+        unselectedText: colors.blue,
+      },
+      completed: {
+        selectedBg: colors.green,
+        selectedBorder: colors.green,
+        selectedText: "#fff",
+        unselectedBg: colors.green + "15",
+        unselectedBorder: colors.green + "30",
+        unselectedText: colors.green,
+      },
+    };
 
-    const textColor =
-      selected &&
-      value !== "active" &&
-      value !== "available" &&
-      value !== "completed"
-        ? colors.card
-        : selected
-        ? "#fff"
-        : colors.cardForeground;
+    const style = config[value];
+    const backgroundColor = selected ? style.selectedBg : style.unselectedBg;
+    const borderColor = selected
+      ? style.selectedBorder
+      : style.unselectedBorder;
+    const textColor = selected ? style.selectedText : style.unselectedText;
 
     return (
       <Button
@@ -247,11 +261,16 @@ export default function VolunteerCampaignsIndex() {
         onPress={() => setFilter(value)}
         style={{
           flex: 1,
-          height: 40,
-          borderColor: style.borderColor,
-          backgroundColor: style.backgroundColor,
+          height: 44,
+          borderColor: borderColor,
+          backgroundColor: backgroundColor,
+          borderWidth: 1.5,
         }}
-        textStyle={{ color: textColor, fontWeight: "700" }}
+        textStyle={{
+          color: textColor,
+          fontWeight: "700",
+          fontSize: 13,
+        }}
       >
         {label}
       </Button>
@@ -269,13 +288,22 @@ export default function VolunteerCampaignsIndex() {
 
   const handleVolunteerApplication = () => {
     // Placeholder submit; wire to API later
-    setShowJoinModal(false);
     const name = selectedCampaign?.name || "Campaign";
+
+    setShowJoinModal(false);
     setSelectedCampaign(null);
-    Alert.alert(
-      "Application submitted",
-      `Your request to join ${name} has been sent.`
-    );
+
+    // Show success alert after modal closes
+    setTimeout(() => {
+      Alert.alert(
+        "✅ Application Submitted!",
+        `Your request to join "${name}" has been successfully sent to ${
+          selectedCampaign?.agent || "the campaign agent"
+        }. You'll be notified once it's reviewed.`,
+        [{ text: "OK", style: "default" }]
+      );
+    }, 300);
+
     setVolunteerApplication({
       fullName: "Alice Johnson",
       age: "",
@@ -299,37 +327,72 @@ export default function VolunteerCampaignsIndex() {
             padding: spacing.lg,
             paddingBottom: spacing.xl,
           }}
+          showsVerticalScrollIndicator={false}
         >
-          {/* Title + count badge */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Text style={typography.h2}>Campaigns</Text>
+          {/* Header Section with gradient-like effect */}
+          <View style={{ marginBottom: spacing.lg }}>
             <View
               style={{
-                backgroundColor: colors.card,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingHorizontal: spacing.md,
-                paddingVertical: 6,
-                borderRadius: 999,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: spacing.sm,
               }}
             >
-              <Text style={{ color: colors.muted }}>{badgeText}</Text>
+              <View>
+                <Text style={[typography.h2, { marginBottom: 4 }]}>
+                  Campaigns
+                </Text>
+                <Text style={{ color: colors.muted, fontSize: 14 }}>
+                  Find and join relief campaigns
+                </Text>
+              </View>
+              <View
+                style={{
+                  backgroundColor: colors.blue + "20",
+                  borderWidth: 1,
+                  borderColor: colors.blue + "40",
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                }}
+              >
+                <Text
+                  style={{
+                    color: colors.blue,
+                    fontWeight: "700",
+                    fontSize: 13,
+                  }}
+                >
+                  {badgeText}
+                </Text>
+              </View>
             </View>
           </View>
 
-          {/* Filter Card */}
-          <Card style={{ borderRadius: 16, marginTop: spacing.lg }}>
-            <CardHeader>
-              <Text style={[typography.h3]}>Filter Campaigns</Text>
+          {/* Filter Card with enhanced design */}
+          <Card
+            style={{
+              borderRadius: 16,
+              marginBottom: spacing.lg,
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            }}
+          >
+            <CardHeader style={{ paddingBottom: spacing.sm }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Ionicons name="filter-outline" size={18} color={colors.blue} />
+                <Text style={[typography.h3]}>Filter Campaigns</Text>
+              </View>
             </CardHeader>
             <CardContent>
-              <View style={{ flexDirection: "row", gap: spacing.md }}>
+              <View style={{ flexDirection: "row", gap: spacing.sm }}>
                 <FilterButton label={`All (${counts.all})`} value="all" />
                 <FilterButton
                   label={`Available (${counts.available})`}
@@ -339,8 +402,8 @@ export default function VolunteerCampaignsIndex() {
               <View
                 style={{
                   flexDirection: "row",
-                  gap: spacing.md,
-                  marginTop: spacing.md,
+                  gap: spacing.sm,
+                  marginTop: spacing.sm,
                 }}
               >
                 <FilterButton
@@ -355,133 +418,264 @@ export default function VolunteerCampaignsIndex() {
             </CardContent>
           </Card>
 
-          {/* Campaign list */}
-          <View style={{ marginTop: spacing.lg, gap: spacing.lg }}>
+          {/* Campaign list with enhanced cards */}
+          <View style={{ gap: spacing.md }}>
             {filtered.map((c) => (
-              <Card key={c.id} style={{ borderRadius: 16 }}>
+              <Card
+                key={c.id}
+                style={{
+                  borderRadius: 16,
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                  elevation: 3,
+                }}
+              >
                 <CardContent style={{ padding: spacing.lg }}>
-                  {/* Title + status */}
+                  {/* Title + status with better spacing */}
                   <View
                     style={{
                       flexDirection: "row",
                       justifyContent: "space-between",
-                      alignItems: "center",
+                      alignItems: "flex-start",
                       marginBottom: spacing.sm,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontWeight: "700",
-                        fontSize: 16,
-                        color: colors.cardForeground,
-                      }}
-                    >
-                      {c.name}
-                    </Text>
+                    <View style={{ flex: 1, marginRight: spacing.md }}>
+                      <Text
+                        style={{
+                          fontWeight: "700",
+                          fontSize: 18,
+                          color: colors.cardForeground,
+                          marginBottom: 4,
+                        }}
+                      >
+                        {c.name}
+                      </Text>
+                      <Text
+                        style={{
+                          color: colors.muted,
+                          fontSize: 13,
+                          lineHeight: 18,
+                        }}
+                      >
+                        {c.description}
+                      </Text>
+                    </View>
                     <StatusPill s={c.status} />
                   </View>
-                  <Text
-                    style={{ color: colors.muted, marginBottom: spacing.md }}
-                  >
-                    {c.description}
-                  </Text>
 
-                  {/* Meta rows */}
-                  <View style={{ gap: 6, marginBottom: spacing.md }}>
+                  {/* Meta rows with icons and better spacing */}
+                  <View
+                    style={{
+                      gap: 10,
+                      marginTop: spacing.md,
+                      marginBottom: spacing.md,
+                    }}
+                  >
                     <View
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <Ionicons
-                        name="location-outline"
-                        size={16}
-                        color={colors.muted}
-                      />
-                      <Text style={{ color: colors.cardForeground }}>
-                        {c.location}
-                      </Text>
-                    </View>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <Ionicons
-                        name="calendar-outline"
-                        size={16}
-                        color={colors.muted}
-                      />
-                      <Text style={{ color: colors.cardForeground }}>
-                        {c.startDate} - {c.endDate}
-                      </Text>
-                    </View>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "space-between",
+                        gap: 10,
                       }}
                     >
                       <View
                         style={{
-                          flexDirection: "row",
+                          width: 32,
+                          height: 32,
+                          borderRadius: 8,
+                          backgroundColor: colors.blue + "20",
                           alignItems: "center",
-                          gap: 6,
+                          justifyContent: "center",
                         }}
                       >
                         <Ionicons
-                          name="person-outline"
+                          name="location"
                           size={16}
-                          color={colors.muted}
+                          color={colors.blue}
                         />
-                        <Text style={{ color: colors.cardForeground }}>
+                      </View>
+                      <Text
+                        style={{
+                          color: colors.cardForeground,
+                          fontSize: 14,
+                          flex: 1,
+                        }}
+                      >
+                        {c.location}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 8,
+                          backgroundColor: colors.orange + "20",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Ionicons
+                          name="calendar"
+                          size={16}
+                          color={colors.orange}
+                        />
+                      </View>
+                      <Text
+                        style={{
+                          color: colors.cardForeground,
+                          fontSize: 14,
+                          flex: 1,
+                        }}
+                      >
+                        {c.startDate} - {c.endDate}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 8,
+                          backgroundColor: colors.green + "20",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Ionicons
+                          name="person"
+                          size={16}
+                          color={colors.green}
+                        />
+                      </View>
+                      <View
+                        style={{
+                          flex: 1,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Text
+                          style={{ color: colors.cardForeground, fontSize: 14 }}
+                        >
                           Agent: {c.agent}
                         </Text>
+                        <View
+                          style={{
+                            backgroundColor: colors.mutedBackground,
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderRadius: 12,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: colors.cardForeground,
+                              fontSize: 12,
+                              fontWeight: "600",
+                            }}
+                          >
+                            {c.volunteers}/{c.volunteersNeeded} volunteers
+                          </Text>
+                        </View>
                       </View>
-                      <Text style={{ color: colors.muted }}>
-                        {c.volunteers}/{c.volunteersNeeded} volunteers
-                      </Text>
                     </View>
                   </View>
 
-                  {/* Tasks + resources panel */}
+                  {/* Tasks + resources panel with better design */}
                   <View
                     style={{
                       backgroundColor: colors.mutedBackground,
                       borderRadius: 12,
                       padding: spacing.md,
                       marginBottom: spacing.md,
+                      borderWidth: 1,
+                      borderColor: colors.border + "40",
                     }}
                   >
-                    <Text
+                    <View
                       style={{
-                        color: colors.muted,
-                        fontSize: 12,
-                        marginBottom: 6,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                        marginBottom: 8,
                       }}
                     >
-                      Tasks: {c.taskTypes}
+                      <Ionicons
+                        name="clipboard-outline"
+                        size={14}
+                        color={colors.muted}
+                      />
+                      <Text
+                        style={{
+                          color: colors.muted,
+                          fontSize: 12,
+                          fontWeight: "600",
+                        }}
+                      >
+                        Tasks
+                      </Text>
+                    </View>
+                    <Text
+                      style={{
+                        color: colors.cardForeground,
+                        fontSize: 13,
+                        marginBottom: 10,
+                      }}
+                    >
+                      {c.taskTypes}
                     </Text>
-                    <View style={{ flexDirection: "row", gap: spacing.lg }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        gap: spacing.md,
+                        flexWrap: "wrap",
+                      }}
+                    >
                       {!!c.resourceNeeds.food && (
                         <View
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
-                            gap: 4,
+                            gap: 6,
+                            backgroundColor: colors.card,
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            borderRadius: 8,
                           }}
                         >
                           <Ionicons
-                            name="restaurant-outline"
+                            name="restaurant"
                             size={14}
-                            color={colors.cardForeground}
+                            color={colors.orange}
                           />
-                          <Text style={{ color: colors.cardForeground }}>
+                          <Text
+                            style={{
+                              color: colors.cardForeground,
+                              fontSize: 13,
+                              fontWeight: "600",
+                            }}
+                          >
                             {c.resourceNeeds.food} food
                           </Text>
                         </View>
@@ -491,15 +685,25 @@ export default function VolunteerCampaignsIndex() {
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
-                            gap: 4,
+                            gap: 6,
+                            backgroundColor: colors.card,
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            borderRadius: 8,
                           }}
                         >
                           <Ionicons
-                            name="shirt-outline"
+                            name="shirt"
                             size={14}
-                            color={colors.cardForeground}
+                            color={colors.blue}
                           />
-                          <Text style={{ color: colors.cardForeground }}>
+                          <Text
+                            style={{
+                              color: colors.cardForeground,
+                              fontSize: 13,
+                              fontWeight: "600",
+                            }}
+                          >
                             {c.resourceNeeds.clothes} clothes
                           </Text>
                         </View>
@@ -509,15 +713,25 @@ export default function VolunteerCampaignsIndex() {
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
-                            gap: 4,
+                            gap: 6,
+                            backgroundColor: colors.card,
+                            paddingHorizontal: 10,
+                            paddingVertical: 6,
+                            borderRadius: 8,
                           }}
                         >
                           <Ionicons
-                            name="cash-outline"
+                            name="cash"
                             size={14}
-                            color={colors.cardForeground}
+                            color={colors.green}
                           />
-                          <Text style={{ color: colors.cardForeground }}>
+                          <Text
+                            style={{
+                              color: colors.cardForeground,
+                              fontSize: 13,
+                              fontWeight: "600",
+                            }}
+                          >
                             ${c.resourceNeeds.funds}
                           </Text>
                         </View>
@@ -525,36 +739,111 @@ export default function VolunteerCampaignsIndex() {
                     </View>
                   </View>
 
-                  {/* CTA */}
+                  {/* CTA with enhanced buttons */}
                   {c.status === "Active" && (
                     <Button
                       onPress={() => onManage(c)}
-                      style={{ width: "100%", backgroundColor: colors.green }}
+                      style={{
+                        width: "100%",
+                        backgroundColor: colors.blue,
+                        height: 48,
+                        shadowColor: colors.blue,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 8,
+                        elevation: 4,
+                      }}
                     >
-                      Manage Campaign
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <Ionicons name="apps" size={18} color="#fff" />
+                        <Text
+                          style={{
+                            color: "#fff",
+                            fontWeight: "700",
+                            fontSize: 15,
+                          }}
+                        >
+                          Manage Campaign
+                        </Text>
+                      </View>
                     </Button>
                   )}
                   {c.status === "Available" && (
                     <Button
                       onPress={() => onRequestJoin(c)}
-                      style={{ width: "100%", backgroundColor: colors.orange }}
+                      style={{
+                        width: "100%",
+                        backgroundColor: colors.orange,
+                        height: 48,
+                        shadowColor: colors.orange,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 8,
+                        elevation: 4,
+                      }}
                     >
-                      Request to Join Agent
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <Ionicons name="person-add" size={18} color="#fff" />
+                        <Text
+                          style={{
+                            color: "#fff",
+                            fontWeight: "700",
+                            fontSize: 15,
+                          }}
+                        >
+                          Request to Join
+                        </Text>
+                      </View>
                     </Button>
                   )}
                   {c.status === "Completed" && (
-                    <Button
-                      variant="outline"
-                      disabled
+                    <View
                       style={{
                         width: "100%",
-                        backgroundColor: colors.mutedBackground,
-                        borderColor: colors.mutedBackground,
+                        height: 48,
+                        backgroundColor: colors.green + "20",
+                        borderRadius: 12,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderWidth: 1,
+                        borderColor: colors.green + "40",
                       }}
-                      textStyle={{ color: colors.muted, fontWeight: "700" }}
                     >
-                      Campaign Completed
-                    </Button>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={18}
+                          color={colors.green}
+                        />
+                        <Text
+                          style={{
+                            color: colors.green,
+                            fontWeight: "700",
+                            fontSize: 15,
+                          }}
+                        >
+                          Campaign Completed
+                        </Text>
+                      </View>
+                    </View>
                   )}
                 </CardContent>
               </Card>
@@ -568,545 +857,737 @@ export default function VolunteerCampaignsIndex() {
         visible={showJoinModal}
         onRequestClose={() => setShowJoinModal(false)}
         transparent
-        animationType="fade"
+        animationType="slide"
       >
-        <Pressable
-          onPress={() => setShowJoinModal(false)}
+        <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.45)",
-            padding: spacing.lg,
+            backgroundColor: "rgba(0,0,0,0.6)",
           }}
         >
           <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+            style={{ flex: 1, justifyContent: "flex-end" }}
           >
-            <Pressable
-              onPress={(e) => e.stopPropagation()}
-              style={{ width: "100%", alignItems: "center" }}
+            <View
+              style={{
+                backgroundColor: colors.card,
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                maxHeight: "90%",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 12,
+                elevation: 8,
+              }}
             >
+              {/* Enhanced Header */}
               <View
                 style={{
-                  width: "110%",
-                  maxWidth: 500,
-                  borderRadius: 16,
-                  backgroundColor: colors.card,
-                  borderWidth: 1,
+                  padding: spacing.lg,
+                  borderBottomWidth: 1,
                   borderColor: colors.border,
-                  overflow: "hidden",
+                  backgroundColor: colors.mutedBackground,
                 }}
               >
-                {/* Header */}
                 <View
                   style={{
-                    padding: spacing.lg,
-                    borderBottomWidth: 1,
-                    borderColor: colors.border,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 8,
                   }}
                 >
-                  <Text style={{ fontSize: 18, fontWeight: "700" }}>
-                    Join Campaign: {selectedCampaign?.name}
-                  </Text>
-                  <Text
-                    style={{ marginTop: 4, color: colors.muted, fontSize: 13 }}
-                  >
-                    Apply to join Agent {selectedCampaign?.agent} for this
-                    campaign.
-                  </Text>
-                </View>
-
-                {/* Content */}
-                <ScrollView
-                  contentContainerStyle={{
-                    padding: spacing.lg,
-                    gap: spacing.lg,
-                  }}
-                  style={{ maxHeight: 520 }}
-                >
-                  {/* Campaign Details */}
-                  <View
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 20,
+                        fontWeight: "700",
+                        color: colors.cardForeground,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Join Campaign
+                    </Text>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 14,
+                      }}
+                    >
+                      {selectedCampaign?.name}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setShowJoinModal(false)}
                     style={{
-                      backgroundColor: colors.mutedBackground,
-                      borderRadius: 12,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: colors.card,
+                      alignItems: "center",
+                      justifyContent: "center",
                       borderWidth: 1,
                       borderColor: colors.border,
-                      padding: spacing.md,
                     }}
                   >
+                    <Ionicons name="close" size={20} color={colors.muted} />
+                  </Pressable>
+                </View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 4,
+                  }}
+                >
+                  <Ionicons
+                    name="person-outline"
+                    size={14}
+                    color={colors.muted}
+                  />
+                  <Text style={{ color: colors.muted, fontSize: 13 }}>
+                    Agent: {selectedCampaign?.agent}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Content */}
+              <ScrollView
+                contentContainerStyle={{
+                  padding: spacing.lg,
+                  gap: spacing.lg,
+                }}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Campaign Summary Card */}
+                <View
+                  style={{
+                    backgroundColor: colors.blue + "15",
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.blue + "30",
+                    padding: spacing.md,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <Ionicons
+                      name="information-circle"
+                      size={18}
+                      color={colors.blue}
+                    />
                     <Text
                       style={{
                         fontWeight: "700",
-                        marginBottom: 8,
                         color: colors.cardForeground,
+                        fontSize: 14,
                       }}
                     >
-                      Campaign Details
+                      Campaign Overview
                     </Text>
-                    <View style={{ gap: 4 }}>
+                  </View>
+                  <View style={{ gap: 6 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons name="location" size={14} color={colors.blue} />
                       <Text
                         style={{ fontSize: 13, color: colors.cardForeground }}
                       >
-                        <Text style={{ fontWeight: "700" }}>Agent: </Text>
-                        {selectedCampaign?.agent}
-                      </Text>
-                      <Text
-                        style={{ fontSize: 13, color: colors.cardForeground }}
-                      >
-                        <Text style={{ fontWeight: "700" }}>Location: </Text>
                         {selectedCampaign?.location}
                       </Text>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons name="calendar" size={14} color={colors.blue} />
                       <Text
                         style={{ fontSize: 13, color: colors.cardForeground }}
                       >
-                        <Text style={{ fontWeight: "700" }}>Duration: </Text>
                         {selectedCampaign?.startDate} -{" "}
                         {selectedCampaign?.endDate}
                       </Text>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons
+                        name="clipboard"
+                        size={14}
+                        color={colors.blue}
+                      />
                       <Text
                         style={{ fontSize: 13, color: colors.cardForeground }}
                       >
-                        <Text style={{ fontWeight: "700" }}>Tasks: </Text>
                         {selectedCampaign?.taskTypes}
                       </Text>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons name="people" size={14} color={colors.blue} />
                       <Text
                         style={{ fontSize: 13, color: colors.cardForeground }}
                       >
-                        <Text style={{ fontWeight: "700" }}>Volunteers: </Text>
                         {selectedCampaign?.volunteers}/
-                        {selectedCampaign?.volunteersNeeded}
+                        {selectedCampaign?.volunteersNeeded} volunteers
                       </Text>
                     </View>
                   </View>
+                </View>
 
-                  {/* Personal Information */}
-                  <View style={{ gap: spacing.md }}>
+                {/* Personal Information */}
+                <View style={{ gap: spacing.sm }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Ionicons
+                      name="person-circle-outline"
+                      size={18}
+                      color={colors.cardForeground}
+                    />
                     <Text
                       style={{
                         fontWeight: "700",
                         color: colors.cardForeground,
+                        fontSize: 15,
                       }}
                     >
                       Personal Information
                     </Text>
-                    <View style={{ flexDirection: "row", gap: spacing.md }}>
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            color: colors.muted,
-                            fontSize: 12,
-                            marginBottom: 4,
-                          }}
-                        >
-                          Full Name
-                        </Text>
-                        <TextInput
-                          value={volunteerApplication.fullName}
-                          onChangeText={(t) =>
-                            setVolunteerApplication({
-                              ...volunteerApplication,
-                              fullName: t,
-                            })
-                          }
-                          placeholder="Your full name"
-                          placeholderTextColor={colors.muted}
-                          style={{
-                            height: 44,
-                            borderWidth: 1,
-                            borderColor: colors.border,
-                            borderRadius: 12,
-                            paddingHorizontal: spacing.md,
-                            backgroundColor: colors.card,
-                            color: colors.cardForeground,
-                          }}
-                        />
-                      </View>
-                      <View style={{ width: 110 }}>
-                        <Text
-                          style={{
-                            color: colors.muted,
-                            fontSize: 12,
-                            marginBottom: 4,
-                          }}
-                        >
-                          Age
-                        </Text>
-                        <TextInput
-                          value={volunteerApplication.age}
-                          onChangeText={(t) =>
-                            setVolunteerApplication({
-                              ...volunteerApplication,
-                              age: t,
-                            })
-                          }
-                          placeholder="Age"
-                          placeholderTextColor={colors.muted}
-                          keyboardType="number-pad"
-                          style={{
-                            height: 44,
-                            borderWidth: 1,
-                            borderColor: colors.border,
-                            borderRadius: 12,
-                            paddingHorizontal: spacing.md,
-                            backgroundColor: colors.card,
-                            color: colors.cardForeground,
-                          }}
-                        />
-                      </View>
-                    </View>
-
-                    <View>
+                  </View>
+                  <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                    <View style={{ flex: 1 }}>
                       <Text
                         style={{
                           color: colors.muted,
                           fontSize: 12,
-                          marginBottom: 4,
+                          marginBottom: 6,
+                          fontWeight: "600",
                         }}
                       >
-                        Email
+                        Full Name *
                       </Text>
                       <TextInput
-                        value={volunteerApplication.email}
+                        value={volunteerApplication.fullName}
                         onChangeText={(t) =>
                           setVolunteerApplication({
                             ...volunteerApplication,
-                            email: t,
+                            fullName: t,
                           })
                         }
-                        placeholder="your.email@example.com"
+                        placeholder="Your full name"
                         placeholderTextColor={colors.muted}
-                        keyboardType="email-address"
                         style={{
-                          height: 44,
-                          borderWidth: 1,
+                          height: 48,
+                          borderWidth: 1.5,
                           borderColor: colors.border,
                           borderRadius: 12,
                           paddingHorizontal: spacing.md,
-                          backgroundColor: colors.card,
+                          backgroundColor: colors.mutedBackground,
                           color: colors.cardForeground,
+                          fontSize: 14,
                         }}
                       />
                     </View>
-
-                    <View>
+                    <View style={{ width: 100 }}>
                       <Text
                         style={{
                           color: colors.muted,
                           fontSize: 12,
-                          marginBottom: 4,
+                          marginBottom: 6,
+                          fontWeight: "600",
                         }}
                       >
-                        Phone Number
+                        Age *
                       </Text>
                       <TextInput
-                        value={volunteerApplication.phone}
+                        value={volunteerApplication.age}
                         onChangeText={(t) =>
                           setVolunteerApplication({
                             ...volunteerApplication,
-                            phone: t,
+                            age: t,
                           })
                         }
-                        placeholder="+1234567890"
+                        placeholder="Age"
                         placeholderTextColor={colors.muted}
-                        keyboardType="phone-pad"
+                        keyboardType="number-pad"
                         style={{
-                          height: 44,
-                          borderWidth: 1,
+                          height: 48,
+                          borderWidth: 1.5,
                           borderColor: colors.border,
                           borderRadius: 12,
                           paddingHorizontal: spacing.md,
-                          backgroundColor: colors.card,
+                          backgroundColor: colors.mutedBackground,
                           color: colors.cardForeground,
+                          fontSize: 14,
                         }}
                       />
                     </View>
                   </View>
 
-                  {/* Skills & Experience */}
-                  <View style={{ gap: spacing.md }}>
+                  <View>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 12,
+                        marginBottom: 6,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Email *
+                    </Text>
+                    <TextInput
+                      value={volunteerApplication.email}
+                      onChangeText={(t) =>
+                        setVolunteerApplication({
+                          ...volunteerApplication,
+                          email: t,
+                        })
+                      }
+                      placeholder="your.email@example.com"
+                      placeholderTextColor={colors.muted}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      style={{
+                        height: 48,
+                        borderWidth: 1.5,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        paddingHorizontal: spacing.md,
+                        backgroundColor: colors.mutedBackground,
+                        color: colors.cardForeground,
+                        fontSize: 14,
+                      }}
+                    />
+                  </View>
+
+                  <View>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 12,
+                        marginBottom: 6,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Phone Number *
+                    </Text>
+                    <TextInput
+                      value={volunteerApplication.phone}
+                      onChangeText={(t) =>
+                        setVolunteerApplication({
+                          ...volunteerApplication,
+                          phone: t,
+                        })
+                      }
+                      placeholder="+1234567890"
+                      placeholderTextColor={colors.muted}
+                      keyboardType="phone-pad"
+                      style={{
+                        height: 48,
+                        borderWidth: 1.5,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        paddingHorizontal: spacing.md,
+                        backgroundColor: colors.mutedBackground,
+                        color: colors.cardForeground,
+                        fontSize: 14,
+                      }}
+                    />
+                  </View>
+                </View>
+
+                {/* Skills & Experience */}
+                <View style={{ gap: spacing.sm }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Ionicons
+                      name="briefcase-outline"
+                      size={18}
+                      color={colors.cardForeground}
+                    />
                     <Text
                       style={{
                         fontWeight: "700",
                         color: colors.cardForeground,
+                        fontSize: 15,
                       }}
                     >
                       Skills & Experience
                     </Text>
-                    <View>
-                      <Text
-                        style={{
-                          color: colors.muted,
-                          fontSize: 12,
-                          marginBottom: 4,
-                        }}
-                      >
-                        Relevant Skills
-                      </Text>
-                      <TextInput
-                        value={volunteerApplication.skills}
-                        onChangeText={(t) =>
-                          setVolunteerApplication({
-                            ...volunteerApplication,
-                            skills: t,
-                          })
-                        }
-                        placeholder="e.g., First Aid, Driving, Languages, Organization..."
-                        placeholderTextColor={colors.muted}
-                        multiline
-                        numberOfLines={2}
-                        style={{
-                          minHeight: 64,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          borderRadius: 12,
-                          padding: spacing.md,
-                          backgroundColor: colors.card,
-                          textAlignVertical: "top",
-                          color: colors.cardForeground,
-                        }}
-                      />
-                    </View>
-                    <View>
-                      <Text
-                        style={{
-                          color: colors.muted,
-                          fontSize: 12,
-                          marginBottom: 4,
-                        }}
-                      >
-                        Previous Volunteer Experience
-                      </Text>
-                      <TextInput
-                        value={volunteerApplication.experience}
-                        onChangeText={(t) =>
-                          setVolunteerApplication({
-                            ...volunteerApplication,
-                            experience: t,
-                          })
-                        }
-                        placeholder="Describe any previous volunteer work..."
-                        placeholderTextColor={colors.muted}
-                        multiline
-                        numberOfLines={2}
-                        style={{
-                          minHeight: 64,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          borderRadius: 12,
-                          padding: spacing.md,
-                          backgroundColor: colors.card,
-                          textAlignVertical: "top",
-                          color: colors.cardForeground,
-                        }}
-                      />
-                    </View>
-                    <View>
-                      <Text
-                        style={{
-                          color: colors.muted,
-                          fontSize: 12,
-                          marginBottom: 4,
-                        }}
-                      >
-                        Preferred Tasks
-                      </Text>
-                      <TextInput
-                        value={volunteerApplication.preferredTasks}
-                        onChangeText={(t) =>
-                          setVolunteerApplication({
-                            ...volunteerApplication,
-                            preferredTasks: t,
-                          })
-                        }
-                        placeholder="Select preferred tasks"
-                        placeholderTextColor={colors.muted}
-                        style={{
-                          height: 44,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          borderRadius: 12,
-                          paddingHorizontal: spacing.md,
-                          backgroundColor: colors.card,
-                          color: colors.cardForeground,
-                        }}
-                      />
-                    </View>
                   </View>
-
-                  {/* Availability & Motivation */}
-                  <View style={{ gap: spacing.md }}>
-                    <View>
-                      <Text
-                        style={{
-                          color: colors.muted,
-                          fontSize: 12,
-                          marginBottom: 4,
-                        }}
-                      >
-                        Availability
-                      </Text>
-                      <TextInput
-                        value={volunteerApplication.availability}
-                        onChangeText={(t) =>
-                          setVolunteerApplication({
-                            ...volunteerApplication,
-                            availability: t,
-                          })
-                        }
-                        placeholder="e.g., Weekends, evenings, 10-15 hours/week"
-                        placeholderTextColor={colors.muted}
-                        style={{
-                          height: 44,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          borderRadius: 12,
-                          paddingHorizontal: spacing.md,
-                          backgroundColor: colors.card,
-                          color: colors.cardForeground,
-                        }}
-                      />
-                    </View>
-                    <View>
-                      <Text
-                        style={{
-                          color: colors.muted,
-                          fontSize: 12,
-                          marginBottom: 4,
-                        }}
-                      >
-                        Why do you want to volunteer?
-                      </Text>
-                      <TextInput
-                        value={volunteerApplication.motivation}
-                        onChangeText={(t) =>
-                          setVolunteerApplication({
-                            ...volunteerApplication,
-                            motivation: t,
-                          })
-                        }
-                        placeholder="Tell us what motivates you to help..."
-                        placeholderTextColor={colors.muted}
-                        multiline
-                        numberOfLines={2}
-                        style={{
-                          minHeight: 64,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          borderRadius: 12,
-                          padding: spacing.md,
-                          backgroundColor: colors.card,
-                          textAlignVertical: "top",
-                          color: colors.cardForeground,
-                        }}
-                      />
-                    </View>
+                  <View>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 12,
+                        marginBottom: 6,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Relevant Skills
+                    </Text>
+                    <TextInput
+                      value={volunteerApplication.skills}
+                      onChangeText={(t) =>
+                        setVolunteerApplication({
+                          ...volunteerApplication,
+                          skills: t,
+                        })
+                      }
+                      placeholder="e.g., First Aid, Driving, Languages, Organization..."
+                      placeholderTextColor={colors.muted}
+                      multiline
+                      numberOfLines={3}
+                      style={{
+                        minHeight: 80,
+                        borderWidth: 1.5,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        padding: spacing.md,
+                        backgroundColor: colors.mutedBackground,
+                        textAlignVertical: "top",
+                        color: colors.cardForeground,
+                        fontSize: 14,
+                      }}
+                    />
                   </View>
+                  <View>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 12,
+                        marginBottom: 6,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Previous Volunteer Experience
+                    </Text>
+                    <TextInput
+                      value={volunteerApplication.experience}
+                      onChangeText={(t) =>
+                        setVolunteerApplication({
+                          ...volunteerApplication,
+                          experience: t,
+                        })
+                      }
+                      placeholder="Describe any previous volunteer work..."
+                      placeholderTextColor={colors.muted}
+                      multiline
+                      numberOfLines={3}
+                      style={{
+                        minHeight: 80,
+                        borderWidth: 1.5,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        padding: spacing.md,
+                        backgroundColor: colors.mutedBackground,
+                        textAlignVertical: "top",
+                        color: colors.cardForeground,
+                        fontSize: 14,
+                      }}
+                    />
+                  </View>
+                  <View>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 12,
+                        marginBottom: 6,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Preferred Tasks
+                    </Text>
+                    <TextInput
+                      value={volunteerApplication.preferredTasks}
+                      onChangeText={(t) =>
+                        setVolunteerApplication({
+                          ...volunteerApplication,
+                          preferredTasks: t,
+                        })
+                      }
+                      placeholder="Select preferred tasks"
+                      placeholderTextColor={colors.muted}
+                      style={{
+                        height: 48,
+                        borderWidth: 1.5,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        paddingHorizontal: spacing.md,
+                        backgroundColor: colors.mutedBackground,
+                        color: colors.cardForeground,
+                        fontSize: 14,
+                      }}
+                    />
+                  </View>
+                </View>
 
-                  {/* Emergency Contact */}
-                  <View style={{ gap: spacing.md }}>
+                {/* Availability & Motivation */}
+                <View style={{ gap: spacing.sm }}>
+                  <View>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 12,
+                        marginBottom: 6,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Availability
+                    </Text>
+                    <TextInput
+                      value={volunteerApplication.availability}
+                      onChangeText={(t) =>
+                        setVolunteerApplication({
+                          ...volunteerApplication,
+                          availability: t,
+                        })
+                      }
+                      placeholder="e.g., Weekends, evenings, 10-15 hours/week"
+                      placeholderTextColor={colors.muted}
+                      style={{
+                        height: 48,
+                        borderWidth: 1.5,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        paddingHorizontal: spacing.md,
+                        backgroundColor: colors.mutedBackground,
+                        color: colors.cardForeground,
+                        fontSize: 14,
+                      }}
+                    />
+                  </View>
+                  <View>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 12,
+                        marginBottom: 6,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Why do you want to volunteer?
+                    </Text>
+                    <TextInput
+                      value={volunteerApplication.motivation}
+                      onChangeText={(t) =>
+                        setVolunteerApplication({
+                          ...volunteerApplication,
+                          motivation: t,
+                        })
+                      }
+                      placeholder="Tell us what motivates you to help..."
+                      placeholderTextColor={colors.muted}
+                      multiline
+                      numberOfLines={3}
+                      style={{
+                        minHeight: 80,
+                        borderWidth: 1.5,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        padding: spacing.md,
+                        backgroundColor: colors.mutedBackground,
+                        textAlignVertical: "top",
+                        color: colors.cardForeground,
+                        fontSize: 14,
+                      }}
+                    />
+                  </View>
+                </View>
+
+                {/* Emergency Contact */}
+                <View style={{ gap: spacing.sm }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Ionicons
+                      name="medical-outline"
+                      size={18}
+                      color={colors.cardForeground}
+                    />
                     <Text
                       style={{
                         fontWeight: "700",
                         color: colors.cardForeground,
+                        fontSize: 15,
                       }}
                     >
                       Emergency Contact
                     </Text>
-                    <View>
-                      <Text
-                        style={{
-                          color: colors.muted,
-                          fontSize: 12,
-                          marginBottom: 4,
-                        }}
-                      >
-                        Emergency Contact Name
-                      </Text>
-                      <TextInput
-                        value={volunteerApplication.emergencyContact}
-                        onChangeText={(t) =>
-                          setVolunteerApplication({
-                            ...volunteerApplication,
-                            emergencyContact: t,
-                          })
-                        }
-                        placeholder="Contact person name"
-                        placeholderTextColor={colors.muted}
-                        style={{
-                          height: 44,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          borderRadius: 12,
-                          paddingHorizontal: spacing.md,
-                          backgroundColor: colors.card,
-                          color: colors.cardForeground,
-                        }}
-                      />
-                    </View>
-                    <View>
-                      <Text
-                        style={{
-                          color: colors.muted,
-                          fontSize: 12,
-                          marginBottom: 4,
-                        }}
-                      >
-                        Emergency Contact Phone
-                      </Text>
-                      <TextInput
-                        value={volunteerApplication.emergencyPhone}
-                        onChangeText={(t) =>
-                          setVolunteerApplication({
-                            ...volunteerApplication,
-                            emergencyPhone: t,
-                          })
-                        }
-                        placeholder="Emergency contact number"
-                        placeholderTextColor={colors.muted}
-                        keyboardType="phone-pad"
-                        style={{
-                          height: 44,
-                          borderWidth: 1,
-                          borderColor: colors.border,
-                          borderRadius: 12,
-                          paddingHorizontal: spacing.md,
-                          backgroundColor: colors.card,
-                          color: colors.cardForeground,
-                        }}
-                      />
-                    </View>
                   </View>
-                </ScrollView>
+                  <View>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 12,
+                        marginBottom: 6,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Emergency Contact Name
+                    </Text>
+                    <TextInput
+                      value={volunteerApplication.emergencyContact}
+                      onChangeText={(t) =>
+                        setVolunteerApplication({
+                          ...volunteerApplication,
+                          emergencyContact: t,
+                        })
+                      }
+                      placeholder="Contact person name"
+                      placeholderTextColor={colors.muted}
+                      style={{
+                        height: 48,
+                        borderWidth: 1.5,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        paddingHorizontal: spacing.md,
+                        backgroundColor: colors.mutedBackground,
+                        color: colors.cardForeground,
+                        fontSize: 14,
+                      }}
+                    />
+                  </View>
+                  <View>
+                    <Text
+                      style={{
+                        color: colors.muted,
+                        fontSize: 12,
+                        marginBottom: 6,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Emergency Contact Phone
+                    </Text>
+                    <TextInput
+                      value={volunteerApplication.emergencyPhone}
+                      onChangeText={(t) =>
+                        setVolunteerApplication({
+                          ...volunteerApplication,
+                          emergencyPhone: t,
+                        })
+                      }
+                      placeholder="Emergency contact number"
+                      placeholderTextColor={colors.muted}
+                      keyboardType="phone-pad"
+                      style={{
+                        height: 48,
+                        borderWidth: 1.5,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        paddingHorizontal: spacing.md,
+                        backgroundColor: colors.mutedBackground,
+                        color: colors.cardForeground,
+                        fontSize: 14,
+                      }}
+                    />
+                  </View>
+                </View>
+              </ScrollView>
 
-                {/* Footer */}
-                <View
+              {/* Enhanced Footer */}
+              <View
+                style={{
+                  padding: spacing.lg,
+                  borderTopWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.mutedBackground,
+                  gap: spacing.sm,
+                }}
+              >
+                <Button
+                  onPress={handleVolunteerApplication}
                   style={{
-                    padding: spacing.lg,
-                    borderTopWidth: 1,
-                    borderColor: colors.border,
-                    flexDirection: "row",
-                    gap: spacing.md,
-                    justifyContent: "flex-end",
+                    height: 52,
+                    backgroundColor: colors.blue,
+                    shadowColor: colors.blue,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 4,
                   }}
                 >
-                  <Button
-                    variant="outline"
-                    onPress={() => setShowJoinModal(false)}
-                    style={{ height: 44 }}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
                   >
-                    Cancel
-                  </Button>
-                  <Button
-                    onPress={handleVolunteerApplication}
-                    style={{ height: 44 }}
-                  >
-                    Submit Application
-                  </Button>
-                </View>
+                    <Ionicons name="paper-plane" size={18} color="#fff" />
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontWeight: "700",
+                        fontSize: 16,
+                      }}
+                    >
+                      Submit Application
+                    </Text>
+                  </View>
+                </Button>
+                <Button
+                  variant="outline"
+                  onPress={() => setShowJoinModal(false)}
+                  style={{
+                    height: 48,
+                    borderColor: colors.border,
+                    backgroundColor: colors.card,
+                  }}
+                  textStyle={{
+                    color: colors.cardForeground,
+                    fontWeight: "600",
+                  }}
+                >
+                  Cancel
+                </Button>
               </View>
-            </Pressable>
+            </View>
           </KeyboardAvoidingView>
-        </Pressable>
+        </View>
       </Modal>
     </>
   );
