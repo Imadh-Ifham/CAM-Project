@@ -6,6 +6,7 @@ import {
   TextInput,
   Alert,
   StyleSheet,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Campaign } from "@/src/types/campaign.type";
@@ -15,9 +16,45 @@ interface CampaignTeamProps {
   campaign: Campaign;
 }
 
+// Mock pending approvals data
+const mockPendingApprovals = [
+  {
+    id: "pa1",
+    name: "Sarah Johnson",
+    role: "Field Supervisor",
+    phone: "+1 555-0123",
+    email: "sarah.j@example.com",
+    appliedDate: "2025-10-25",
+    experience: "5 years in disaster relief",
+    availability: "Full-time",
+  },
+  {
+    id: "pa2",
+    name: "Michael Chen",
+    role: "Logistics Coordinator",
+    phone: "+1 555-0124",
+    email: "m.chen@example.com",
+    appliedDate: "2025-10-24",
+    experience: "3 years in supply chain",
+    availability: "Part-time",
+  },
+  {
+    id: "pa3",
+    name: "Emily Rodriguez",
+    role: "Medical Officer",
+    phone: "+1 555-0125",
+    email: "emily.r@example.com",
+    appliedDate: "2025-10-23",
+    experience: "Licensed nurse, 7 years",
+    availability: "Full-time",
+  },
+];
+
 export default function CampaignTeam({ campaign }: CampaignTeamProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
+  const [pendingApprovals, setPendingApprovals] =
+    useState(mockPendingApprovals);
 
   const volunteers = mockTeamMembers.volunteers;
 
@@ -49,6 +86,57 @@ export default function CampaignTeam({ campaign }: CampaignTeamProps) {
     );
   };
 
+  const handleApproveApplication = (
+    applicationId: string,
+    memberName: string
+  ) => {
+    Alert.alert(
+      "Approve Application",
+      `Approve ${memberName} to join the campaign team?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Approve",
+          onPress: () => {
+            setPendingApprovals(
+              pendingApprovals.filter((app) => app.id !== applicationId)
+            );
+            Alert.alert(
+              "Success! ✅",
+              `${memberName} has been added to the team`
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRejectApplication = (
+    applicationId: string,
+    memberName: string
+  ) => {
+    Alert.alert(
+      "Reject Application",
+      `Are you sure you want to reject ${memberName}'s application?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reject",
+          style: "destructive",
+          onPress: () => {
+            setPendingApprovals(
+              pendingApprovals.filter((app) => app.id !== applicationId)
+            );
+            Alert.alert(
+              "Application Rejected",
+              `${memberName}'s application has been rejected`
+            );
+          },
+        },
+      ]
+    );
+  };
+
   const getRoleIcon = (role: string) => {
     switch (role.toLowerCase()) {
       case "campaign coordinator":
@@ -65,7 +153,103 @@ export default function CampaignTeam({ campaign }: CampaignTeamProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Pending Approvals Section */}
+      {pendingApprovals.length > 0 && (
+        <View style={styles.pendingSection}>
+          <View style={styles.pendingSectionHeader}>
+            <View style={styles.pendingTitleRow}>
+              <Ionicons name="time" size={20} color="#fbbf24" />
+              <Text style={styles.pendingSectionTitle}>Pending Approvals</Text>
+              <View style={styles.pendingBadge}>
+                <Text style={styles.pendingBadgeText}>
+                  {pendingApprovals.length}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.pendingSectionSubtitle}>
+              Review and approve new team member applications
+            </Text>
+          </View>
+
+          <View style={styles.pendingList}>
+            {pendingApprovals.map((application) => (
+              <View key={application.id} style={styles.pendingCard}>
+                <View style={styles.pendingHeader}>
+                  <View style={styles.pendingAvatar}>
+                    <Ionicons name="person" size={20} color="#fbbf24" />
+                  </View>
+
+                  <View style={styles.pendingInfo}>
+                    <Text style={styles.pendingName}>{application.name}</Text>
+                    <Text style={styles.pendingRole}>{application.role}</Text>
+                  </View>
+
+                  <View style={styles.pendingStatusBadge}>
+                    <Text style={styles.pendingStatusText}>PENDING</Text>
+                  </View>
+                </View>
+
+                <View style={styles.pendingDetails}>
+                  <View style={styles.pendingDetailRow}>
+                    <Ionicons name="call" size={14} color="#888" />
+                    <Text style={styles.pendingDetailText}>
+                      {application.phone}
+                    </Text>
+                  </View>
+                  <View style={styles.pendingDetailRow}>
+                    <Ionicons name="mail" size={14} color="#888" />
+                    <Text style={styles.pendingDetailText}>
+                      {application.email}
+                    </Text>
+                  </View>
+                  <View style={styles.pendingDetailRow}>
+                    <Ionicons name="calendar" size={14} color="#888" />
+                    <Text style={styles.pendingDetailText}>
+                      Applied: {application.appliedDate}
+                    </Text>
+                  </View>
+                  <View style={styles.pendingDetailRow}>
+                    <Ionicons name="briefcase" size={14} color="#888" />
+                    <Text style={styles.pendingDetailText}>
+                      {application.experience}
+                    </Text>
+                  </View>
+                  <View style={styles.pendingDetailRow}>
+                    <Ionicons name="time" size={14} color="#888" />
+                    <Text style={styles.pendingDetailText}>
+                      Availability: {application.availability}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.pendingActions}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleRejectApplication(application.id, application.name)
+                    }
+                    style={styles.rejectButton}
+                  >
+                    <Ionicons name="close-circle" size={16} color="#ef4444" />
+                    <Text style={styles.rejectButtonText}>Reject</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleApproveApplication(application.id, application.name)
+                    }
+                    style={styles.approveButton}
+                  >
+                    <Ionicons name="checkmark-circle" size={16} color="#000" />
+                    <Text style={styles.approveButtonText}>Approve</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
       {/* Team Stats */}
       <View style={styles.overviewCard}>
         <Text style={styles.overviewTitle}>Team Overview</Text>
@@ -227,13 +411,146 @@ export default function CampaignTeam({ campaign }: CampaignTeamProps) {
           </View>
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: 20,
+  },
+  pendingSection: {
+    marginBottom: 20,
+  },
+  pendingSectionHeader: {
+    marginBottom: 16,
+  },
+  pendingTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  pendingSectionTitle: {
+    color: "#ffffff",
+    fontSize: 20,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  pendingBadge: {
+    backgroundColor: "#fbbf2420",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  pendingBadgeText: {
+    color: "#fbbf24",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  pendingSectionSubtitle: {
+    color: "#9ca3af",
+    fontSize: 14,
+    marginLeft: 28,
+  },
+  pendingList: {
+    gap: 12,
+  },
+  pendingCard: {
+    backgroundColor: "#1f2937",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: "#fbbf24",
+  },
+  pendingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  pendingAvatar: {
+    width: 48,
+    height: 48,
+    backgroundColor: "#fbbf2420",
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  pendingInfo: {
+    flex: 1,
+  },
+  pendingName: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  pendingRole: {
+    color: "#fbbf24",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  pendingStatusBadge: {
+    backgroundColor: "#fbbf2420",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  pendingStatusText: {
+    color: "#fbbf24",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  pendingDetails: {
+    gap: 6,
+    marginBottom: 16,
+    paddingLeft: 60,
+  },
+  pendingDetailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  pendingDetailText: {
+    color: "#9ca3af",
+    fontSize: 13,
+    marginLeft: 8,
+  },
+  pendingActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  rejectButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: "#ef4444",
+    borderRadius: 12,
+    paddingVertical: 12,
+  },
+  rejectButtonText: {
+    color: "#ef4444",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 6,
+  },
+  approveButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#10b981",
+    borderRadius: 12,
+    paddingVertical: 12,
+  },
+  approveButtonText: {
+    color: "#000",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 6,
   },
   overviewCard: {
     backgroundColor: "#1f2937",

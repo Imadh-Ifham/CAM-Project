@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
+  Modal,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Campaign } from "@/src/types/campaign.type";
@@ -17,10 +19,131 @@ export default function CampaignResources({
   campaign,
 }: CampaignResourcesProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [resources, setResources] = useState(campaign.resources);
+  const [showAddStockModal, setShowAddStockModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [selectedResourceIndex, setSelectedResourceIndex] = useState<
+    number | null
+  >(null);
+  const [stockAmount, setStockAmount] = useState("");
+  const [updateQuantity, setUpdateQuantity] = useState("");
+  const [updateName, setUpdateName] = useState("");
+  const [updateRequiredQuantity, setUpdateRequiredQuantity] = useState("");
+  const [updateUnit, setUpdateUnit] = useState("");
 
-  const filteredResources = campaign.resources.filter((resource) =>
+  const filteredResources = resources.filter((resource) =>
     resource.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleAddStock = () => {
+    if (selectedResourceIndex === null) return;
+
+    const amount = parseInt(stockAmount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert("Invalid Amount", "Please enter a valid positive number");
+      return;
+    }
+
+    const updatedResources = resources.map((resource, idx) => {
+      if (idx === selectedResourceIndex) {
+        return {
+          ...resource,
+          availableQuantity: resource.availableQuantity + amount,
+        };
+      }
+      return resource;
+    });
+    setResources(updatedResources);
+
+    Alert.alert(
+      "Stock Added! 📦",
+      `Successfully added ${amount} ${updatedResources[selectedResourceIndex].unit} to ${updatedResources[selectedResourceIndex].name}`,
+      [{ text: "OK" }]
+    );
+
+    setShowAddStockModal(false);
+    setStockAmount("");
+    setSelectedResourceIndex(null);
+  };
+
+  const handleUpdateResource = () => {
+    if (selectedResourceIndex === null) return;
+
+    const newQuantity = parseInt(updateQuantity);
+    const newRequiredQuantity = parseInt(updateRequiredQuantity);
+
+    if (!updateName.trim()) {
+      Alert.alert("Invalid Name", "Please enter a resource name");
+      return;
+    }
+
+    if (isNaN(newQuantity) || newQuantity < 0) {
+      Alert.alert(
+        "Invalid Quantity",
+        "Please enter a valid non-negative available quantity"
+      );
+      return;
+    }
+
+    if (isNaN(newRequiredQuantity) || newRequiredQuantity <= 0) {
+      Alert.alert(
+        "Invalid Required Quantity",
+        "Please enter a valid positive required quantity"
+      );
+      return;
+    }
+
+    if (!updateUnit.trim()) {
+      Alert.alert(
+        "Invalid Unit",
+        "Please enter a unit (e.g., kg, boxes, liters)"
+      );
+      return;
+    }
+
+    const oldResource = resources[selectedResourceIndex];
+    const updatedResources = resources.map((resource, idx) => {
+      if (idx === selectedResourceIndex) {
+        return {
+          ...resource,
+          name: updateName,
+          availableQuantity: newQuantity,
+          requiredQuantity: newRequiredQuantity,
+          unit: updateUnit,
+        };
+      }
+      return resource;
+    });
+    setResources(updatedResources);
+
+    Alert.alert(
+      "Resource Updated! ✅",
+      `Successfully updated resource:\n• Name: ${oldResource.name} → ${updateName}\n• Available: ${oldResource.availableQuantity} → ${newQuantity} ${updateUnit}\n• Required: ${oldResource.requiredQuantity} → ${newRequiredQuantity} ${updateUnit}`,
+      [{ text: "OK" }]
+    );
+
+    setShowUpdateModal(false);
+    setUpdateQuantity("");
+    setUpdateName("");
+    setUpdateRequiredQuantity("");
+    setUpdateUnit("");
+    setSelectedResourceIndex(null);
+  };
+
+  const openAddStockModal = (index: number) => {
+    setSelectedResourceIndex(index);
+    setStockAmount("");
+    setShowAddStockModal(true);
+  };
+
+  const openUpdateModal = (index: number) => {
+    setSelectedResourceIndex(index);
+    setUpdateName(resources[index].name);
+    setUpdateQuantity(resources[index].availableQuantity.toString());
+    setUpdateRequiredQuantity(resources[index].requiredQuantity.toString());
+    setUpdateUnit(resources[index].unit);
+    setShowUpdateModal(true);
+  };
 
   const getResourceIcon = (resourceName: string) => {
     const name = resourceName.toLowerCase();
@@ -63,11 +186,11 @@ export default function CampaignResources({
     return "#ef444420";
   };
 
-  const totalResources = campaign.resources.length;
-  const completeResources = campaign.resources.filter(
+  const totalResources = resources.length;
+  const completeResources = resources.filter(
     (r) => r.availableQuantity >= r.requiredQuantity
   ).length;
-  const criticalResources = campaign.resources.filter(
+  const criticalResources = resources.filter(
     (r) => (r.availableQuantity / r.requiredQuantity) * 100 < 50
   ).length;
 
@@ -197,6 +320,7 @@ export default function CampaignResources({
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.addButton]}
+                  onPress={() => openAddStockModal(index)}
                 >
                   <View style={styles.buttonContent}>
                     <Ionicons name="add" size={16} color="#00ff94" />
@@ -206,6 +330,7 @@ export default function CampaignResources({
 
                 <TouchableOpacity
                   style={[styles.actionButton, styles.updateButton]}
+                  onPress={() => openUpdateModal(index)}
                 >
                   <View style={styles.buttonContent}>
                     <Ionicons name="create" size={16} color="#60a5fa" />
@@ -244,6 +369,145 @@ export default function CampaignResources({
         <Ionicons name="add" size={20} color="#000" />
         <Text style={styles.addResourceButtonText}>Add New Resource</Text>
       </TouchableOpacity>
+
+      {/* Add Stock Modal */}
+      <Modal
+        visible={showAddStockModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddStockModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Stock</Text>
+              <TouchableOpacity onPress={() => setShowAddStockModal(false)}>
+                <Ionicons name="close" size={24} color="#9ca3af" />
+              </TouchableOpacity>
+            </View>
+
+            {selectedResourceIndex !== null && (
+              <View style={styles.modalBody}>
+                <Text style={styles.resourceLabel}>Resource</Text>
+                <Text style={styles.resourceNameText}>
+                  {resources[selectedResourceIndex].name}
+                </Text>
+
+                <Text style={styles.currentStockLabel}>Current Stock</Text>
+                <Text style={styles.currentStockValue}>
+                  {resources[selectedResourceIndex].availableQuantity}{" "}
+                  {resources[selectedResourceIndex].unit}
+                </Text>
+
+                <Text style={styles.inputLabel}>Amount to Add</Text>
+                <TextInput
+                  style={styles.input}
+                  value={stockAmount}
+                  onChangeText={setStockAmount}
+                  placeholder="Enter amount"
+                  placeholderTextColor="#666"
+                  keyboardType="numeric"
+                />
+
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setShowAddStockModal(false)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={handleAddStock}
+                  >
+                    <Text style={styles.confirmButtonText}>Add Stock</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Update Resource Modal */}
+      <Modal
+        visible={showUpdateModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowUpdateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Update Resource</Text>
+              <TouchableOpacity onPress={() => setShowUpdateModal(false)}>
+                <Ionicons name="close" size={24} color="#9ca3af" />
+              </TouchableOpacity>
+            </View>
+
+            {selectedResourceIndex !== null && (
+              <View style={styles.modalBody}>
+                <Text style={styles.inputLabel}>Resource Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={updateName}
+                  onChangeText={setUpdateName}
+                  placeholder="Enter resource name"
+                  placeholderTextColor="#666"
+                />
+
+                <Text style={styles.inputLabel}>
+                  Unit (e.g., kg, boxes, liters)
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  value={updateUnit}
+                  onChangeText={setUpdateUnit}
+                  placeholder="Enter unit"
+                  placeholderTextColor="#666"
+                />
+
+                <Text style={styles.inputLabel}>Available Quantity</Text>
+                <TextInput
+                  style={styles.input}
+                  value={updateQuantity}
+                  onChangeText={setUpdateQuantity}
+                  placeholder="Enter available quantity"
+                  placeholderTextColor="#666"
+                  keyboardType="numeric"
+                />
+
+                <Text style={styles.inputLabel}>Required Quantity</Text>
+                <TextInput
+                  style={styles.input}
+                  value={updateRequiredQuantity}
+                  onChangeText={setUpdateRequiredQuantity}
+                  placeholder="Enter required quantity"
+                  placeholderTextColor="#666"
+                  keyboardType="numeric"
+                />
+
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setShowUpdateModal(false)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={handleUpdateResource}
+                  >
+                    <Text style={styles.confirmButtonText}>Update</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -460,5 +724,99 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#1a1a1a",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  modalTitle: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "600",
+  },
+  modalBody: {
+    gap: 16,
+  },
+  resourceLabel: {
+    color: "#9ca3af",
+    fontSize: 14,
+    marginBottom: -8,
+  },
+  resourceNameText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  currentStockLabel: {
+    color: "#9ca3af",
+    fontSize: 14,
+    marginBottom: -8,
+  },
+  currentStockValue: {
+    color: "#60a5fa",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  inputLabel: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+    marginTop: 8,
+  },
+  input: {
+    backgroundColor: "#0f0f0f",
+    borderWidth: 1.5,
+    borderColor: "#374151",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: "#fff",
+    fontSize: 16,
+  },
+  modalFooter: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+    borderColor: "#374151",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "#9ca3af",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  confirmButton: {
+    flex: 1,
+    backgroundColor: "#10b981",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
